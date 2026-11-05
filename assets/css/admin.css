@@ -1,0 +1,359 @@
+/**
+ * Área Profesores - Backend Admin Styles
+ * Modern, clean WordPress Admin interface for "Área Familias"
+ */
+
+.ap-admin-wrap {
+    margin-top: 20px;
+    max-width: 1200px;
+}
+
+/* Header & Shortcode Box */
+.ap-admin-header {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.ap-admin-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 6px;
+}
+
+.ap-admin-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+}
+
+.ap-admin-lead {
+    font-size: 13.5px;
+    color: #64748b;
+    margin: 0;
+    max-width: 650px;
+}
+
+.ap-admin-shortcode-box {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 12px 18px;
+    text-align: right;
+}
+
+.ap-shortcode-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.ap-shortcode-code {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e40af;
+    background: #eff6ff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #bfdbfe;
+    display: inline-block;
+}
+
+/* Toolbar & Filters */
+.ap-admin-toolbar {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ap-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ap-search-box {
+    display: flex;
+    gap: 6px;
+}
+
+.ap-toolbar-stats {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Table Styling */
+.ap-card-table-wrap {
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
+}
+
+.ap-table {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+}
+
+.ap-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.ap-table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    font-size: 13.5px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ap-user-row.is-teacher {
+    background-color: #f8fafc;
+}
+
+.ap-table-avatar {
+    border-radius: 50%;
+    display: block;
+}
+
+.ap-user-login-subtext {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Toggle Switch */
+.ap-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    vertical-align: middle;
+}
+
+.ap-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.ap-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.25s;
+    border-radius: 24px;
+}
+
+.ap-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.25s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.ap-toggle-switch input:checked + .ap-toggle-slider {
+    background-color: #10b981;
+}
+
+.ap-toggle-switch input:checked + .ap-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.ap-ajax-status {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ap-ajax-status.is-saved {
+    color: #059669;
+}
+
+/* Tutoría Select */
+.ap-tutoria-select {
+    width: 100%;
+    max-width: 190px;
+    border-radius: 6px;
+    border-color: #cbd5e1;
+}
+
+/* Admin Footer */
+.ap-admin-footer {
+    display: flex;
+    align-items: center;
+    margin-top: 16px;
+}
+
+/* ==========================================================================
+   COMEDOR DIARIO ADMIN STYLES
+   ========================================================================== */
+.ap-date-selector-bar {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 14px 20px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.ap-date-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ap-date-form input[type="date"] {
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    padding: 5px 10px;
+}
+
+/* Metrics Grid */
+.ap-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.ap-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.ap-metric-number {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.ap-metric-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.ap-text-orange {
+    color: #d97706;
+}
+
+.ap-text-red {
+    color: #dc2626;
+}
+
+.ap-class-pill {
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.ap-number-badge {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.ap-dietas-box {
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #92400e;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.ap-alert-box {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #991b1b;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+/* Print Sheet for Kitchen */
+@media print {
+    #adminmenumain, #wpadminbar, #wpfooter, .ap-admin-header-actions, .ap-date-selector-bar, .ap-admin-shortcode-box {
+        display: none !important;
+    }
+    #wpcontent, #wpbody-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .ap-admin-wrap {
+        margin: 0;
+        max-width: 100%;
+    }
+    .ap-admin-header {
+        box-shadow: none;
+        border: none;
+        padding: 0 0 16px 0;
+    }
+    .ap-card-table-wrap {
+        border: 1px solid #000;
+    }
+    .ap-table th, .ap-table td {
+        border: 1px solid #ddd;
+    }
+}
