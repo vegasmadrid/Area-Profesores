@@ -1010,3 +1010,783 @@
         justify-content: flex-start;
     }
 }
+
+/* ==========================================================================
+   SERVICIOS DE HOY - VISTA DE COCINA ([comedorhoy])
+   Diseño cómodo, tipografía clara, alta legibilidad y adaptado a móviles
+   ========================================================================== */
+.ap-cocina-container {
+    max-width: 1020px;
+    margin: 20px auto 40px auto;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.ap-icon-xxs {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: -2px;
+}
+
+/* Cabecera de Cocina */
+.ap-cocina-header {
+    background: #ffffff;
+    border-radius: var(--ap-radius-xl);
+    border: 1px solid var(--ap-slate-200);
+    box-shadow: var(--ap-shadow);
+    padding: 28px 32px 24px 32px;
+    margin-bottom: 24px;
+}
+
+.ap-cocina-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.ap-cocina-branding {
+    flex: 1;
+    min-width: 280px;
+}
+
+.ap-tag-cocina {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #1e40af;
+    background: #eff6ff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #bfdbfe;
+}
+
+.ap-cocina-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    margin: 0 0 6px 0;
+    line-height: 1.25;
+}
+
+.ap-cocina-subtitle {
+    font-size: 15px;
+    color: var(--ap-slate-600);
+    margin: 0;
+    max-width: 600px;
+}
+
+.ap-cocina-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ap-btn-print {
+    background: #ffffff;
+    color: var(--ap-slate-800);
+    border: 1.5px solid var(--ap-slate-300);
+    font-weight: 700;
+}
+
+.ap-btn-print:hover {
+    background: var(--ap-slate-100);
+    border-color: var(--ap-slate-400);
+}
+
+/* Barra de Navegación de Fechas */
+.ap-cocina-date-bar {
+    background: var(--ap-slate-50);
+    border: 1px solid var(--ap-slate-200);
+    border-radius: var(--ap-radius-lg);
+    padding: 12px 18px;
+    margin-bottom: 18px;
+}
+
+.ap-date-navigator-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.ap-date-nav-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-btn-date-nav {
+    background: #ffffff;
+    border: 1px solid var(--ap-slate-300);
+    color: var(--ap-slate-700);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: var(--ap-radius-md);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.ap-btn-date-nav:hover {
+    background: var(--ap-slate-100);
+    color: var(--ap-slate-900);
+    border-color: var(--ap-slate-400);
+}
+
+.ap-btn-today-nav {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: var(--ap-radius-md);
+    text-decoration: none;
+}
+
+.ap-btn-today-nav:hover {
+    background: #dbeafe;
+}
+
+.ap-date-picker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ap-date-picker-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ap-slate-600);
+}
+
+.ap-date-input {
+    background: #ffffff;
+    border: 1.5px solid var(--ap-slate-300);
+    border-radius: var(--ap-radius-md);
+    padding: 7px 12px;
+    font-size: 14px;
+    color: var(--ap-slate-800);
+    font-weight: 600;
+    outline: none;
+}
+
+.ap-date-input:focus {
+    border-color: var(--ap-primary);
+}
+
+/* Indicador de Fecha Actual */
+.ap-current-date-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px dashed var(--ap-slate-200);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ap-date-big-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ap-date-day-badge {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    letter-spacing: -0.01em;
+}
+
+.ap-badge-live {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 14px;
+    letter-spacing: 0.05em;
+}
+
+.ap-badge-historical {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 14px;
+}
+
+.ap-date-time-stamp {
+    font-size: 13px;
+    color: var(--ap-slate-500);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   MÉTRICAS NUMÉRICAS DE COCINA (Letra grande y legible)
+   ========================================================================== */
+.ap-cocina-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.ap-cocina-metric-card {
+    background: #ffffff;
+    border: 1.5px solid var(--ap-slate-200);
+    border-radius: var(--ap-radius-lg);
+    padding: 22px 20px;
+    box-shadow: var(--ap-shadow-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ap-cocina-metric-card:hover {
+    box-shadow: var(--ap-shadow);
+    transform: translateY(-2px);
+}
+
+.ap-metric-total {
+    border-color: #bfdbfe;
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+}
+
+.ap-metric-dietas {
+    border-color: #fed7aa;
+}
+
+.ap-metric-alergicos {
+    border-color: #fecaca;
+    background: linear-gradient(180deg, #ffffff 0%, #fffcfc 100%);
+}
+
+.ap-metric-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.ap-bg-blue   { background: #eff6ff; }
+.ap-bg-orange { background: #fff7ed; }
+.ap-bg-red    { background: #fef2f2; }
+.ap-bg-slate  { background: #f1f5f9; }
+
+.ap-metric-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.ap-metric-big-number {
+    font-size: 38px;
+    font-weight: 900;
+    color: var(--ap-slate-900);
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.ap-metric-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ap-slate-800);
+    margin-bottom: 2px;
+}
+
+.ap-metric-subtext {
+    font-size: 12px;
+    color: var(--ap-slate-500);
+}
+
+.ap-text-orange { color: #d97706 !important; }
+.ap-text-red    { color: #dc2626 !important; }
+
+/* ==========================================================================
+   SECCIONES Y AVISOS DE COCINA
+   ========================================================================== */
+.ap-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 32px 0 16px 0;
+}
+
+.ap-section-icon {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.ap-section-title {
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    margin: 0;
+}
+
+.ap-section-subtitle {
+    font-size: 14px;
+    color: var(--ap-slate-600);
+    margin: 2px 0 0 0;
+}
+
+/* 1. SECCIÓN DE ALÉRGICOS AUSENTES (ALERTA ROJA/ÁMBAR) */
+.ap-cocina-alert-section {
+    background: #fef2f2;
+    border: 2px solid #f87171;
+    border-radius: var(--ap-radius-lg);
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);
+}
+
+.ap-cocina-alert-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.ap-alert-badge-icon {
+    font-size: 30px;
+    line-height: 1;
+}
+
+.ap-alert-section-title {
+    font-size: 19px;
+    font-weight: 800;
+    color: #991b1b;
+    margin: 0 0 4px 0;
+}
+
+.ap-alert-section-desc {
+    font-size: 14px;
+    color: #7f1d1d;
+    margin: 0;
+    font-weight: 500;
+}
+
+.ap-alert-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.ap-alert-item-card {
+    background: #ffffff;
+    border: 1.5px solid #fecaca;
+    border-left: 5px solid #dc2626;
+    border-radius: var(--ap-radius-md);
+    padding: 14px 16px;
+}
+
+.ap-alert-class-badge {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 800;
+    color: #991b1b;
+    background: #fee2e2;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.ap-alert-item-text {
+    font-size: 14.5px;
+    color: #1f2937;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+/* 2. SECCIÓN DE DIETAS ESPECIALES */
+.ap-cocina-dietas-section {
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: var(--ap-radius-lg);
+    padding: 24px;
+    margin-bottom: 28px;
+}
+
+.ap-dietas-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.ap-dieta-card {
+    background: #ffffff;
+    border: 1.5px solid #fcd34d;
+    border-left: 5px solid #f59e0b;
+    border-radius: var(--ap-radius-md);
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.ap-dieta-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #fef3c7;
+}
+
+.ap-dieta-class-badge {
+    font-size: 16px;
+    font-weight: 800;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+
+.ap-dieta-stage-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #78350f;
+    text-transform: uppercase;
+}
+
+.ap-dieta-content {
+    font-size: 14.5px;
+    color: #1f2937;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* 3. DESGLOSE COMPLETO POR CLASE (Tarjetas Claras y Grandes) */
+.ap-cocina-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.ap-cocina-class-card {
+    background: #ffffff;
+    border: 1.5px solid var(--ap-slate-200);
+    border-radius: var(--ap-radius-lg);
+    box-shadow: var(--ap-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.ap-cocina-class-card:hover {
+    border-color: var(--ap-slate-300);
+    box-shadow: var(--ap-shadow);
+}
+
+.ap-class-card-header {
+    background: var(--ap-slate-50);
+    border-bottom: 1.5px solid var(--ap-slate-200);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.ap-class-card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ap-class-main-pill {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffffff;
+    background: var(--ap-primary);
+    padding: 4px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+}
+
+.ap-stage-subpill {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ap-slate-600);
+    background: var(--ap-slate-200);
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.ap-class-comensales-box {
+    text-align: right;
+}
+
+.ap-comensales-number {
+    display: block;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--ap-slate-900);
+    line-height: 1;
+}
+
+.ap-comensales-lbl {
+    font-size: 11px;
+    color: var(--ap-slate-500);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.ap-class-card-body {
+    padding: 18px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ap-class-card-row {
+    font-size: 14.5px;
+    line-height: 1.45;
+}
+
+.ap-row-label {
+    display: block;
+    font-size: 13px;
+    color: var(--ap-slate-700);
+    margin-bottom: 3px;
+}
+
+.ap-text-dieta-highlight {
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #92400e;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.ap-row-warning {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.ap-text-alergico-highlight {
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.ap-text-muted {
+    color: var(--ap-slate-400);
+    font-style: italic;
+    font-size: 13.5px;
+}
+
+.ap-class-card-footer {
+    background: #ffffff;
+    border-top: 1px solid var(--ap-slate-100);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ap-slate-500);
+}
+
+.ap-footer-teacher,
+.ap-footer-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* TOTAL GENERAL FINAL */
+.ap-cocina-grand-total {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #ffffff;
+    border-radius: var(--ap-radius-lg);
+    padding: 22px 28px;
+    margin-top: 24px;
+    box-shadow: var(--ap-shadow);
+}
+
+.ap-grand-total-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ap-grand-total-label {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #dbeafe;
+}
+
+.ap-grand-total-number {
+    font-size: 32px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+/* ESTADO VACÍO COCINA */
+.ap-cocina-empty-card {
+    background: #ffffff;
+    border: 2px dashed var(--ap-slate-300);
+    border-radius: var(--ap-radius-xl);
+    padding: 60px 24px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.ap-empty-emoji {
+    font-size: 54px;
+    margin-bottom: 16px;
+}
+
+.ap-empty-heading {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    margin: 0 0 10px 0;
+}
+
+.ap-empty-text {
+    font-size: 15px;
+    color: var(--ap-slate-600);
+    max-width: 520px;
+    margin: 0 auto 24px auto;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   ADAPTACIÓN A MÓVILES PARA COCINA
+   ========================================================================== */
+@media (max-width: 640px) {
+    .ap-cocina-header {
+        padding: 20px 16px;
+    }
+    .ap-cocina-title {
+        font-size: 22px;
+    }
+    .ap-cocina-subtitle {
+        font-size: 14px;
+    }
+    .ap-cocina-actions {
+        width: 100%;
+    }
+    .ap-cocina-actions .ap-btn {
+        flex: 1;
+        justify-content: center;
+    }
+    .ap-date-navigator-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .ap-date-nav-buttons {
+        justify-content: space-between;
+    }
+    .ap-date-picker-wrap {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ap-date-input {
+        flex: 1;
+    }
+    .ap-cocina-metrics-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .ap-metric-big-number {
+        font-size: 30px;
+    }
+    .ap-cocina-cards-container {
+        grid-template-columns: 1fr;
+    }
+    .ap-grand-total-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS DE IMPRESIÓN LIMPIOS PARA COCINA
+   ========================================================================== */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .ap-cocina-container,
+    .ap-cocina-container * {
+        visibility: visible;
+    }
+    .ap-cocina-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .no-print,
+    header,
+    nav,
+    footer,
+    #wpadminbar,
+    .ap-cocina-actions,
+    .ap-cocina-date-bar {
+        display: none !important;
+    }
+    .ap-cocina-header {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 0 12px 0 !important;
+    }
+    .ap-cocina-metric-card,
+    .ap-cocina-class-card,
+    .ap-cocina-alert-section,
+    .ap-cocina-dietas-section {
+        box-shadow: none !important;
+        border: 1px solid #333 !important;
+        break-inside: avoid;
+    }
+    .ap-cocina-metrics-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        margin-bottom: 14px !important;
+    }
+    .ap-metric-big-number {
+        color: #000 !important;
+    }
+    .ap-cocina-cards-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+

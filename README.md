@@ -31,7 +31,17 @@ Plugin a medida para colegios y centros educativos que integra el **Área de Pro
    - Envío asíncrono con AJAX sin recargar la página.
    - Pestaña de **"Mis Registros de Hoy"** donde el docente puede revisar, editar o eliminar los envíos realizados durante el día.
 
-4. **Panel de Cocina y Dirección (`Área Familias > Comedor Diario`)**:
+4. **Shortcode de Cocina `[comedorhoy]` (Página Pública de Comedor)**:
+   - Genera una página accesible para cualquier persona (incluso sin iniciar sesión), pensada para el personal de cocina, catering y monitores.
+   - **Métricas inmediatas**: Total de comensales estándar, clases con dietas, alérgicos que faltan y clases reportadas.
+   - **Alerta de Alérgicos Ausentes**: Bloque de advertencia destacado en rojo para que en cocina sepan qué menús especiales NO preparar hoy.
+   - **Resumen de Dietas**: Bloque agrupado con todas las dietas notificadas por los tutores.
+   - **Desglose Clase por Clase**: Tarjetas con números grandes y tipografía cómoda de leer en cocina.
+   - **Navegación por Fechas**: Selector de fecha táctil y botones rápidos "Día anterior", "Hoy" y "Día siguiente".
+   - **Botón Imprimir**: Hoja limpia adaptada a papel para colocar en el tablón de cocina.
+   - **100% Adaptado a Móviles y Tablets**: Diseñado para consultarlo cómodamente desde el móvil o tablet en cocina.
+
+5. **Panel de Cocina y Dirección en el Backend (`Área Familias > Comedor Diario`)**:
    - Resumen diario en tiempo real con estadísticas: Total comensales estándar, clases reportadas, clases con dietas y ausencias.
    - Selector de fecha para consultar días pasados.
    - Botón para **Exportar a CSV / Excel**.
@@ -63,6 +73,14 @@ Plugin a medida para colegios y centros educativos que integra el **Área de Pro
      [area_profesores]
      ```
    - Publica la página.
+3. **Crear la página para Cocina:**
+   - Ve a **Páginas > Añadir nueva**.
+   - Ponle el título que desees (ej: *Servicio de Comedor Hoy* o *Cocina Diario*).
+   - Añade el shortcode:
+     ```text
+     [comedorhoy]
+     ```
+   - Publica la página y comparte el enlace directamente con el personal de cocina (pueden acceder sin necesidad de usuario ni contraseña).
 
 ---
 

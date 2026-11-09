@@ -1,7 +1,7 @@
 <?php
 /**
  * Shortcode Management Class
- * Handles [area_profesores] shortcode rendering, access control, and routing.
+ * Handles [area_profesores] and [comedorhoy] shortcodes.
  */
 
 if (!defined('ABSPATH')) {
@@ -20,11 +20,17 @@ class Area_Profesores_Shortcode {
     }
 
     private function __construct() {
+        // Teacher portal shortcode (restricted to authorized teachers)
         add_shortcode('area_profesores', array($this, 'render_shortcode'));
+
+        // Kitchen dining room service shortcodes (publicly accessible)
+        add_shortcode('comedorhoy', array($this, 'render_comedor_hoy'));
+        add_shortcode('comedor_hoy', array($this, 'render_comedor_hoy'));
+        add_shortcode('serviciosdehoy', array($this, 'render_comedor_hoy'));
     }
 
     /**
-     * Render the [area_profesores] shortcode
+     * Render the [area_profesores] shortcode (Restricted to logged-in teachers)
      */
     public function render_shortcode($atts = array()) {
         // Enqueue frontend CSS and JS
@@ -73,6 +79,63 @@ class Area_Profesores_Shortcode {
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
+        return ob_get_clean();
+    }
+
+    /**
+     * Render [comedorhoy] shortcode (Public view for kitchen & school)
+     */
+    public function render_comedor_hoy($atts = array()) {
+        wp_enqueue_style('area-profesores-frontend');
+        wp_enqueue_script('area-profesores-frontend');
+
+        $today = current_time('Y-m-d');
+        $fecha = isset($_GET['fecha']) && !empty($_GET['fecha']) ? sanitize_text_field(wp_unslash($_GET['fecha'])) : $today;
+
+        // Validate date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            $fecha = $today;
+        }
+
+        // Previous and next date calculation
+        $prev_date = date('Y-m-d', strtotime($fecha . ' -1 day'));
+        $next_date = date('Y-m-d', strtotime($fecha . ' +1 day'));
+
+        // Formatted date string in local language (e.g. "Jueves, 5 de Noviembre de 2026")
+        $fecha_timestamp = strtotime($fecha);
+        $fecha_formatted = date_i18n(get_option('date_format'), $fecha_timestamp);
+        $day_of_week = date_i18n('l', $fecha_timestamp);
+        $fecha_formatted = $day_of_week . ', ' . $fecha_formatted;
+
+        // Retrieve data
+        $records = Area_Profesores_Comedor::get_records_by_date($fecha);
+        $summary = Area_Profesores_Comedor::get_summary_by_date($fecha);
+
+        // Extract diet and allergy notice lists for instant kitchen overview
+        $dietas_list = array();
+        $alergicos_faltan_list = array();
+
+        if (!empty($records)) {
+            foreach ($records as $r) {
+                if (!empty(trim($r->dietas))) {
+                    $dietas_list[] = array(
+                        'clase' => $r->clase,
+                        'etapa' => $r->etapa,
+                        'texto' => $r->dietas,
+                    );
+                }
+                if (!empty(trim($r->alergicos_faltan))) {
+                    $alergicos_faltan_list[] = array(
+                        'clase' => $r->clase,
+                        'etapa' => $r->etapa,
+                        'texto' => $r->alergicos_faltan,
+                    );
+                }
+            }
+        }
+
+        ob_start();
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/servicios-de-hoy.php';
         return ob_get_clean();
     }
 }
