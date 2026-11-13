@@ -31,6 +31,11 @@ if (!defined('ABSPATH')) {
                     <?php esc_html_e('Iniciar Sesión como Profesor', 'area-profesores'); ?>
                 </a>
             </div>
+            <div style="margin-top: 14px;">
+                <a href="<?php echo esc_url($login_url); ?>" style="font-size: 13px; color: #1e40af; text-decoration: underline; font-weight: 600;">
+                    <?php esc_html_e('¿Eres nuevo en el colegio? Solicita tu alta de profesor aquí', 'area-profesores'); ?> &rarr;
+                </a>
+            </div>
         <?php else : ?>
             <span class="ap-badge ap-badge-danger"><?php esc_html_e('Acceso Exclusivo a Profesores', 'area-profesores'); ?></span>
             <h2 class="ap-restricted-title"><?php esc_html_e('Sección Reservada al Profesorado', 'area-profesores'); ?></h2>

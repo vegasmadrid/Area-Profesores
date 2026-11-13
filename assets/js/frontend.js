@@ -310,6 +310,93 @@
             };
             return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
         }
+
+        // =========================================================================
+        // Login & Access Request Handlers ([loginprofesores])
+        // =========================================================================
+        $('.ap-login-tab-btn').on('click', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var target = $btn.data('login-target');
+
+            $('.ap-login-tab-btn').removeClass('is-active');
+            $btn.addClass('is-active');
+
+            $('.ap-login-tab-panel').removeClass('is-active');
+            $('#' + target).addClass('is-active');
+        });
+
+        // Quick button to switch to Request tab
+        $(document).on('click', '.ap-switch-to-request', function(e) {
+            e.preventDefault();
+            $('.ap-login-tab-btn[data-login-target="tab-solicitar"]').trigger('click');
+        });
+
+        // Quick button to switch to Login tab
+        $(document).on('click', '.ap-switch-to-login', function(e) {
+            e.preventDefault();
+            $('.ap-login-tab-btn[data-login-target="tab-entrar"]').trigger('click');
+        });
+
+        // AJAX Submission of Solicitud de Acceso
+        var $solicitudForm = $('#ap-solicitud-form');
+        var $solicitudAlert = $('#ap-solicitud-alert');
+        var $solicitudSubmitBtn = $('#ap-submit-solicitud-btn');
+
+        $solicitudForm.on('submit', function(e) {
+            e.preventDefault();
+
+            var nombre = $.trim($('#ap-req-nombre').val());
+            var apellidos = $.trim($('#ap-req-apellidos').val());
+            var email = $.trim($('#ap-req-email').val());
+
+            if (!nombre || !apellidos || !email) {
+                showSolicitudAlert('error', AreaProfesoresData.i18n.fill_required);
+                return;
+            }
+
+            // Button loading state
+            $solicitudSubmitBtn.prop('disabled', true);
+            $solicitudSubmitBtn.find('.ap-btn-text').hide();
+            $solicitudSubmitBtn.find('.ap-btn-loading').show();
+            $solicitudAlert.slideUp(100);
+
+            var formData = $solicitudForm.serializeArray();
+            formData.push({ name: 'action', value: 'ap_submit_solicitud' });
+            formData.push({ name: 'nonce', value: AreaProfesoresData.nonce });
+
+            $.ajax({
+                url: AreaProfesoresData.ajax_url,
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(res) {
+                    $solicitudSubmitBtn.prop('disabled', false);
+                    $solicitudSubmitBtn.find('.ap-btn-text').show();
+                    $solicitudSubmitBtn.find('.ap-btn-loading').hide();
+
+                    if (res.success) {
+                        showSolicitudAlert('success', res.data.message);
+                        $solicitudForm[0].reset();
+                    } else {
+                        showSolicitudAlert('error', res.data.message || AreaProfesoresData.i18n.error);
+                    }
+                },
+                error: function() {
+                    $solicitudSubmitBtn.prop('disabled', false);
+                    $solicitudSubmitBtn.find('.ap-btn-text').show();
+                    $solicitudSubmitBtn.find('.ap-btn-loading').hide();
+                    showSolicitudAlert('error', AreaProfesoresData.i18n.error);
+                }
+            });
+        });
+
+        function showSolicitudAlert(type, message) {
+            $solicitudAlert.removeClass('ap-alert-success ap-alert-error')
+                           .addClass(type === 'success' ? 'ap-alert-success' : 'ap-alert-error')
+                           .html(message)
+                           .slideDown(200);
+        }
     });
 
 })(jQuery);

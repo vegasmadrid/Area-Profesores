@@ -1,8 +1,11 @@
 <?php
 /**
  * Admin Management Class
- * Handles backend menus: "Área Familias" > "Profesores" and "Comedor Diario",
- * user role/meta assignment, and teacher tutoría configuration.
+ * Handles backend menus under "Área Profesores":
+ * - Profesores (Gestión de usuarios y tutorías)
+ * - Solicitudes de Acceso (Aprobación y altas pendientes con badge)
+ * - Comedor Diario (Control de cocina y exportación)
+ * - Ajustes (Configuración institucional, login y Nextend Social Login)
  */
 
 if (!defined('ABSPATH')) {
@@ -23,6 +26,9 @@ class Area_Profesores_Admin {
     private function __construct() {
         add_action('admin_menu', array($this, 'register_admin_menus'));
 
+        // Backward compatibility redirects for older menu slugs
+        add_action('admin_init', array($this, 'handle_legacy_admin_redirects'));
+
         // User profile fields integration
         add_action('show_user_profile', array($this, 'render_user_profile_fields'));
         add_action('edit_user_profile', array($this, 'render_user_profile_fields'));
@@ -34,6 +40,39 @@ class Area_Profesores_Admin {
     }
 
     /**
+     * Get a setting with fallback default
+     */
+    public static function get_setting($key, $default = '') {
+        $defaults = array(
+            'allowed_domain'            => 'casadelavirgen.es',
+            'tribanda_url'              => 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png',
+            'logo_url'                  => 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png',
+            'login_button_text'         => 'Accede usando tu cuenta de profesor',
+            'only_approved_can_register'=> 'yes',
+            'notification_emails'       => get_option('admin_email'),
+            'login_page_id'             => 0,
+            'area_page_id'              => 0,
+        );
+
+        $settings = get_option('ap_settings', array());
+
+        if (isset($settings[$key])) {
+            return $settings[$key];
+        }
+
+        return isset($defaults[$key]) ? $defaults[$key] : $default;
+    }
+
+    /**
+     * Update a single setting
+     */
+    public static function update_setting($key, $value) {
+        $settings = get_option('ap_settings', array());
+        $settings[$key] = $value;
+        update_option('ap_settings', $settings);
+    }
+
+    /**
      * Check if a user is marked as teacher
      */
     public static function is_user_profesor($user_id) {
@@ -41,16 +80,14 @@ class Area_Profesores_Admin {
             return false;
         }
 
-        // Administrators can always be granted access or configured
         $is_teacher = get_user_meta($user_id, '_ap_is_profesor', true);
         if ($is_teacher === '1' || $is_teacher === 1 || $is_teacher === true) {
             return true;
         }
 
-        // Also check if user has 'administrator' role (convenience for webmasters/testing)
+        // Also check if user has 'administrator' role
         $user = get_userdata($user_id);
         if ($user && in_array('administrator', (array) $user->roles, true)) {
-            // Check if explicitly disabled or allow admins by default
             return true;
         }
 
@@ -68,49 +105,83 @@ class Area_Profesores_Admin {
     }
 
     /**
-     * Register Admin Menus under "Área Familias"
+     * Redirect legacy admin menu slugs (area-familias -> area-profesores)
+     */
+    public function handle_legacy_admin_redirects() {
+        if (!is_admin()) {
+            return;
+        }
+
+        $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        if ($page === 'area-familias' || $page === 'area-familias-profesores') {
+            wp_safe_redirect(admin_url('admin.php?page=area-profesores'));
+            exit;
+        } elseif ($page === 'area-familias-comedor') {
+            wp_safe_redirect(admin_url('admin.php?page=area-profesores-comedor'));
+            exit;
+        }
+    }
+
+    /**
+     * Register Admin Menus under "Área Profesores"
      */
     public function register_admin_menus() {
-        // Main Menu: Área Familias
+        $pending_count = Area_Profesores_Solicitudes::get_pending_count();
+        $badge = '';
+        if ($pending_count > 0) {
+            $badge = sprintf(' <span class="update-plugins count-%d"><span class="plugin-count">%d</span></span>', $pending_count, $pending_count);
+        }
+
+        // Main Menu: Área Profesores
         add_menu_page(
-            __('Área Familias', 'area-profesores'),
-            __('Área Familias', 'area-profesores'),
+            __('Área Profesores', 'area-profesores'),
+            __('Área Profesores', 'area-profesores') . $badge,
             'manage_options',
-            'area-familias',
-            array($this, 'render_main_admin_page'),
-            'dashicons-groups',
+            'area-profesores',
+            array($this, 'render_profesores_page'),
+            'dashicons-welcome-learn-status',
             26
         );
 
-        // Submenu: Profesores
+        // Submenu: Profesores (claustro actual)
         add_submenu_page(
-            'area-familias',
+            'area-profesores',
             __('Profesores', 'area-profesores'),
             __('Profesores', 'area-profesores'),
             'manage_options',
-            'area-familias-profesores',
+            'area-profesores',
             array($this, 'render_profesores_page')
+        );
+
+        // Submenu: Solicitudes de Acceso (con contador)
+        add_submenu_page(
+            'area-profesores',
+            __('Solicitudes de Acceso', 'area-profesores'),
+            __('Solicitudes de Acceso', 'area-profesores') . $badge,
+            'manage_options',
+            'area-profesores-solicitudes',
+            array($this, 'render_solicitudes_page')
         );
 
         // Submenu: Comedor Diario
         add_submenu_page(
-            'area-familias',
+            'area-profesores',
             __('Comedor Diario', 'area-profesores'),
             __('Comedor Diario', 'area-profesores'),
             'manage_options',
-            'area-familias-comedor',
+            'area-profesores-comedor',
             array($this, 'render_comedor_admin_page')
         );
 
-        // Remove the duplicated top-level menu title from submenu list
-        remove_submenu_page('area-familias', 'area-familias');
-    }
-
-    /**
-     * Main page fallback redirecting to Profesores
-     */
-    public function render_main_admin_page() {
-        $this->render_profesores_page();
+        // Submenu: Ajustes
+        add_submenu_page(
+            'area-profesores',
+            __('Ajustes', 'area-profesores'),
+            __('Ajustes', 'area-profesores'),
+            'manage_options',
+            'area-profesores-ajustes',
+            array($this, 'render_ajustes_page')
+        );
     }
 
     /**
@@ -180,6 +251,87 @@ class Area_Profesores_Admin {
         $available_classes = Area_Profesores_Comedor::get_available_classes();
 
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/admin-profesores.php';
+    }
+
+    /**
+     * Render "Solicitudes de Acceso" screen
+     */
+    public function render_solicitudes_page() {
+        global $wpdb;
+        $table = Area_Profesores_Solicitudes::get_table_name();
+
+        $estado_filter = isset($_GET['estado']) ? sanitize_text_field($_GET['estado']) : '';
+        $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+
+        $where = array('1=1');
+        $params = array();
+
+        if (!empty($estado_filter) && in_array($estado_filter, array('pendiente', 'aprobada', 'rechazada'), true)) {
+            $where[] = 'estado = %s';
+            $params[] = $estado_filter;
+        }
+
+        if (!empty($search)) {
+            $where[] = '(nombre LIKE %s OR apellidos LIKE %s OR email LIKE %s)';
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $where_sql = implode(' AND ', $where);
+        if (!empty($params)) {
+            $sql = $wpdb->prepare("SELECT * FROM $table WHERE $where_sql ORDER BY id DESC", $params);
+        } else {
+            $sql = "SELECT * FROM $table ORDER BY id DESC";
+        }
+
+        $solicitudes = $wpdb->get_results($sql);
+        $available_classes = Area_Profesores_Comedor::get_available_classes();
+
+        // Counts for tabs
+        $count_pendiente = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE estado = 'pendiente'");
+        $count_aprobada = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE estado = 'aprobada'");
+        $count_rechazada = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE estado = 'rechazada'");
+        $count_total = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/admin-solicitudes.php';
+    }
+
+    /**
+     * Render "Ajustes" configuration screen
+     */
+    public function render_ajustes_page() {
+        if (isset($_POST['ap_save_ajustes']) && check_admin_referer('ap_save_ajustes_nonce')) {
+            $settings = array(
+                'allowed_domain'            => sanitize_text_field(wp_unslash($_POST['allowed_domain'])),
+                'tribanda_url'              => esc_url_raw(wp_unslash($_POST['tribanda_url'])),
+                'logo_url'                  => esc_url_raw(wp_unslash($_POST['logo_url'])),
+                'login_button_text'         => sanitize_text_field(wp_unslash($_POST['login_button_text'])),
+                'only_approved_can_register'=> isset($_POST['only_approved_can_register']) ? 'yes' : 'no',
+                'notification_emails'       => sanitize_text_field(wp_unslash($_POST['notification_emails'])),
+                'login_page_id'             => absint($_POST['login_page_id']),
+                'area_page_id'              => absint($_POST['area_page_id']),
+            );
+
+            update_option('ap_settings', $settings);
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Ajustes guardados correctamente.', 'area-profesores') . '</p></div>';
+        }
+
+        $settings = array(
+            'allowed_domain'            => self::get_setting('allowed_domain', 'casadelavirgen.es'),
+            'tribanda_url'              => self::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png'),
+            'logo_url'                  => self::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png'),
+            'login_button_text'         => self::get_setting('login_button_text', 'Accede usando tu cuenta de profesor'),
+            'only_approved_can_register'=> self::get_setting('only_approved_can_register', 'yes'),
+            'notification_emails'       => self::get_setting('notification_emails', get_option('admin_email')),
+            'login_page_id'             => self::get_setting('login_page_id', 0),
+            'area_page_id'              => self::get_setting('area_page_id', 0),
+        );
+
+        $pages = get_pages();
+
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/admin-ajustes.php';
     }
 
     /**

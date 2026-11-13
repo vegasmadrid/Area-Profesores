@@ -357,3 +357,99 @@
         border: 1px solid #ddd;
     }
 }
+
+/* ==========================================================================
+   SOLICITUDES Y AJUSTES ADMIN STYLES
+   ========================================================================== */
+.ap-admin-tabs {
+    margin-bottom: 12px;
+}
+
+.ap-status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ap-status-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.ap-status-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.ap-status-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.ap-badge-tutoria-plain {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ap-obs-text {
+    font-size: 12.5px;
+    color: #475569;
+    line-height: 1.4;
+}
+
+.ap-solicitud-row.ap-row-estado-aprobada {
+    background-color: #f8fafc;
+}
+
+/* AJUSTES CARDS */
+.ap-settings-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ap-settings-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ap-settings-section-title .dashicons {
+    color: #1e40af;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+}
+
+.ap-input-prefix-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.ap-input-prefix {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 700;
+    color: #64748b;
+    font-size: 15px;
+}
+

@@ -1,7 +1,7 @@
 <?php
 /**
  * Shortcode Management Class
- * Handles [area_profesores] and [comedorhoy] shortcodes.
+ * Handles [area_profesores], [comedorhoy], and [loginprofesores] shortcodes.
  */
 
 if (!defined('ABSPATH')) {
@@ -27,6 +27,10 @@ class Area_Profesores_Shortcode {
         add_shortcode('comedorhoy', array($this, 'render_comedor_hoy'));
         add_shortcode('comedor_hoy', array($this, 'render_comedor_hoy'));
         add_shortcode('serviciosdehoy', array($this, 'render_comedor_hoy'));
+
+        // Corporate Login & Access Request shortcode (publicly accessible)
+        add_shortcode('loginprofesores', array($this, 'render_login_profesores'));
+        add_shortcode('login_profesores', array($this, 'render_login_profesores'));
     }
 
     /**
@@ -58,7 +62,13 @@ class Area_Profesores_Shortcode {
      */
     private function render_restricted_view($reason) {
         ob_start();
-        $login_url = wp_login_url(get_permalink());
+        $login_page_id = Area_Profesores_Admin::get_setting('login_page_id', 0);
+        if ($login_page_id && get_post_status($login_page_id) === 'publish') {
+            $login_url = get_permalink($login_page_id);
+        } else {
+            $login_url = wp_login_url(get_permalink());
+        }
+
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/restricted.php';
         return ob_get_clean();
     }
@@ -101,7 +111,7 @@ class Area_Profesores_Shortcode {
         $prev_date = date('Y-m-d', strtotime($fecha . ' -1 day'));
         $next_date = date('Y-m-d', strtotime($fecha . ' +1 day'));
 
-        // Formatted date string in local language (e.g. "Jueves, 5 de Noviembre de 2026")
+        // Formatted date string in local language
         $fecha_timestamp = strtotime($fecha);
         $fecha_formatted = date_i18n(get_option('date_format'), $fecha_timestamp);
         $day_of_week = date_i18n('l', $fecha_timestamp);
@@ -136,6 +146,35 @@ class Area_Profesores_Shortcode {
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/servicios-de-hoy.php';
+        return ob_get_clean();
+    }
+
+    /**
+     * Render [loginprofesores] shortcode (Corporate login & access request)
+     */
+    public function render_login_profesores($atts = array()) {
+        wp_enqueue_style('area-profesores-frontend');
+        wp_enqueue_script('area-profesores-frontend');
+
+        $is_logged_in = is_user_logged_in();
+        $user_id = $is_logged_in ? get_current_user_id() : 0;
+        $is_profesor = $is_logged_in ? Area_Profesores_Admin::is_user_profesor($user_id) : false;
+
+        $area_page_id = Area_Profesores_Admin::get_setting('area_page_id', 0);
+        $area_url = $area_page_id ? get_permalink($area_page_id) : home_url('/');
+
+        $tribanda_url = Area_Profesores_Admin::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png');
+        $logo_url = Area_Profesores_Admin::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png');
+        $login_button_text = Area_Profesores_Admin::get_setting('login_button_text', 'Accede usando tu cuenta de profesor');
+        $allowed_domain = Area_Profesores_Admin::get_setting('allowed_domain', 'casadelavirgen.es');
+        $available_classes = Area_Profesores_Comedor::get_available_classes();
+
+        // Target URL after Nextend Social Login
+        $redirect_target = !empty($_GET['redirect_to']) ? esc_url_raw($_GET['redirect_to']) : $area_url;
+        $google_login_url = Area_Profesores_Solicitudes::get_nextend_google_login_url($redirect_target);
+
+        ob_start();
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/login-profesores.php';
         return ob_get_clean();
     }
 }

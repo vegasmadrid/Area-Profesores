@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin View: Comedor Diario
- * Screen under "Área Familias > Comedor Diario"
+ * Screen under "Área Profesores > Comedor Diario"
  */
 
 if (!defined('ABSPATH')) {
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 <div class="wrap ap-admin-wrap">
     <div class="ap-admin-header">
         <div class="ap-admin-title-area">
-            <span class="ap-admin-badge"><?php esc_html_e('Área Familias · Comedor', 'area-profesores'); ?></span>
+            <span class="ap-admin-badge"><?php esc_html_e('Área Profesores · Comedor', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Control Diario de Comedor Escolar', 'area-profesores'); ?></h1>
             <p class="ap-admin-lead">
                 <?php esc_html_e('Consulta en tiempo real los datos introducidos por cada profesor, el recuento de comensales y las dietas especiales notificadas para cocina.', 'area-profesores'); ?>
@@ -34,12 +34,12 @@ if (!defined('ABSPATH')) {
     <!-- Date selector bar -->
     <div class="ap-date-selector-bar">
         <form method="get" class="ap-date-form">
-            <input type="hidden" name="page" value="area-familias-comedor">
+            <input type="hidden" name="page" value="area-profesores-comedor">
             <label for="fecha-input"><strong><?php esc_html_e('Seleccionar fecha:', 'area-profesores'); ?></strong></label>
             <input type="date" id="fecha-input" name="fecha" value="<?php echo esc_attr($fecha); ?>">
             <button type="submit" class="button button-primary"><?php esc_html_e('Filtrar', 'area-profesores'); ?></button>
             <?php if ($fecha !== current_time('Y-m-d')) : ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=area-familias-comedor')); ?>" class="button"><?php esc_html_e('Ver Hoy', 'area-profesores'); ?></a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=area-profesores-comedor')); ?>" class="button"><?php esc_html_e('Ver Hoy', 'area-profesores'); ?></a>
             <?php endif; ?>
         </form>
     </div>

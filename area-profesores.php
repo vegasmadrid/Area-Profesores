@@ -19,6 +19,7 @@ define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Require core classes
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-comedor.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-solicitudes.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-admin.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-shortcode.php';
 
@@ -42,6 +43,7 @@ class Area_Profesores_Plugin {
 
         // Initialize modules
         Area_Profesores_Comedor::get_instance();
+        Area_Profesores_Solicitudes::get_instance();
         Area_Profesores_Admin::get_instance();
         Area_Profesores_Shortcode::get_instance();
 
@@ -54,6 +56,7 @@ class Area_Profesores_Plugin {
      */
     public function activate() {
         Area_Profesores_Comedor::create_tables();
+        Area_Profesores_Solicitudes::create_tables();
     }
 
     /**
@@ -87,11 +90,14 @@ class Area_Profesores_Plugin {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('area_profesores_nonce'),
             'i18n'     => array(
-                'submitting'     => __('Enviando registro...', 'area-profesores'),
-                'success'        => __('¡Registro guardado correctamente!', 'area-profesores'),
-                'error'          => __('Ha ocurrido un error al guardar el registro.', 'area-profesores'),
-                'fill_required'  => __('Por favor, completa todos los campos requeridos (*).', 'area-profesores'),
-                'confirm_delete' => __('¿Estás seguro de que deseas eliminar este registro?', 'area-profesores'),
+                'submitting'        => __('Enviando registro...', 'area-profesores'),
+                'submitting_req'    => __('Enviando solicitud...', 'area-profesores'),
+                'success'           => __('¡Registro guardado correctamente!', 'area-profesores'),
+                'error'             => __('Ha ocurrido un error al guardar el registro.', 'area-profesores'),
+                'fill_required'     => __('Por favor, completa todos los campos requeridos (*).', 'area-profesores'),
+                'confirm_delete'    => __('¿Estás seguro de que deseas eliminar este registro?', 'area-profesores'),
+                'confirm_approve'   => __('¿Aprobar esta solicitud y dar acceso al profesor?', 'area-profesores'),
+                'confirm_reject'    => __('¿Rechazar esta solicitud de acceso?', 'area-profesores'),
             )
         ));
     }
@@ -100,7 +106,7 @@ class Area_Profesores_Plugin {
      * Admin assets
      */
     public function enqueue_admin_assets($hook) {
-        if (strpos($hook, 'area-familias') !== false || 'user-edit.php' === $hook || 'profile.php' === $hook) {
+        if (strpos($hook, 'area-profesores') !== false || strpos($hook, 'area-familias') !== false || 'user-edit.php' === $hook || 'profile.php' === $hook) {
             wp_enqueue_style(
                 'area-profesores-admin',
                 AREA_PROFESORES_PLUGIN_URL . 'assets/css/admin.css',

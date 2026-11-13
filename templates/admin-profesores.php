@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin View: Gestión de Profesores
- * Screen under "Área Familias > Profesores"
+ * Screen under "Área Profesores > Profesores"
  */
 
 if (!defined('ABSPATH')) {
@@ -12,14 +12,14 @@ if (!defined('ABSPATH')) {
 <div class="wrap ap-admin-wrap">
     <div class="ap-admin-header">
         <div class="ap-admin-title-area">
-            <span class="ap-admin-badge"><?php esc_html_e('Área Familias', 'area-profesores'); ?></span>
+            <span class="ap-admin-badge"><?php esc_html_e('Área Profesores', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Gestión del Claustro de Profesores', 'area-profesores'); ?></h1>
             <p class="ap-admin-lead">
                 <?php esc_html_e('Marca qué usuarios registrados en la web tienen rol de profesor para permitirles el acceso al Área de Profesores y asígnales su curso de tutoría.', 'area-profesores'); ?>
             </p>
         </div>
         <div class="ap-admin-shortcode-box">
-            <span class="ap-shortcode-label"><?php esc_html_e('Shortcode para insertar en la página:', 'area-profesores'); ?></span>
+            <span class="ap-shortcode-label"><?php esc_html_e('Shortcode del Área Docente:', 'area-profesores'); ?></span>
             <code class="ap-shortcode-code">[area_profesores]</code>
         </div>
     </div>
@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
     <!-- Filter and Search Bar -->
     <div class="ap-admin-toolbar">
         <form method="get" class="ap-filter-form">
-            <input type="hidden" name="page" value="area-familias-profesores">
+            <input type="hidden" name="page" value="area-profesores">
 
             <div class="ap-filter-group">
                 <select name="filter_profesor" onchange="this.form.submit()">
@@ -40,7 +40,7 @@ if (!defined('ABSPATH')) {
                     <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Buscar por nombre, usuario o email...', 'area-profesores'); ?>">
                     <button type="submit" class="button"><?php esc_html_e('Buscar', 'area-profesores'); ?></button>
                     <?php if (!empty($search) || !empty($filter_profesor)) : ?>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=area-familias-profesores')); ?>" class="button"><?php esc_html_e('Limpiar', 'area-profesores'); ?></a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=area-profesores')); ?>" class="button"><?php esc_html_e('Limpiar', 'area-profesores'); ?></a>
                     <?php endif; ?>
                 </div>
             </div>
