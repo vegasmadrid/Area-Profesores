@@ -133,7 +133,7 @@ if (!defined('ABSPATH')) {
                             <?php endforeach; ?>
                         </div>
                         <p class="description">
-                            <?php esc_html_e('Marca las páginas que deben seguir siendo accesibles sin iniciar sesión (por ejemplo, la página de cocina con [comedorhoy]).', 'area-profesores'); ?>
+                            <?php esc_html_e('Marca las páginas que deben seguir siendo accesibles sin iniciar sesión (por ejemplo, la página de cocina).', 'area-profesores'); ?>
                         </p>
                     </td>
                 </tr>
@@ -158,10 +158,10 @@ if (!defined('ABSPATH')) {
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><label for="login_page_id"><?php esc_html_e('Página de Login ([loginprofesores])', 'area-profesores'); ?></label></th>
+                    <th scope="row"><label for="login_page_id"><?php esc_html_e('Página de Login', 'area-profesores'); ?></label></th>
                     <td>
                         <select name="login_page_id" id="login_page_id">
-                            <option value="0"><?php esc_html_e('-- Selecciona la página donde has insertado [loginprofesores] --', 'area-profesores'); ?></option>
+                            <option value="0"><?php esc_html_e('-- Selecciona la página de login --', 'area-profesores'); ?></option>
                             <?php foreach ($pages as $p) : ?>
                                 <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['login_page_id'], $p->ID); ?>>
                                     <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
@@ -169,16 +169,16 @@ if (!defined('ABSPATH')) {
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Los usuarios que intenten entrar al Área de Profesores sin estar conectados serán dirigidos a esta página.', 'area-profesores'); ?>
+                            <?php esc_html_e('En esta página se mostrará automáticamente la pantalla de acceso (no hace falta ningún shortcode). Los usuarios sin sesión serán redirigidos aquí.', 'area-profesores'); ?>
                         </p>
                     </td>
                 </tr>
 
                 <tr>
-                    <th scope="row"><label for="area_page_id"><?php esc_html_e('Página del Área de Profesores ([area_profesores])', 'area-profesores'); ?></label></th>
+                    <th scope="row"><label for="area_page_id"><?php esc_html_e('Página del Área de Profesores', 'area-profesores'); ?></label></th>
                     <td>
                         <select name="area_page_id" id="area_page_id">
-                            <option value="0"><?php esc_html_e('-- Selecciona la página donde has insertado [area_profesores] --', 'area-profesores'); ?></option>
+                            <option value="0"><?php esc_html_e('-- Selecciona la página del Área de Profesores --', 'area-profesores'); ?></option>
                             <?php foreach ($pages as $p) : ?>
                                 <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['area_page_id'], $p->ID); ?>>
                                     <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
@@ -186,7 +186,32 @@ if (!defined('ABSPATH')) {
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Página a la que se redirige automáticamente al profesor tras iniciar sesión con su cuenta.', 'area-profesores'); ?>
+                            <?php esc_html_e('En esta página se mostrará automáticamente el panel del profesor (no hace falta ningún shortcode). Es la página a la que se redirige al profesor tras iniciar sesión.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><label for="comedor_page_id"><?php esc_html_e('Página de Comedor / Cocina', 'area-profesores'); ?></label></th>
+                    <td>
+                        <select name="comedor_page_id" id="comedor_page_id">
+                            <option value="0"><?php esc_html_e('-- Selecciona la página de cocina (opcional) --', 'area-profesores'); ?></option>
+                            <?php foreach ($pages as $p) : ?>
+                                <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['comedor_page_id'], $p->ID); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e('En esta página se mostrará automáticamente el resumen diario de comensales para cocina. Si debe verse sin iniciar sesión, márcala también en "Páginas públicas".', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" style="padding-left:0;">
+                        <p class="description">
+                            <?php esc_html_e('Nota: el contenido que tengan estas páginas en el editor se sustituye por la pantalla correspondiente del plugin. Los shortcodes antiguos ([loginprofesores], [area_profesores], [comedorhoy]) siguen funcionando por compatibilidad, pero ya no son necesarios.', 'area-profesores'); ?>
                         </p>
                     </td>
                 </tr>

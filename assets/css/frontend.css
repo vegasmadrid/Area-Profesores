@@ -1818,15 +1818,23 @@
     width: 100%;
     line-height: 0;
     overflow: hidden;
-    background: #0f172a;
+    background: transparent;
 }
 
+/* La tribanda (1024x87) se muestra completa, a su proporción natural, sin recortes */
+.ap-portal-container .ap-login-tribanda-img,
 .ap-login-tribanda-img {
-    width: 100%;
-    height: auto;
-    max-height: 10px;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     display: block;
-    object-fit: cover;
+    object-fit: contain;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .ap-login-content {

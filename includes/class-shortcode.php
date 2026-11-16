@@ -31,6 +31,63 @@ class Area_Profesores_Shortcode {
         // Corporate Login & Access Request shortcode (publicly accessible)
         add_shortcode('loginprofesores', array($this, 'render_login_profesores'));
         add_shortcode('login_profesores', array($this, 'render_login_profesores'));
+
+        // Automatic injection: the pages selected in "Área Profesores > Ajustes"
+        // render the corresponding screen without needing any shortcode.
+        // Late priority so wpautop/page builders do not alter the generated HTML.
+        add_filter('the_content', array($this, 'inject_page_content'), 999);
+    }
+
+    /**
+     * Map of configured page ID => render callback.
+     */
+    private function get_injected_pages() {
+        $map = array();
+
+        $pages = array(
+            'login_page_id'   => 'render_login_profesores',
+            'area_page_id'    => 'render_shortcode',
+            'comedor_page_id' => 'render_comedor_hoy',
+        );
+
+        foreach ($pages as $setting => $callback) {
+            $page_id = absint(Area_Profesores_Admin::get_setting($setting, 0));
+            if ($page_id && !isset($map[$page_id])) {
+                $map[$page_id] = $callback;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Replace the content of the configured pages with the plugin screens.
+     */
+    public function inject_page_content($content) {
+        if (is_admin() || is_feed() || !is_singular() || doing_filter('get_the_excerpt')) {
+            return $content;
+        }
+
+        $post_id = get_the_ID();
+        if (!$post_id || (int) $post_id !== (int) get_queried_object_id()) {
+            return $content;
+        }
+
+        $map = $this->get_injected_pages();
+        if (!isset($map[$post_id])) {
+            return $content;
+        }
+
+        // Render only once per request (some themes/builders call the_content several times).
+        static $rendered = array();
+        if (isset($rendered[$post_id])) {
+            return $rendered[$post_id];
+        }
+
+        $callback = $map[$post_id];
+        $rendered[$post_id] = $this->$callback();
+
+        return $rendered[$post_id];
     }
 
     /**

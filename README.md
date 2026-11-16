@@ -62,26 +62,9 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Comprueba las URLs de la tribanda y el logotipo.
    - Añade el correo o correos donde la dirección desea recibir las alertas de nuevas solicitudes de docentes.
 
-2. **Crear la Página de Login:**
-   - Ve a **Páginas > Añadir nueva** (ej: *Acceso Profesores*).
-   - Pega el shortcode:
-     ```text
-     [loginprofesores]
-     ```
-   - Publica la página y selecciónala en **Área Profesores > Ajustes** como tu página de login.
-
-3. **Crear la Página del Área Docente:**
-   - Ve a **Páginas > Añadir nueva** (ej: *Área Profesores*).
-   - Pega el shortcode:
-     ```text
-     [area_profesores]
-     ```
-   - Publica la página.
-
-4. **Crear la Página de Cocina:**
-   - Ve a **Páginas > Añadir nueva** (ej: *Comedor Diario*).
-   - Pega el shortcode:
-     ```text
-     [comedorhoy]
-     ```
-   - Publica la página y comparte el enlace con el equipo de cocina.
+2. **Crear las páginas (sin shortcodes):**
+   - Crea y publica tres páginas vacías, por ejemplo *Acceso Profesores*, *Área Profesores* y *Comedor Diario*.
+   - En **Área Profesores > Ajustes > Páginas y Redirecciones del Sistema** selecciona cada una como *Página de Login*, *Página del Área de Profesores* y *Página de Comedor / Cocina*.
+   - El plugin inyecta automáticamente la pantalla correspondiente en cada página; no hace falta pegar ningún shortcode (el contenido del editor se sustituye).
+   - Si la página de cocina debe verse sin iniciar sesión, márcala en *Páginas públicas*.
+   - Los shortcodes `[loginprofesores]`, `[area_profesores]` y `[comedorhoy]` siguen funcionando por compatibilidad.
