@@ -28,6 +28,15 @@ class Area_Profesores_Access {
         // Block anonymous access to the REST API (it exposes pages, posts and users).
         add_filter('rest_authentication_errors', array($this, 'restrict_rest_api'), 99);
 
+        // Start page after a standard WordPress login (wp-login.php).
+        add_filter('login_redirect', array($this, 'filter_login_redirect'), 20, 3);
+
+        // Hide the admin toolbar on the front end for teachers (non-editors).
+        add_filter('show_admin_bar', array($this, 'filter_show_admin_bar'), 20);
+
+        // Keep teachers (non-editors) out of /wp-admin.
+        add_action('admin_init', array($this, 'block_wp_admin'), 1);
+
         // Block RSS/Atom feeds for anonymous visitors.
         foreach (array('do_feed', 'do_feed_rdf', 'do_feed_rss', 'do_feed_rss2', 'do_feed_atom', 'do_feed_rss2_comments', 'do_feed_atom_comments') as $feed_hook) {
             add_action($feed_hook, array($this, 'restrict_feed'), 0);
@@ -67,6 +76,113 @@ class Area_Profesores_Access {
         }
 
         return wp_login_url($redirect_to);
+    }
+
+    /**
+     * URL of the start page teachers are sent to after logging in.
+     * Priority: custom URL > selected page > Área de Profesores page > home.
+     */
+    public static function get_start_url() {
+        $custom = trim((string) Area_Profesores_Admin::get_setting('start_custom_url', ''));
+        if ($custom !== '') {
+            return $custom;
+        }
+
+        $start_page_id = absint(Area_Profesores_Admin::get_setting('start_page_id', 0));
+        if ($start_page_id && get_post_status($start_page_id) === 'publish') {
+            return get_permalink($start_page_id);
+        }
+
+        $area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0));
+        if ($area_page_id && get_post_status($area_page_id) === 'publish') {
+            return get_permalink($area_page_id);
+        }
+
+        return home_url('/');
+    }
+
+    /**
+     * Decide where to send a user after login.
+     * If "Volver a la página solicitada" is on and the visitor was sent to the login
+     * page from a specific internal page, go back there; otherwise use the start page.
+     */
+    public static function resolve_login_redirect($requested = '') {
+        $start = self::get_start_url();
+
+        if ($requested === '' || Area_Profesores_Admin::get_setting('respect_redirect_to', 'yes') !== 'yes') {
+            return $start;
+        }
+
+        $requested = wp_validate_redirect($requested, '');
+        if ($requested === '') {
+            return $start;
+        }
+
+        // The home page, the login page or wp-admin are not "specific" pages.
+        $normalize = function ($url) {
+            $parts = wp_parse_url($url);
+            $path = isset($parts['path']) ? untrailingslashit($parts['path']) : '';
+            return strtolower((isset($parts['host']) ? $parts['host'] : '') . $path);
+        };
+        $generic = array($normalize(home_url('/')));
+        $login_page_id = self::get_login_page_id();
+        if ($login_page_id) {
+            $generic[] = $normalize(get_permalink($login_page_id));
+        }
+        if (in_array($normalize($requested), $generic, true) || strpos($requested, admin_url()) === 0) {
+            return $start;
+        }
+
+        return $requested;
+    }
+
+    /**
+     * Logout URL: after logging out, go to the login page.
+     */
+    public static function get_logout_url() {
+        $login_page_id = self::get_login_page_id();
+        return wp_logout_url($login_page_id ? get_permalink($login_page_id) : home_url('/'));
+    }
+
+    /**
+     * Users that may use the WordPress dashboard (editors and admins).
+     */
+    private static function can_use_dashboard($user = null) {
+        $user = $user ? $user : wp_get_current_user();
+        return $user && $user->exists() && user_can($user, 'edit_posts');
+    }
+
+    /**
+     * login_redirect: send teachers to the configured start page.
+     */
+    public function filter_login_redirect($redirect_to, $requested, $user) {
+        if (!($user instanceof WP_User) || self::can_use_dashboard($user)) {
+            return $redirect_to;
+        }
+        return self::resolve_login_redirect((string) $requested);
+    }
+
+    public function filter_show_admin_bar($show) {
+        if (Area_Profesores_Admin::get_setting('hide_admin_bar', 'yes') === 'yes' && is_user_logged_in() && !self::can_use_dashboard()) {
+            return false;
+        }
+        return $show;
+    }
+
+    public function block_wp_admin() {
+        if (Area_Profesores_Admin::get_setting('block_wp_admin', 'yes') !== 'yes') {
+            return;
+        }
+        if (wp_doing_ajax() || (defined('DOING_CRON') && DOING_CRON) || !is_user_logged_in() || self::can_use_dashboard()) {
+            return;
+        }
+        // admin-post.php handlers (e.g. form submissions) must keep working.
+        global $pagenow;
+        if ($pagenow === 'admin-post.php') {
+            return;
+        }
+        wp_safe_redirect(self::get_start_url());
+        exit;
     }
 
     /**

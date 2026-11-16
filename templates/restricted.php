@@ -54,7 +54,7 @@ if (!defined('ABSPATH')) {
                 <a href="<?php echo esc_url(home_url('/')); ?>" class="ap-btn ap-btn-secondary">
                     <?php esc_html_e('Volver al Inicio', 'area-profesores'); ?>
                 </a>
-                <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="ap-btn ap-btn-outline">
+                <a href="<?php echo esc_url(Area_Profesores_Access::get_logout_url()); ?>" class="ap-btn ap-btn-outline">
                     <?php esc_html_e('Cerrar sesión / Cambiar usuario', 'area-profesores'); ?>
                 </a>
             </div>

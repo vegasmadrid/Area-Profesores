@@ -34,7 +34,18 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - También se bloquean la API REST y los feeds RSS para visitantes anónimos.
    - Se pueden marcar **páginas públicas** como excepción (la página de login siempre es pública).
 
-6. **Shortcode de Cocina `[comedorhoy]`**:
+6. **Enlaces Útiles** (*Área Profesores > Enlaces Útiles*):
+   - Alta, edición, ocultación y borrado de enlaces desde el backend: título, URL, descripción, categoría, icono (emoji), orden, destacado, abrir en pestaña nueva y visibilidad (todos / solo tutores / solo especialistas).
+   - Los profesores los ven en la pestaña **Enlaces Útiles** de su área, agrupados por categoría, con los destacados arriba como *Accesos rápidos* y un buscador cuando hay muchos.
+   - Se puede abrir directamente la pestaña con `#enlaces` al final de la URL del Área de Profesores.
+
+7. **Inicio tras el login y experiencia del profesor** (*Ajustes*):
+   - Página de inicio tras iniciar sesión (o URL personalizada), con opción de volver a la página que el profesor intentaba abrir.
+   - Al cerrar sesión se vuelve a la página de login.
+   - Aviso destacado configurable en la parte superior del Área de Profesores.
+   - Ocultar la barra de WordPress y bloquear `/wp-admin` a los profesores (no afecta a administradores ni editores).
+
+8. **Shortcode de Cocina `[comedorhoy]`**:
    - Pensada para el personal de cocina, catering e inspección. Si la restricción global está activa, márcala como **página pública** en *Ajustes* para que se pueda ver sin login.
    - Tipografía grande y cómoda, adaptada a teléfonos móviles y tablets.
    - Alerta destacada de **Alérgicos ausentes** para no preparar menús especiales innecesariamente.

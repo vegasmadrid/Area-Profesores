@@ -1,7 +1,7 @@
 <?php
 /**
  * Teacher Portal Dashboard Shell
- * Loaded via shortcode [area_profesores] when an authorized teacher visits.
+ * Loaded on the configured Área de Profesores page when an authorized teacher visits.
  */
 
 if (!defined('ABSPATH')) {
@@ -44,7 +44,7 @@ if (!defined('ABSPATH')) {
         </div>
 
         <div class="ap-header-right">
-            <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="ap-btn ap-btn-subtle" title="<?php esc_attr_e('Cerrar sesión', 'area-profesores'); ?>">
+            <a href="<?php echo esc_url($logout_url); ?>" class="ap-btn ap-btn-subtle" title="<?php esc_attr_e('Cerrar sesión', 'area-profesores'); ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="ap-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
@@ -52,6 +52,14 @@ if (!defined('ABSPATH')) {
             </a>
         </div>
     </header>
+
+    <?php if (!empty($aviso)) : ?>
+        <!-- Aviso para el claustro (configurable en Ajustes) -->
+        <div class="ap-portal-aviso" role="status">
+            <span class="ap-portal-aviso-icon" aria-hidden="true">📢</span>
+            <div class="ap-portal-aviso-text"><?php echo wp_kses_post(wpautop($aviso)); ?></div>
+        </div>
+    <?php endif; ?>
 
     <!-- Navigation / Tabs Menu -->
     <nav class="ap-nav-tabs">
@@ -70,13 +78,14 @@ if (!defined('ABSPATH')) {
             <span class="ap-tab-counter" id="ap-records-count"><?php echo count($today_records); ?></span>
         </button>
 
-        <!-- Modular future section placeholder -->
-        <button type="button" class="ap-tab-btn is-disabled" title="<?php esc_attr_e('Próxima funcionalidad en desarrollo', 'area-profesores'); ?>">
+        <button type="button" class="ap-tab-btn" data-target="tab-enlaces">
             <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            <span><?php esc_html_e('Gestión de Aula', 'area-profesores'); ?></span>
-            <span class="ap-pill-proximamente"><?php esc_html_e('Pronto', 'area-profesores'); ?></span>
+            <span><?php esc_html_e('Enlaces Útiles', 'area-profesores'); ?></span>
+            <?php if (!empty($enlaces['total'])) : ?>
+                <span class="ap-tab-counter"><?php echo (int) $enlaces['total']; ?></span>
+            <?php endif; ?>
         </button>
     </nav>
 
@@ -157,6 +166,11 @@ if (!defined('ABSPATH')) {
                     <?php endif; ?>
                 </div>
             </div>
+        </section>
+
+        <!-- Pestaña 3: Enlaces Útiles -->
+        <section id="tab-enlaces" class="ap-tab-content">
+            <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/enlaces-utiles.php'; ?>
         </section>
     </main>
 </div>

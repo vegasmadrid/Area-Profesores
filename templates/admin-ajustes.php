@@ -218,6 +218,94 @@ if (!defined('ABSPATH')) {
             </table>
         </div>
 
+        <div class="ap-settings-card" style="margin-top: 24px;">
+            <h2 class="ap-settings-section-title">
+                <span class="dashicons dashicons-admin-home"></span>
+                <?php esc_html_e('Inicio tras el Login', 'area-profesores'); ?>
+            </h2>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="start_page_id"><?php esc_html_e('Página de inicio', 'area-profesores'); ?></label></th>
+                    <td>
+                        <select name="start_page_id" id="start_page_id">
+                            <option value="0"><?php esc_html_e('-- Página del Área de Profesores (por defecto) --', 'area-profesores'); ?></option>
+                            <?php foreach ($pages as $p) : ?>
+                                <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['start_page_id'], $p->ID); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e('Página a la que se envía a los profesores después de iniciar sesión.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><label for="start_custom_url"><?php esc_html_e('…o una URL personalizada', 'area-profesores'); ?></label></th>
+                    <td>
+                        <input type="text" name="start_custom_url" id="start_custom_url" value="<?php echo esc_attr($settings['start_custom_url']); ?>" class="large-text" placeholder="<?php echo esc_attr(home_url('/')); ?>">
+                        <p class="description">
+                            <?php esc_html_e('Opcional. Si la rellenas, tiene prioridad sobre la página seleccionada (por ejemplo, una entrada, una categoría o una sección concreta de la web).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Volver a la página solicitada', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="respect_redirect_to">
+                            <input type="checkbox" name="respect_redirect_to" id="respect_redirect_to" value="yes" <?php checked($settings['respect_redirect_to'], 'yes'); ?>>
+                            <?php esc_html_e('Si el profesor intentó abrir una página concreta (por ejemplo, desde un enlace en un correo), llevarle a esa página tras iniciar sesión en lugar de a la página de inicio.', 'area-profesores'); ?>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="ap-settings-card" style="margin-top: 24px;">
+            <h2 class="ap-settings-section-title">
+                <span class="dashicons dashicons-welcome-learn-status"></span>
+                <?php esc_html_e('Experiencia del Profesor', 'area-profesores'); ?>
+            </h2>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="aviso_profesores"><?php esc_html_e('Aviso destacado', 'area-profesores'); ?></label></th>
+                    <td>
+                        <textarea name="aviso_profesores" id="aviso_profesores" rows="3" class="large-text" placeholder="<?php esc_attr_e('Ej: Recordad que el viernes hay claustro a las 17:00 en la sala de profesores.', 'area-profesores'); ?>"><?php echo esc_textarea($settings['aviso_profesores']); ?></textarea>
+                        <p class="description">
+                            <?php esc_html_e('Mensaje que aparece destacado en la parte superior del Área de Profesores. Déjalo vacío para no mostrar ningún aviso. Admite enlaces y negritas (HTML básico).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Barra de administración', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="hide_admin_bar">
+                            <input type="checkbox" name="hide_admin_bar" id="hide_admin_bar" value="yes" <?php checked($settings['hide_admin_bar'], 'yes'); ?>>
+                            <?php esc_html_e('Ocultar la barra negra de WordPress a los profesores (administradores y editores la siguen viendo).', 'area-profesores'); ?>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Escritorio de WordPress', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="block_wp_admin">
+                            <input type="checkbox" name="block_wp_admin" id="block_wp_admin" value="yes" <?php checked($settings['block_wp_admin'], 'yes'); ?>>
+                            <?php esc_html_e('Impedir que los profesores entren en /wp-admin; se les envía a la página de inicio (administradores y editores no se ven afectados).', 'area-profesores'); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('Al cerrar sesión, los profesores vuelven siempre a la Página de Login.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
         <div style="margin-top: 24px;">
             <button type="submit" name="ap_save_ajustes" class="button button-primary button-large">
                 <?php esc_html_e('Guardar Configuración', 'area-profesores'); ?>
