@@ -10,14 +10,26 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
+<?php if (!empty($tribanda_url)) : ?>
+    <!-- Tribanda Corporativa Superior: a todo el ancho de la pantalla, fuera de la tarjeta -->
+    <div class="ap-page-tribanda" id="ap-page-tribanda" aria-hidden="true">
+        <img src="<?php echo esc_url($tribanda_url); ?>" alt="" class="ap-page-tribanda-img">
+    </div>
+    <script>
+        (function () {
+            // Move the band to the very top of <body> so it spans the full screen width,
+            // regardless of the theme / page builder container it was rendered in.
+            var band = document.getElementById('ap-page-tribanda');
+            if (band && document.body && band.parentNode !== document.body) {
+                document.body.insertBefore(band, document.body.firstChild);
+                band.classList.add('ap-page-tribanda--top');
+            }
+        })();
+    </script>
+<?php endif; ?>
+
 <div class="ap-portal-container ap-login-wrapper">
     <div class="ap-login-card">
-        <!-- Tribanda Corporativa Superior -->
-        <?php if (!empty($tribanda_url)) : ?>
-            <div class="ap-login-tribanda-wrap">
-                <img src="<?php echo esc_url($tribanda_url); ?>" alt="" class="ap-login-tribanda-img">
-            </div>
-        <?php endif; ?>
 
         <div class="ap-login-content">
             <!-- Logotipo Oficial Casa de la Virgen -->
