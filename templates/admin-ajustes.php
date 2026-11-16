@@ -109,6 +109,36 @@ if (!defined('ABSPATH')) {
                 </tr>
 
                 <tr>
+                    <th scope="row"><?php esc_html_e('Restringir toda la web', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="restrict_site">
+                            <input type="checkbox" name="restrict_site" id="restrict_site" value="yes" <?php checked($settings['restrict_site'], 'yes'); ?>>
+                            <strong><?php esc_html_e('Solo los usuarios registrados que hayan iniciado sesión pueden ver las páginas de la web.', 'area-profesores'); ?></strong>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('Los visitantes sin sesión serán redirigidos a la Página de Login configurada más abajo (o a wp-login.php si no hay ninguna seleccionada). La página de login siempre es pública.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Páginas públicas (excepciones)', 'area-profesores'); ?></th>
+                    <td>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px; background: #fff; max-width: 520px;">
+                            <?php foreach ($pages as $p) : ?>
+                                <label style="display: block; margin-bottom: 4px;">
+                                    <input type="checkbox" name="public_page_ids[]" value="<?php echo esc_attr($p->ID); ?>" <?php checked(in_array((int) $p->ID, array_map('intval', $settings['public_page_ids']), true)); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="description">
+                            <?php esc_html_e('Marca las páginas que deben seguir siendo accesibles sin iniciar sesión (por ejemplo, la página de cocina con [comedorhoy]).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
                     <th scope="row"><label for="notification_emails"><?php esc_html_e('Correos de Notificación de Solicitudes', 'area-profesores'); ?></label></th>
                     <td>
                         <input type="text" name="notification_emails" id="notification_emails" value="<?php echo esc_attr($settings['notification_emails']); ?>" class="large-text">

@@ -22,6 +22,7 @@ require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-comedor.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-solicitudes.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-admin.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-shortcode.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-access.php';
 
 /**
  * Main Plugin Class
@@ -46,6 +47,7 @@ class Area_Profesores_Plugin {
         Area_Profesores_Solicitudes::get_instance();
         Area_Profesores_Admin::get_instance();
         Area_Profesores_Shortcode::get_instance();
+        Area_Profesores_Access::get_instance();
 
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));

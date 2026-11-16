@@ -28,8 +28,14 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Formulario de **"Apuntar Comedor"** con preselección automática de la tutoría del docente, recuento de alumnos, dietas especiales y aviso de alérgicos ausentes.
    - Pestaña **"Mis Registros de Hoy"** para editar o consultar envíos realizados durante la jornada.
 
-5. **Shortcode de Cocina `[comedorhoy]`**:
-   - Página abierta (sin necesidad de login) pensada para el personal de cocina, catering e inspección.
+5. **Restricción de acceso a toda la web**:
+   - Con la opción *Restringir toda la web* (activada por defecto en **Área Profesores > Ajustes**), solo los usuarios registrados con sesión iniciada pueden ver cualquier página del sitio.
+   - Los visitantes sin sesión son redirigidos a la **Página de Login** configurada (con `redirect_to` para volver a la página que querían ver). Si no hay página configurada se usa `wp-login.php`.
+   - También se bloquean la API REST y los feeds RSS para visitantes anónimos.
+   - Se pueden marcar **páginas públicas** como excepción (la página de login siempre es pública).
+
+6. **Shortcode de Cocina `[comedorhoy]`**:
+   - Pensada para el personal de cocina, catering e inspección. Si la restricción global está activa, márcala como **página pública** en *Ajustes* para que se pueda ver sin login.
    - Tipografía grande y cómoda, adaptada a teléfonos móviles y tablets.
    - Alerta destacada de **Alérgicos ausentes** para no preparar menús especiales innecesariamente.
    - Resumen agrupado de dietas especiales y desglose completo clase por clase.

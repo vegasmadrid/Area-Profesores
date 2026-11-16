@@ -52,6 +52,8 @@ class Area_Profesores_Admin {
             'notification_emails'       => get_option('admin_email'),
             'login_page_id'             => 0,
             'area_page_id'              => 0,
+            'restrict_site'             => 'yes',
+            'public_page_ids'           => array(),
         );
 
         $settings = get_option('ap_settings', array());
@@ -312,6 +314,8 @@ class Area_Profesores_Admin {
                 'notification_emails'       => sanitize_text_field(wp_unslash($_POST['notification_emails'])),
                 'login_page_id'             => absint($_POST['login_page_id']),
                 'area_page_id'              => absint($_POST['area_page_id']),
+                'restrict_site'             => isset($_POST['restrict_site']) ? 'yes' : 'no',
+                'public_page_ids'           => isset($_POST['public_page_ids']) ? array_values(array_filter(array_map('absint', (array) wp_unslash($_POST['public_page_ids'])))) : array(),
             );
 
             update_option('ap_settings', $settings);
@@ -327,6 +331,8 @@ class Area_Profesores_Admin {
             'notification_emails'       => self::get_setting('notification_emails', get_option('admin_email')),
             'login_page_id'             => self::get_setting('login_page_id', 0),
             'area_page_id'              => self::get_setting('area_page_id', 0),
+            'restrict_site'             => self::get_setting('restrict_site', 'yes'),
+            'public_page_ids'           => (array) self::get_setting('public_page_ids', array()),
         );
 
         $pages = get_pages();

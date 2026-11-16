@@ -62,12 +62,7 @@ class Area_Profesores_Shortcode {
      */
     private function render_restricted_view($reason) {
         ob_start();
-        $login_page_id = Area_Profesores_Admin::get_setting('login_page_id', 0);
-        if ($login_page_id && get_post_status($login_page_id) === 'publish') {
-            $login_url = get_permalink($login_page_id);
-        } else {
-            $login_url = wp_login_url(get_permalink());
-        }
+        $login_url = Area_Profesores_Access::get_login_url(get_permalink());
 
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/restricted.php';
         return ob_get_clean();
@@ -170,7 +165,8 @@ class Area_Profesores_Shortcode {
         $available_classes = Area_Profesores_Comedor::get_available_classes();
 
         // Target URL after Nextend Social Login
-        $redirect_target = !empty($_GET['redirect_to']) ? esc_url_raw($_GET['redirect_to']) : $area_url;
+        // Only allow redirects to this same site (prevents open redirects).
+        $redirect_target = !empty($_GET['redirect_to']) ? wp_validate_redirect(esc_url_raw(wp_unslash($_GET['redirect_to'])), $area_url) : $area_url;
         $google_login_url = Area_Profesores_Solicitudes::get_nextend_google_login_url($redirect_target);
 
         ob_start();
