@@ -26,6 +26,42 @@
             $('#' + targetTab).addClass('is-active');
         });
 
+        // Open a tab from the URL hash (e.g. /area-profesores/#enlaces)
+        var tabFromHash = (window.location.hash || '').replace('#', '');
+        if (tabFromHash) {
+            var $hashTab = $('.ap-tab-btn[data-target="tab-' + tabFromHash + '"]');
+            if ($hashTab.length) {
+                $hashTab.trigger('click');
+            }
+        }
+
+        // =========================================================================
+        // Enlaces Útiles: live search
+        // =========================================================================
+        $('#ap-enlaces-search-input').on('input', function() {
+            var normalize = function(str) {
+                return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            };
+            var term = normalize($(this).val()).trim();
+            var $container = $('#tab-enlaces');
+            var visible = 0;
+
+            $container.find('.ap-enlace-card').each(function() {
+                var match = term === '' || normalize($(this).data('search')).indexOf(term) !== -1;
+                $(this).toggle(match);
+                if (match) { visible++; }
+            });
+
+            $container.find('.ap-enlaces-group').each(function() {
+                var shown = $(this).find('.ap-enlace-card').filter(function() {
+                    return this.style.display !== 'none';
+                }).length;
+                $(this).toggle(shown > 0);
+            });
+
+            $container.find('.ap-enlaces-no-results').toggle(visible === 0);
+        });
+
         // Switch to form button from empty state
         $(document).on('click', '.ap-switch-to-form', function() {
             $('.ap-tab-btn[data-target="tab-comedor"]').trigger('click');

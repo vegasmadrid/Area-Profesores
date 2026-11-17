@@ -12,12 +12,6 @@ if (!defined('ABSPATH')) {
 
 <div class="ap-portal-container ap-login-wrapper">
     <div class="ap-login-card">
-        <!-- Tribanda Corporativa Superior -->
-        <?php if (!empty($tribanda_url)) : ?>
-            <div class="ap-login-tribanda-wrap">
-                <img src="<?php echo esc_url($tribanda_url); ?>" alt="" class="ap-login-tribanda-img">
-            </div>
-        <?php endif; ?>
 
         <div class="ap-login-content">
             <!-- Logotipo Oficial Casa de la Virgen -->
@@ -60,7 +54,7 @@ if (!defined('ABSPATH')) {
                     <?php endif; ?>
 
                     <div style="margin-top: 18px; text-align: center;">
-                        <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="ap-link-subtle">
+                        <a href="<?php echo esc_url(Area_Profesores_Access::get_logout_url()); ?>" class="ap-link-subtle">
                             <?php esc_html_e('Cerrar sesión / Cambiar de cuenta', 'area-profesores'); ?>
                         </a>
                     </div>

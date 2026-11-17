@@ -109,6 +109,36 @@ if (!defined('ABSPATH')) {
                 </tr>
 
                 <tr>
+                    <th scope="row"><?php esc_html_e('Restringir toda la web', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="restrict_site">
+                            <input type="checkbox" name="restrict_site" id="restrict_site" value="yes" <?php checked($settings['restrict_site'], 'yes'); ?>>
+                            <strong><?php esc_html_e('Solo los usuarios registrados que hayan iniciado sesión pueden ver las páginas de la web.', 'area-profesores'); ?></strong>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('Los visitantes sin sesión serán redirigidos a la Página de Login configurada más abajo (o a wp-login.php si no hay ninguna seleccionada). La página de login siempre es pública.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Páginas públicas (excepciones)', 'area-profesores'); ?></th>
+                    <td>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px; background: #fff; max-width: 520px;">
+                            <?php foreach ($pages as $p) : ?>
+                                <label style="display: block; margin-bottom: 4px;">
+                                    <input type="checkbox" name="public_page_ids[]" value="<?php echo esc_attr($p->ID); ?>" <?php checked(in_array((int) $p->ID, array_map('intval', $settings['public_page_ids']), true)); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="description">
+                            <?php esc_html_e('Marca las páginas que deben seguir siendo accesibles sin iniciar sesión (por ejemplo, la página de cocina).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
                     <th scope="row"><label for="notification_emails"><?php esc_html_e('Correos de Notificación de Solicitudes', 'area-profesores'); ?></label></th>
                     <td>
                         <input type="text" name="notification_emails" id="notification_emails" value="<?php echo esc_attr($settings['notification_emails']); ?>" class="large-text">
@@ -128,10 +158,10 @@ if (!defined('ABSPATH')) {
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><label for="login_page_id"><?php esc_html_e('Página de Login ([loginprofesores])', 'area-profesores'); ?></label></th>
+                    <th scope="row"><label for="login_page_id"><?php esc_html_e('Página de Login', 'area-profesores'); ?></label></th>
                     <td>
                         <select name="login_page_id" id="login_page_id">
-                            <option value="0"><?php esc_html_e('-- Selecciona la página donde has insertado [loginprofesores] --', 'area-profesores'); ?></option>
+                            <option value="0"><?php esc_html_e('-- Selecciona la página de login --', 'area-profesores'); ?></option>
                             <?php foreach ($pages as $p) : ?>
                                 <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['login_page_id'], $p->ID); ?>>
                                     <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
@@ -139,16 +169,16 @@ if (!defined('ABSPATH')) {
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Los usuarios que intenten entrar al Área de Profesores sin estar conectados serán dirigidos a esta página.', 'area-profesores'); ?>
+                            <?php esc_html_e('En esta página se mostrará automáticamente la pantalla de acceso (no hace falta ningún shortcode). Los usuarios sin sesión serán redirigidos aquí.', 'area-profesores'); ?>
                         </p>
                     </td>
                 </tr>
 
                 <tr>
-                    <th scope="row"><label for="area_page_id"><?php esc_html_e('Página del Área de Profesores ([area_profesores])', 'area-profesores'); ?></label></th>
+                    <th scope="row"><label for="area_page_id"><?php esc_html_e('Página del Área de Profesores', 'area-profesores'); ?></label></th>
                     <td>
                         <select name="area_page_id" id="area_page_id">
-                            <option value="0"><?php esc_html_e('-- Selecciona la página donde has insertado [area_profesores] --', 'area-profesores'); ?></option>
+                            <option value="0"><?php esc_html_e('-- Selecciona la página del Área de Profesores --', 'area-profesores'); ?></option>
                             <?php foreach ($pages as $p) : ?>
                                 <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['area_page_id'], $p->ID); ?>>
                                     <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
@@ -156,7 +186,120 @@ if (!defined('ABSPATH')) {
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Página a la que se redirige automáticamente al profesor tras iniciar sesión con su cuenta.', 'area-profesores'); ?>
+                            <?php esc_html_e('En esta página se mostrará automáticamente el panel del profesor (no hace falta ningún shortcode). Es la página a la que se redirige al profesor tras iniciar sesión.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><label for="comedor_page_id"><?php esc_html_e('Página de Comedor / Cocina', 'area-profesores'); ?></label></th>
+                    <td>
+                        <select name="comedor_page_id" id="comedor_page_id">
+                            <option value="0"><?php esc_html_e('-- Selecciona la página de cocina (opcional) --', 'area-profesores'); ?></option>
+                            <?php foreach ($pages as $p) : ?>
+                                <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['comedor_page_id'], $p->ID); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e('En esta página se mostrará automáticamente el resumen diario de comensales para cocina. Si debe verse sin iniciar sesión, márcala también en "Páginas públicas".', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" style="padding-left:0;">
+                        <p class="description">
+                            <?php esc_html_e('Nota: el contenido que tengan estas páginas en el editor se sustituye por la pantalla correspondiente del plugin. Los shortcodes antiguos ([loginprofesores], [area_profesores], [comedorhoy]) siguen funcionando por compatibilidad, pero ya no son necesarios.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="ap-settings-card" style="margin-top: 24px;">
+            <h2 class="ap-settings-section-title">
+                <span class="dashicons dashicons-admin-home"></span>
+                <?php esc_html_e('Inicio tras el Login', 'area-profesores'); ?>
+            </h2>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="start_page_id"><?php esc_html_e('Página de inicio', 'area-profesores'); ?></label></th>
+                    <td>
+                        <select name="start_page_id" id="start_page_id">
+                            <option value="0"><?php esc_html_e('-- Página del Área de Profesores (por defecto) --', 'area-profesores'); ?></option>
+                            <?php foreach ($pages as $p) : ?>
+                                <option value="<?php echo esc_attr($p->ID); ?>" <?php selected($settings['start_page_id'], $p->ID); ?>>
+                                    <?php echo esc_html($p->post_title); ?> (ID: <?php echo esc_html($p->ID); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e('Página a la que se envía a los profesores después de iniciar sesión.', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><label for="start_custom_url"><?php esc_html_e('…o una URL personalizada', 'area-profesores'); ?></label></th>
+                    <td>
+                        <input type="text" name="start_custom_url" id="start_custom_url" value="<?php echo esc_attr($settings['start_custom_url']); ?>" class="large-text" placeholder="<?php echo esc_attr(home_url('/')); ?>">
+                        <p class="description">
+                            <?php esc_html_e('Opcional. Si la rellenas, tiene prioridad sobre la página seleccionada (por ejemplo, una entrada, una categoría o una sección concreta de la web).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Volver a la página solicitada', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="respect_redirect_to">
+                            <input type="checkbox" name="respect_redirect_to" id="respect_redirect_to" value="yes" <?php checked($settings['respect_redirect_to'], 'yes'); ?>>
+                            <?php esc_html_e('Si el profesor intentó abrir una página concreta (por ejemplo, desde un enlace en un correo), llevarle a esa página tras iniciar sesión en lugar de a la página de inicio.', 'area-profesores'); ?>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="ap-settings-card" style="margin-top: 24px;">
+            <h2 class="ap-settings-section-title">
+                <span class="dashicons dashicons-welcome-learn-status"></span>
+                <?php esc_html_e('Experiencia del Profesor', 'area-profesores'); ?>
+            </h2>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="aviso_profesores"><?php esc_html_e('Aviso destacado', 'area-profesores'); ?></label></th>
+                    <td>
+                        <textarea name="aviso_profesores" id="aviso_profesores" rows="3" class="large-text" placeholder="<?php esc_attr_e('Ej: Recordad que el viernes hay claustro a las 17:00 en la sala de profesores.', 'area-profesores'); ?>"><?php echo esc_textarea($settings['aviso_profesores']); ?></textarea>
+                        <p class="description">
+                            <?php esc_html_e('Mensaje que aparece destacado en la parte superior del Área de Profesores. Déjalo vacío para no mostrar ningún aviso. Admite enlaces y negritas (HTML básico).', 'area-profesores'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Barra de administración', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="hide_admin_bar">
+                            <input type="checkbox" name="hide_admin_bar" id="hide_admin_bar" value="yes" <?php checked($settings['hide_admin_bar'], 'yes'); ?>>
+                            <?php esc_html_e('Ocultar la barra negra de WordPress a los profesores (administradores y editores la siguen viendo).', 'area-profesores'); ?>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php esc_html_e('Escritorio de WordPress', 'area-profesores'); ?></th>
+                    <td>
+                        <label for="block_wp_admin">
+                            <input type="checkbox" name="block_wp_admin" id="block_wp_admin" value="yes" <?php checked($settings['block_wp_admin'], 'yes'); ?>>
+                            <?php esc_html_e('Impedir que los profesores entren en /wp-admin; se les envía a la página de inicio (administradores y editores no se ven afectados).', 'area-profesores'); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('Al cerrar sesión, los profesores vuelven siempre a la Página de Login.', 'area-profesores'); ?>
                         </p>
                     </td>
                 </tr>

@@ -52,6 +52,15 @@ class Area_Profesores_Admin {
             'notification_emails'       => get_option('admin_email'),
             'login_page_id'             => 0,
             'area_page_id'              => 0,
+            'comedor_page_id'           => 0,
+            'start_page_id' => 0,
+            'start_custom_url' => '',
+            'respect_redirect_to' => 'yes',
+            'hide_admin_bar' => 'yes',
+            'block_wp_admin' => 'yes',
+            'aviso_profesores' => '',
+            'restrict_site'             => 'yes',
+            'public_page_ids'           => array(),
         );
 
         $settings = get_option('ap_settings', array());
@@ -312,6 +321,15 @@ class Area_Profesores_Admin {
                 'notification_emails'       => sanitize_text_field(wp_unslash($_POST['notification_emails'])),
                 'login_page_id'             => absint($_POST['login_page_id']),
                 'area_page_id'              => absint($_POST['area_page_id']),
+                'comedor_page_id'           => isset($_POST['comedor_page_id']) ? absint($_POST['comedor_page_id']) : 0,
+                'start_page_id' => isset($_POST['start_page_id']) ? absint($_POST['start_page_id']) : 0,
+                'start_custom_url' => isset($_POST['start_custom_url']) ? esc_url_raw(wp_unslash($_POST['start_custom_url'])) : '',
+                'respect_redirect_to' => isset($_POST['respect_redirect_to']) ? 'yes' : 'no',
+                'hide_admin_bar' => isset($_POST['hide_admin_bar']) ? 'yes' : 'no',
+                'block_wp_admin' => isset($_POST['block_wp_admin']) ? 'yes' : 'no',
+                'aviso_profesores' => isset($_POST['aviso_profesores']) ? wp_kses_post(wp_unslash($_POST['aviso_profesores'])) : '',
+                'restrict_site'             => isset($_POST['restrict_site']) ? 'yes' : 'no',
+                'public_page_ids'           => isset($_POST['public_page_ids']) ? array_values(array_filter(array_map('absint', (array) wp_unslash($_POST['public_page_ids'])))) : array(),
             );
 
             update_option('ap_settings', $settings);
@@ -327,6 +345,15 @@ class Area_Profesores_Admin {
             'notification_emails'       => self::get_setting('notification_emails', get_option('admin_email')),
             'login_page_id'             => self::get_setting('login_page_id', 0),
             'area_page_id'              => self::get_setting('area_page_id', 0),
+            'comedor_page_id'           => self::get_setting('comedor_page_id', 0),
+            'start_page_id' => self::get_setting('start_page_id', 0),
+            'start_custom_url' => self::get_setting('start_custom_url', ''),
+            'respect_redirect_to' => self::get_setting('respect_redirect_to', 'yes'),
+            'hide_admin_bar' => self::get_setting('hide_admin_bar', 'yes'),
+            'block_wp_admin' => self::get_setting('block_wp_admin', 'yes'),
+            'aviso_profesores' => self::get_setting('aviso_profesores', ''),
+            'restrict_site'             => self::get_setting('restrict_site', 'yes'),
+            'public_page_ids'           => (array) self::get_setting('public_page_ids', array()),
         );
 
         $pages = get_pages();

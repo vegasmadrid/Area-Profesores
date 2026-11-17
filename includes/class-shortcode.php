@@ -31,6 +31,63 @@ class Area_Profesores_Shortcode {
         // Corporate Login & Access Request shortcode (publicly accessible)
         add_shortcode('loginprofesores', array($this, 'render_login_profesores'));
         add_shortcode('login_profesores', array($this, 'render_login_profesores'));
+
+        // Automatic injection: the pages selected in "Área Profesores > Ajustes"
+        // render the corresponding screen without needing any shortcode.
+        // Late priority so wpautop/page builders do not alter the generated HTML.
+        add_filter('the_content', array($this, 'inject_page_content'), 999);
+    }
+
+    /**
+     * Map of configured page ID => render callback.
+     */
+    private function get_injected_pages() {
+        $map = array();
+
+        $pages = array(
+            'login_page_id'   => 'render_login_profesores',
+            'area_page_id'    => 'render_shortcode',
+            'comedor_page_id' => 'render_comedor_hoy',
+        );
+
+        foreach ($pages as $setting => $callback) {
+            $page_id = absint(Area_Profesores_Admin::get_setting($setting, 0));
+            if ($page_id && !isset($map[$page_id])) {
+                $map[$page_id] = $callback;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Replace the content of the configured pages with the plugin screens.
+     */
+    public function inject_page_content($content) {
+        if (is_admin() || is_feed() || !is_singular() || doing_filter('get_the_excerpt')) {
+            return $content;
+        }
+
+        $post_id = get_the_ID();
+        if (!$post_id || (int) $post_id !== (int) get_queried_object_id()) {
+            return $content;
+        }
+
+        $map = $this->get_injected_pages();
+        if (!isset($map[$post_id])) {
+            return $content;
+        }
+
+        // Render only once per request (some themes/builders call the_content several times).
+        static $rendered = array();
+        if (isset($rendered[$post_id])) {
+            return $rendered[$post_id];
+        }
+
+        $callback = $map[$post_id];
+        $rendered[$post_id] = $this->$callback();
+
+        return $rendered[$post_id];
     }
 
     /**
@@ -62,12 +119,7 @@ class Area_Profesores_Shortcode {
      */
     private function render_restricted_view($reason) {
         ob_start();
-        $login_page_id = Area_Profesores_Admin::get_setting('login_page_id', 0);
-        if ($login_page_id && get_post_status($login_page_id) === 'publish') {
-            $login_url = get_permalink($login_page_id);
-        } else {
-            $login_url = wp_login_url(get_permalink());
-        }
+        $login_url = Area_Profesores_Access::get_login_url(get_permalink());
 
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/restricted.php';
         return ob_get_clean();
@@ -86,6 +138,11 @@ class Area_Profesores_Shortcode {
 
         // Get teacher's existing submissions for today
         $today_records = Area_Profesores_Comedor::get_records_by_user_and_date($user_id, $today);
+
+        // Useful links, notice for teachers and logout URL
+        $enlaces = Area_Profesores_Enlaces::get_for_user($user_id);
+        $aviso = trim((string) Area_Profesores_Admin::get_setting('aviso_profesores', ''));
+        $logout_url = Area_Profesores_Access::get_logout_url();
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
@@ -160,8 +217,8 @@ class Area_Profesores_Shortcode {
         $user_id = $is_logged_in ? get_current_user_id() : 0;
         $is_profesor = $is_logged_in ? Area_Profesores_Admin::is_user_profesor($user_id) : false;
 
-        $area_page_id = Area_Profesores_Admin::get_setting('area_page_id', 0);
-        $area_url = $area_page_id ? get_permalink($area_page_id) : home_url('/');
+        // Start page after login (configurable in Ajustes)
+        $area_url = Area_Profesores_Access::get_start_url();
 
         $tribanda_url = Area_Profesores_Admin::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png');
         $logo_url = Area_Profesores_Admin::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png');
@@ -170,7 +227,10 @@ class Area_Profesores_Shortcode {
         $available_classes = Area_Profesores_Comedor::get_available_classes();
 
         // Target URL after Nextend Social Login
-        $redirect_target = !empty($_GET['redirect_to']) ? esc_url_raw($_GET['redirect_to']) : $area_url;
+        // Target after login: the configured start page, or the page the visitor
+        // originally requested (only same-site URLs, prevents open redirects).
+        $requested = !empty($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redirect_to'])) : '';
+        $redirect_target = Area_Profesores_Access::resolve_login_redirect($requested);
         $google_login_url = Area_Profesores_Solicitudes::get_nextend_google_login_url($redirect_target);
 
         ob_start();

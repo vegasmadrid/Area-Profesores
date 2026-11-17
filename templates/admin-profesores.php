@@ -18,9 +18,14 @@ if (!defined('ABSPATH')) {
                 <?php esc_html_e('Marca qué usuarios registrados en la web tienen rol de profesor para permitirles el acceso al Área de Profesores y asígnales su curso de tutoría.', 'area-profesores'); ?>
             </p>
         </div>
+        <?php $ap_area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0)); ?>
         <div class="ap-admin-shortcode-box">
-            <span class="ap-shortcode-label"><?php esc_html_e('Shortcode del Área Docente:', 'area-profesores'); ?></span>
-            <code class="ap-shortcode-code">[area_profesores]</code>
+            <span class="ap-shortcode-label"><?php esc_html_e('Página del Área Docente:', 'area-profesores'); ?></span>
+            <?php if ($ap_area_page_id && get_post_status($ap_area_page_id)) : ?>
+                <a class="ap-shortcode-code" href="<?php echo esc_url(get_permalink($ap_area_page_id)); ?>" target="_blank" rel="noopener"><?php echo esc_html(get_the_title($ap_area_page_id)); ?></a>
+            <?php else : ?>
+                <a class="ap-shortcode-code" href="<?php echo esc_url(admin_url('admin.php?page=area-profesores-ajustes')); ?>"><?php esc_html_e('Sin configurar (ir a Ajustes)', 'area-profesores'); ?></a>
+            <?php endif; ?>
         </div>
     </div>
 
