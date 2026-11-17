@@ -25,11 +25,14 @@ if (!defined('ABSPATH')) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="ap-icon-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <?php printf(esc_html__('Tutor/a: %s', 'area-profesores'), esc_html(isset($available_classes[$tutoria]) ? $available_classes[$tutoria] : $tutoria)); ?>
+                            <?php echo esc_html(Area_Profesores_Cursos::get_codigo_label($tutoria)); ?>
                         </span>
                     <?php else : ?>
+                        <?php $ap_codigo = Area_Profesores_Cursos::get_codigo_asignacion($user_id); ?>
                         <span class="ap-badge ap-badge-secondary">
-                            <?php esc_html_e('Profesor/a Especialista (Sin tutoría asignada)', 'area-profesores'); ?>
+                            <?php echo $ap_codigo !== ''
+                                ? esc_html(Area_Profesores_Cursos::get_codigo_label($ap_codigo))
+                                : esc_html__('Etapa sin asignar', 'area-profesores'); ?>
                         </span>
                     <?php endif; ?>
 

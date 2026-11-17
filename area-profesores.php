@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.1.0
+ * Version:     1.2.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,11 +13,12 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.1.0');
+define('AREA_PROFESORES_VERSION', '1.2.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Require core classes
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-cursos.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-comedor.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-solicitudes.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-admin.php';
@@ -52,6 +53,9 @@ class Area_Profesores_Plugin {
         Area_Profesores_Access::get_instance();
         Area_Profesores_Enlaces::get_instance();
         Area_Profesores_Chat::get_instance();
+
+        // One-time data migrations (old 1A…6B tutorías → new courses).
+        add_action('init', array('Area_Profesores_Cursos', 'maybe_migrate'), 5);
 
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
@@ -105,6 +109,17 @@ class Area_Profesores_Plugin {
                 'confirm_approve'   => __('¿Aprobar esta solicitud y dar acceso al profesor?', 'area-profesores'),
                 'confirm_reject'    => __('¿Rechazar esta solicitud de acceso?', 'area-profesores'),
                 'com_publish'       => __('Publicar en %d espacio(s)', 'area-profesores'),
+                'com_schedule_btn'  => __('Programar en %d espacio(s)', 'area-profesores'),
+                'com_save_changes'  => __('Guardar cambios (%d espacio(s))', 'area-profesores'),
+                'com_at'            => __('a las', 'area-profesores'),
+                'com_will_publish'  => __('Se publicará el %s.', 'area-profesores'),
+                'com_past'          => __('Elige un día y una hora futuros para programar el comunicado.', 'area-profesores'),
+                'com_confirm_sched' => __('Se va a programar el comunicado en %1$d espacio(s). %2$s ¿Continuar?', 'area-profesores'),
+                'com_sched_ok'      => __('Programado para el %s', 'area-profesores'),
+                'com_sched_updated' => __('Cambios guardados. Se publicará el %s', 'area-profesores'),
+                'com_sched_spaces'  => __('Se publicará en %d espacio(s):', 'area-profesores'),
+                'com_editing'       => __('Estás editando un comunicado programado. Al guardar se sustituye el anterior.', 'area-profesores'),
+                'com_confirm_cancel'=> __('¿Cancelar este comunicado programado? No se enviará.', 'area-profesores'),
                 'com_none'          => __('Ningún espacio seleccionado', 'area-profesores'),
                 'com_selected'      => __('%d espacio(s) seleccionado(s)', 'area-profesores'),
                 'com_confirm'       => __('Se va a publicar el comunicado en %d espacio(s) de Google Chat. Las familias lo recibirán al momento y no se puede deshacer desde aquí. ¿Continuar?', 'area-profesores'),

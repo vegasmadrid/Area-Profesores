@@ -53,20 +53,19 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Navegación rápida por fechas y botón **"Imprimir para Cocina"**.
 
 9. **Comunicados a familias en Google Chat** (*Área Profesores > Espacios de Chat*):
-   - Publica **el mismo comunicado (texto + imagen) en varios espacios de Google Chat a la vez**, firmado como *Colegio Casa de la Virgen*.
+   - Publica **el mismo comunicado (texto + imagen) en varios espacios de Google Chat a la vez**, firmado como *Colegio Casa de la Virgen*, **ahora o programado** para un día y hora.
    - Solo pueden publicar los profesores marcados como **Dirección** (columna *Dirección* en *Área Profesores > Profesores* o en el perfil del usuario) y los administradores.
-   - Pestaña **Comunicados** en el Área de Profesores: título, mensaje con formato de Chat (`*negrita*`, `_cursiva_`, `~tachado~`), imagen JPG/PNG/GIF (máx. 8 MB), selección de espacios por grupo (Infantil, Primaria…) y vista previa.
-   - Tras publicar se muestra el resultado de cada espacio, con botón para **reintentar solo los que han fallado**, y un historial de los últimos comunicados.
-   - Cada espacio se conecta con un **webhook entrante** de Google Chat. El texto va en el mensaje (aparece en la notificación del móvil) y la imagen debajo, en una tarjeta.
+   - Pestaña **Comunicados** en el Área de Profesores: título, mensaje con formato de Chat (`*negrita*`, `_cursiva_`, `~tachado~`), imagen JPG/PNG/GIF (máx. 8 MB), espacios agrupados por etapa (con "Todo el colegio" y casilla por etapa), vista previa y programación (atajos *Mañana 8:00*, *Lunes 8:00*, *Hoy 17:00*).
+   - **Programados**: se pueden editar, enviar ya o cancelar. Si al enviarse falla algún espacio, el autor recibe un email.
+   - **Historial** con el resultado por espacio, **reintento de los fallidos** y **Usar como plantilla**.
+   - Los espacios de familias van unidos a su **promoción** (y grupo), así que **cada septiembre pasan solos al curso siguiente**. Vienen ya dados de alta los 31 espacios del colegio; solo hay que pegar los webhooks (se pueden pegar varios a la vez y cada uno se asigna a su curso por el código del espacio). También se pueden añadir "otros espacios" (AMPA, coro…).
+   - El plugin comprueba que cada webhook es del espacio correcto y avisa de los cursos sin espacio, de la zona horaria y de HTTPS.
 
-### Conectar los espacios de Google Chat
-
-1. **Consola de administración de Google** (una sola vez): *Aplicaciones › Google Workspace › Google Chat › Ajustes de las aplicaciones de Chat* y activa **"Permitir que los usuarios añadan y usen webhooks entrantes"**.
-2. En cada espacio de familias (desde el ordenador): nombre del espacio › **Aplicaciones e integraciones › Webhooks › Añadir webhooks**. Nombre: `Colegio Casa de la Virgen`; avatar: URL del logotipo.
-3. Copia la URL del webhook y dala de alta en **Área Profesores > Espacios de Chat** (nombre, grupo y orden). Pulsa **Probar** para comprobar que llega el mensaje (la prueba incluye el logotipo para verificar que las imágenes se ven).
-4. Marca como **Dirección** a quien pueda publicar en *Área Profesores > Profesores*.
-
-> La URL del webhook es secreta: quien la tenga puede publicar en el espacio. Las imágenes se guardan en la Biblioteca de medios y Google las descarga desde `wp-content/uploads`, por lo que la web debe servirse por **HTTPS**.
+10. **Etapas y tutorías del profesorado**:
+   - Cada profesor tiene una **etapa** (Primer Ciclo, Infantil, Primaria o Secundaria —que incluye Bachillerato—) y es **tutor/a de un curso** o **especialista**. Se asigna con un único desplegable en *Profesores*, en el perfil, en las *Solicitudes de acceso* y en el formulario de solicitud del login.
+   - Cursos: 1 año A/B, 2 años A/B, 3-5 años A/B, 1º-6º EP A/B, 1º-4º ESO A/B, 1º y 2º Bachillerato.
+   - Filtro por etapa en *Profesores*; *Apuntar Comedor* muestra los cursos de la etapa del profesor (con su curso preseleccionado y la etapa rellenada sola); los *Enlaces Útiles* pueden limitarse a una etapa.
+   - Las tutorías antiguas (1A…6B) se convierten automáticamente a 1º-6º EP A/B de Primaria.
 
 ---
 

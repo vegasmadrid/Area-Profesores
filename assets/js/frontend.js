@@ -74,7 +74,18 @@
             $('.ap-radio-chip').removeClass('is-selected');
             if ($(this).is(':checked')) {
                 $(this).closest('.ap-radio-chip').addClass('is-selected');
+                // The etapa follows the selected course.
+                var etapaFromCourse = $(this).data('etapa');
+                if (etapaFromCourse) {
+                    $('input[name="etapa"]').filter(function() { return this.value === String(etapaFromCourse); }).prop('checked', true);
+                }
             }
+        });
+
+        // Comedor: show courses from other etapas
+        $('.ap-comedor-show-all').on('click', function() {
+            $('.ap-comedor-etapa.is-other').prop('hidden', false);
+            $(this).remove();
         });
 
         // =========================================================================
@@ -230,6 +241,7 @@
             // Select class chip
             $('.ap-radio-chip input[name="clase"]').each(function() {
                 if ($(this).val() === String(clase)) {
+                    $(this).closest('.ap-comedor-etapa').prop('hidden', false);
                     $(this).prop('checked', true).trigger('change');
                 }
             });
@@ -438,7 +450,7 @@
         // Comunicados a familias (Google Chat) - solo Dirección
         // =========================================================================
         var $comForm = $('#ap-comunicado-form');
-        if ($comForm.length) {
+        if ($('#tab-comunicados').length) {
             var i18n = AreaProfesoresData.i18n;
             var $comMsg = $('#ap-com-mensaje');
             var $comTitle = $('#ap-com-titulo');
@@ -446,19 +458,26 @@
             var $comSubmit = $('#ap-com-submit');
             var $comAlert = $('#ap-comunicado-alert');
             var $comResult = $('#ap-com-result');
+            var $replaceId = $('#ap-com-replace-id');
+            var $reuseImage = $('#ap-com-reuse-image');
+            var $fecha = $('#ap-com-fecha');
+            var $hora = $('#ap-com-hora');
             var lastComunicadoId = 0;
             var lastFailed = [];
             var previewUrl = null;
+
             var fmt = function(str) {
                 var args = Array.prototype.slice.call(arguments, 1);
                 var i = 0;
-                return String(str).replace(/%(\d+\$)?d/g, function(m, pos) {
+                return String(str).replace(/%(\d+\$)?[ds]/g, function(m, pos) {
                     return pos ? args[parseInt(pos, 10) - 1] : args[i++];
                 });
             };
             var escapeHtml = function(s) {
                 return $('<div>').text(s || '').html();
             };
+            var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+            var ymd = function(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 
             // Google Chat-like formatting for the preview.
             var chatFormat = function(text) {
@@ -468,6 +487,17 @@
                 html = html.replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s.,;:!?)])/g, '$1<em>$2</em>');
                 html = html.replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s.,;:!?)])/g, '$1<s>$2</s>');
                 return html.replace(/\n/g, '<br>');
+            };
+
+            var isScheduled = function() {
+                return $comForm.find('input[name="modo"]:checked').val() === 'programar';
+            };
+
+            var scheduledDate = function() {
+                var f = $fecha.val(), h = $hora.val();
+                if (!f || !h) { return null; }
+                var p = f.split('-'), t = h.split(':');
+                return new Date(+p[0], +p[1] - 1, +p[2], +t[0], +t[1]);
             };
 
             var updatePreview = function() {
@@ -482,13 +512,31 @@
                 return $comForm.find('input[name="espacios[]"]:checked');
             };
 
+            var updateSchedule = function() {
+                var prog = isScheduled();
+                $('#ap-com-programar').toggle(prog);
+                $comForm.find('.ap-com-modo .ap-com-chip').each(function() {
+                    $(this).toggleClass('is-selected', $(this).find('input').is(':checked'));
+                });
+                var d = scheduledDate();
+                var $txt = $('#ap-com-programar-text');
+                if (prog && d) {
+                    var label = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) + ' ' + i18n.com_at + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                    $txt.text(fmt(i18n.com_will_publish, label)).toggleClass('is-error', d.getTime() < Date.now() + 60000);
+                } else {
+                    $txt.text('');
+                }
+            };
+
             var updateSelection = function() {
                 var n = selectedSpaces().length;
+                var editing = !!$replaceId.val();
+                var label = editing ? i18n.com_save_changes : (isScheduled() ? i18n.com_schedule_btn : i18n.com_publish);
                 $comSubmit.prop('disabled', n === 0);
-                $comSubmit.find('.ap-com-submit-label').text(n ? fmt(i18n.com_publish, n) : fmt(i18n.com_publish, 0));
+                $comSubmit.find('.ap-com-submit-label').text(fmt(label, n));
                 $('#ap-com-selected').text(n ? fmt(i18n.com_selected, n) : i18n.com_none);
 
-                $comForm.find('.ap-com-chip').each(function() {
+                $comForm.find('.ap-com-chips .ap-com-chip').each(function() {
                     $(this).toggleClass('is-selected', $(this).find('input').is(':checked'));
                 });
                 $comForm.find('.ap-com-grupo').each(function() {
@@ -498,10 +546,13 @@
                     $g.prop('checked', checked > 0 && checked === $boxes.length);
                     $g.prop('indeterminate', checked > 0 && checked < $boxes.length);
                 });
+                updateSchedule();
             };
 
             $comMsg.add($comTitle).on('input', updatePreview);
             $comForm.on('change', 'input[name="espacios[]"]', updateSelection);
+            $comForm.on('change', 'input[name="modo"]', updateSelection);
+            $fecha.add($hora).on('change input', updateSchedule);
             $comForm.on('change', '.ap-com-grupo-check', function() {
                 $(this).closest('.ap-com-grupo').find('input[name="espacios[]"]').prop('checked', $(this).is(':checked'));
                 updateSelection();
@@ -510,10 +561,31 @@
                 $comForm.find('input[name="espacios[]"]').prop('checked', $(this).data('ap-select') === 'all');
                 updateSelection();
             });
+            $comForm.on('click', '[data-ap-when]', function() {
+                var d = new Date();
+                var when = $(this).data('ap-when');
+                var hour = '08:00';
+                if (when === 'tomorrow') {
+                    d.setDate(d.getDate() + 1);
+                } else if (when === 'monday') {
+                    d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7));
+                } else {
+                    hour = '17:00';
+                }
+                $fecha.val(ymd(d));
+                $hora.val(hour);
+                updateSchedule();
+            });
 
             // Image selection + preview
+            var setImagePreview = function(url) {
+                $('#ap-com-image-preview').show().find('img').attr('src', url);
+                $('#ap-com-dropzone').hide();
+                $('#ap-com-preview-img').attr('src', url).show();
+            };
             var clearImage = function() {
                 $comFile.val('');
+                $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
                 $('#ap-com-image-preview').hide();
                 $('#ap-com-dropzone').show();
@@ -527,11 +599,10 @@
                     return;
                 }
                 $comAlert.hide();
+                $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); }
                 previewUrl = URL.createObjectURL(file);
-                $('#ap-com-image-preview').show().find('img').attr('src', previewUrl);
-                $('#ap-com-dropzone').hide();
-                $('#ap-com-preview-img').attr('src', previewUrl).show();
+                setImagePreview(previewUrl);
             };
             $comFile.on('change', function() {
                 if (this.files && this.files[0]) { showImage(this.files[0]); } else { clearImage(); }
@@ -554,32 +625,51 @@
                 $('html, body').animate({ scrollTop: $comAlert.offset().top - 80 }, 200);
             }
 
-            function renderResult(data) {
-                lastComunicadoId = data.comunicado_id;
-                lastFailed = [];
-                var $list = $comResult.find('.ap-com-result-list').empty();
-                $.each(data.resultados, function(_, r) {
-                    if (!r.ok) { lastFailed.push(r.id); }
-                    $('<li>').addClass(r.ok ? 'is-ok' : 'is-error')
-                        .append($('<strong>').text((r.ok ? '✓ ' : '✗ ') + r.nombre))
-                        .append(r.ok ? $('<span>').text(' — ' + i18n.com_ok) : $('<span>').text(' — ' + r.error))
-                        .appendTo($list);
-                });
-                $comResult.find('.ap-com-result-title').text(
-                    data.ok === data.total ? fmt(i18n.com_all_ok, data.total) : fmt(i18n.com_some_fail, data.ok, data.total)
-                ).toggleClass('is-error', data.ok !== data.total);
-                $('#ap-com-retry').toggle(lastFailed.length > 0);
-                if (data.historial_html) { $('#ap-com-historial').html(data.historial_html); }
+            function refreshLists(data) {
+                if (data.historial_html !== undefined) { $('#ap-com-historial').html(data.historial_html); }
+                if (data.programados_html !== undefined) { $('#ap-com-programados').html(data.programados_html); }
+            }
+
+            function showResultPanel() {
                 $comForm.hide();
                 $comResult.show();
                 $('html, body').animate({ scrollTop: $comResult.offset().top - 80 }, 200);
             }
 
-            function publish(formData, $btn, count) {
-                if (!window.confirm(fmt(i18n.com_confirm, count))) { return; }
+            function renderResult(data) {
+                refreshLists(data);
+                var $list = $comResult.find('.ap-com-result-list').empty();
+                var $title = $comResult.find('.ap-com-result-title').removeClass('is-error is-scheduled');
+                var $text = $comResult.find('.ap-com-result-text').text('').hide();
+
+                if (data.programado) {
+                    lastFailed = [];
+                    $title.text(fmt(data.editado ? i18n.com_sched_updated : i18n.com_sched_ok, data.programado_texto)).addClass('is-scheduled');
+                    $text.text(fmt(i18n.com_sched_spaces, data.total) + ' ' + data.espacios.join(', ') + '.').show();
+                    $('#ap-com-retry').hide();
+                    showResultPanel();
+                    return;
+                }
+
+                lastComunicadoId = data.comunicado_id;
+                lastFailed = [];
+                $.each(data.resultados, function(_, r) {
+                    if (!r.ok) { lastFailed.push(r.id); }
+                    $('<li>').addClass(r.ok ? 'is-ok' : 'is-error')
+                        .append($('<strong>').text((r.ok ? '✓ ' : '✗ ') + r.nombre))
+                        .append($('<span>').text(' — ' + (r.ok ? i18n.com_ok : r.error)))
+                        .appendTo($list);
+                });
+                $title.text(
+                    data.ok === data.total ? fmt(i18n.com_all_ok, data.total) : fmt(i18n.com_some_fail, data.ok, data.total)
+                ).toggleClass('is-error', data.ok !== data.total);
+                $('#ap-com-retry').toggle(lastFailed.length > 0);
+                showResultPanel();
+            }
+
+            function ajaxCall(formData, $btn, onSuccess) {
                 var original = $btn.html();
                 $btn.prop('disabled', true).html('<span class="ap-spinner"></span>' + escapeHtml(i18n.com_sending));
-                formData.append('action', 'ap_chat_publicar');
                 formData.append('nonce', AreaProfesoresData.nonce);
 
                 $.ajax({
@@ -592,7 +682,7 @@
                     timeout: 180000
                 }).done(function(res) {
                     if (res && res.success) {
-                        renderResult(res.data);
+                        onSuccess(res.data);
                     } else {
                         showComAlert('error', (res && res.data && res.data.message) || i18n.error);
                     }
@@ -600,28 +690,91 @@
                     var msg = xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message;
                     showComAlert('error', msg || i18n.com_net_error);
                 }).always(function() {
-                    $btn.prop('disabled', false).html(original);
+                    if ($.contains(document, $btn[0])) {
+                        $btn.prop('disabled', false).html(original);
+                    }
                     updateSelection();
                 });
+            }
+
+            function resetComForm() {
+                if (!$comForm.length) { return; }
+                $comForm[0].reset();
+                clearImage();
+                $replaceId.val('');
+                $('#ap-com-editing').hide();
+                updatePreview();
+                updateSelection();
+                $comAlert.hide();
+            }
+
+            // Fill the form from a stored announcement (edit or template).
+            function fillForm(data, editId) {
+                resetComForm();
+                $comResult.hide();
+                $comForm.show();
+                $comTitle.val(data.titulo || '');
+                $comMsg.val(data.mensaje || '');
+                $comForm.find('input[name="espacios[]"]').each(function() {
+                    $(this).prop('checked', $.inArray($(this).val(), data.espacios || []) !== -1);
+                });
+                if (data.image_id && data.image_url) {
+                    $reuseImage.val(data.image_id);
+                    setImagePreview(data.image_url);
+                }
+                if (editId) {
+                    $replaceId.val(editId);
+                    $comForm.find('input[name="modo"][value="programar"]').prop('checked', true);
+                    if (data.fecha) { $fecha.val(data.fecha); }
+                    if (data.hora) { $hora.val(data.hora); }
+                    $('#ap-com-editing-text').text(i18n.com_editing);
+                    $('#ap-com-editing').show();
+                }
+                updatePreview();
+                updateSelection();
+                $('.ap-tab-btn[data-target="tab-comunicados"]').trigger('click');
+                $('html, body').animate({ scrollTop: $('#tab-comunicados').offset().top - 40 }, 200);
             }
 
             $comForm.on('submit', function(e) {
                 e.preventDefault();
                 var hasFile = $comFile[0].files && $comFile[0].files.length > 0;
-                if (!$.trim($comMsg.val()) && !hasFile) {
+                if (!$.trim($comMsg.val()) && !hasFile && !$reuseImage.val()) {
                     showComAlert('error', i18n.com_empty);
                     return;
                 }
                 var n = selectedSpaces().length;
                 if (!n) { return; }
-                publish(new FormData(this), $comSubmit, n);
+
+                var confirmText;
+                if (isScheduled()) {
+                    var d = scheduledDate();
+                    if (!d || d.getTime() < Date.now() + 60000) {
+                        showComAlert('error', i18n.com_past);
+                        return;
+                    }
+                    confirmText = fmt(i18n.com_confirm_sched, n, $('#ap-com-programar-text').text());
+                } else {
+                    confirmText = fmt(i18n.com_confirm, n);
+                }
+                if (!window.confirm(confirmText)) { return; }
+
+                var fd = new FormData(this);
+                fd.append('action', 'ap_chat_publicar');
+                ajaxCall(fd, $comSubmit, function(data) {
+                    $replaceId.val('');
+                    $('#ap-com-editing').hide();
+                    renderResult(data);
+                });
             });
 
             function retry(comunicadoId, spaces, $btn) {
+                if (!window.confirm(fmt(i18n.com_confirm, spaces.length))) { return; }
                 var fd = new FormData();
+                fd.append('action', 'ap_chat_publicar');
                 fd.append('comunicado_id', comunicadoId);
                 $.each(spaces, function(_, id) { fd.append('espacios[]', id); });
-                publish(fd, $btn, spaces.length);
+                ajaxCall(fd, $btn, renderResult);
             }
 
             $('#ap-com-retry').on('click', function() {
@@ -631,12 +784,42 @@
                 retry($(this).data('comunicado'), $(this).data('espacios') || [], $(this));
             });
 
+            $(document).on('click', '.ap-com-edit', function() {
+                fillForm($(this).data('form') || {}, $(this).data('comunicado'));
+            });
+            $(document).on('click', '.ap-com-template', function() {
+                var data = $.extend({}, $(this).data('form') || {});
+                delete data.fecha; delete data.hora;
+                fillForm(data, 0);
+            });
+            $('#ap-com-editing-cancel').on('click', resetComForm);
+
+            $(document).on('click', '.ap-com-cancel', function() {
+                var id = $(this).data('comunicado');
+                if (!window.confirm(i18n.com_confirm_cancel)) { return; }
+                var fd = new FormData();
+                fd.append('action', 'ap_chat_cancelar');
+                fd.append('comunicado_id', id);
+                ajaxCall(fd, $(this), function(data) {
+                    refreshLists(data);
+                    if (String($replaceId.val()) === String(id)) { resetComForm(); }
+                });
+            });
+
+            $(document).on('click', '.ap-com-send-now', function() {
+                var id = $(this).data('comunicado');
+                if (!window.confirm(fmt(i18n.com_confirm, $(this).data('total')))) { return; }
+                var fd = new FormData();
+                fd.append('action', 'ap_chat_enviar_ahora');
+                fd.append('comunicado_id', id);
+                ajaxCall(fd, $(this), function(data) {
+                    if (String($replaceId.val()) === String(id)) { resetComForm(); }
+                    renderResult(data);
+                });
+            });
+
             $('#ap-com-new').on('click', function() {
-                $comForm[0].reset();
-                clearImage();
-                updatePreview();
-                updateSelection();
-                $comAlert.hide();
+                resetComForm();
                 $comResult.hide();
                 $comForm.show();
             });

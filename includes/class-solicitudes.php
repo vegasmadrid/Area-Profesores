@@ -120,7 +120,7 @@ class Area_Profesores_Solicitudes {
         $nombre = isset($_POST['nombre']) ? sanitize_text_field(wp_unslash($_POST['nombre'])) : '';
         $apellidos = isset($_POST['apellidos']) ? sanitize_text_field(wp_unslash($_POST['apellidos'])) : '';
         $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
-        $tutoria = isset($_POST['tutoria_deseada']) ? sanitize_text_field(wp_unslash($_POST['tutoria_deseada'])) : '';
+        $tutoria = isset($_POST['tutoria_deseada']) ? Area_Profesores_Cursos::sanitize_codigo(sanitize_text_field(wp_unslash($_POST['tutoria_deseada']))) : '';
         $observaciones = isset($_POST['observaciones']) ? sanitize_textarea_field(wp_unslash($_POST['observaciones'])) : '';
 
         // Validation
@@ -213,7 +213,7 @@ class Area_Profesores_Solicitudes {
 
         $subject = sprintf('[%s] Nueva solicitud de acceso de profesor: %s %s', $site_name, $nombre, $apellidos);
 
-        $tutoria_label = !empty($tutoria) ? $tutoria : __('Sin tutoría / Especialista', 'area-profesores');
+        $tutoria_label = !empty($tutoria) ? Area_Profesores_Cursos::get_codigo_label($tutoria) : __('Sin indicar', 'area-profesores');
         $obs_text = !empty($observaciones) ? esc_html($observaciones) : __('Ninguna observación aportada.', 'area-profesores');
 
         $logo_url = Area_Profesores_Admin::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png');
@@ -262,7 +262,7 @@ class Area_Profesores_Solicitudes {
                             <span class="data-value"><a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a></span>
                         </div>
                         <div class="data-row">
-                            <span class="data-label">Tutoría Deseada:</span>
+                            <span class="data-label">Etapa y tutoría:</span>
                             <span class="data-value">' . esc_html($tutoria_label) . '</span>
                         </div>
                         <div class="data-row">
@@ -309,7 +309,7 @@ class Area_Profesores_Solicitudes {
         }
 
         $solicitud_id = isset($_POST['solicitud_id']) ? absint($_POST['solicitud_id']) : 0;
-        $tutoria = isset($_POST['tutoria']) ? sanitize_text_field(wp_unslash($_POST['tutoria'])) : '';
+        $tutoria = isset($_POST['tutoria']) ? Area_Profesores_Cursos::sanitize_codigo(sanitize_text_field(wp_unslash($_POST['tutoria']))) : '';
 
         global $wpdb;
         $table = self::get_table_name();
@@ -341,7 +341,9 @@ class Area_Profesores_Solicitudes {
         $user = get_user_by('email', $solicitud->email);
         if ($user) {
             update_user_meta($user->ID, '_ap_is_profesor', '1');
-            update_user_meta($user->ID, '_ap_tutoria', $tutoria);
+            if ($tutoria !== '') {
+                Area_Profesores_Cursos::set_asignacion($user->ID, $tutoria);
+            }
         }
 
         // Send approval email to the teacher
@@ -479,7 +481,7 @@ class Area_Profesores_Solicitudes {
         if ($solicitud) {
             update_user_meta($user_id, '_ap_is_profesor', '1');
             if (!empty($solicitud->tutoria_deseada)) {
-                update_user_meta($user_id, '_ap_tutoria', $solicitud->tutoria_deseada);
+                Area_Profesores_Cursos::set_asignacion($user_id, $solicitud->tutoria_deseada);
             }
         }
     }
@@ -505,9 +507,9 @@ class Area_Profesores_Solicitudes {
 
         if ($solicitud) {
             update_user_meta($user_id, '_ap_is_profesor', '1');
-            $tutoria_actual = get_user_meta($user_id, '_ap_tutoria', true);
-            if (empty($tutoria_actual) && !empty($solicitud->tutoria_deseada)) {
-                update_user_meta($user_id, '_ap_tutoria', $solicitud->tutoria_deseada);
+            // Only fill the assignment if the teacher has none yet (admins may have changed it).
+            if (Area_Profesores_Cursos::get_codigo_asignacion($user_id) === '' && !empty($solicitud->tutoria_deseada)) {
+                Area_Profesores_Cursos::set_asignacion($user_id, $solicitud->tutoria_deseada);
             }
         }
     }

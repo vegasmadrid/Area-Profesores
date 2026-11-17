@@ -19,7 +19,7 @@
                     nonce: AreaProfesoresAdminData.nonce,
                     user_id: userId,
                     is_profesor: isProfesor ? 1 : 0,
-                    tutoria: tutoria
+                    asignacion: tutoria
                 },
                 dataType: 'json',
                 success: function(response) {
@@ -54,6 +54,15 @@
             }
 
             saveTeacherAjax(userId, isProfesor, tutoria, $status);
+        });
+
+        // Etapa / tutoría select change (auto-save)
+        $('.ap-tutoria-select').on('change', function() {
+            var $select = $(this);
+            var userId = $select.data('user-id');
+            var $row = $select.closest('.ap-user-row');
+            var isProfesor = $row.find('.ap-teacher-toggle').is(':checked');
+            saveTeacherAjax(userId, isProfesor, $select.val(), $('#status-' + userId));
         });
 
         // "Dirección" toggle (puede publicar comunicados en Google Chat)

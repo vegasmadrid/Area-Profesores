@@ -45,31 +45,18 @@ class Area_Profesores_Comedor {
      * Available standard classes (matching the user's form image)
      */
     public static function get_available_classes() {
-        return array(
-            '1A' => '1º A',
-            '1B' => '1º B',
-            '2A' => '2º A',
-            '2B' => '2º B',
-            '3A' => '3º A',
-            '3B' => '3º B',
-            '4A' => '4º A',
-            '4B' => '4º B',
-            '5A' => '5º A',
-            '5B' => '5º B',
-            '6A' => '6º A',
-            '6B' => '6º B',
-        );
+        return Area_Profesores_Cursos::get_cursos_options();
     }
 
     /**
-     * Available stages (Etapa)
+     * Available stages (Etapa), keyed by their label (stored as text in the records).
      */
     public static function get_available_stages() {
-        return array(
-            'Primer Ciclo' => 'Primer Ciclo',
-            'Infantil'     => 'Infantil',
-            'Primaria'     => 'Primaria',
-        );
+        $out = array();
+        foreach (Area_Profesores_Cursos::get_etapas() as $label) {
+            $out[$label] = $label;
+        }
+        return $out;
     }
 
     /**

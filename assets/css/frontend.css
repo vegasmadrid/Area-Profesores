@@ -2623,3 +2623,154 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
         position: static;
     }
 }
+
+/* Comunicados: programación, edición y listas */
+.ap-com-modo {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-com-modo .ap-com-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ap-com-modo .ap-com-chip {
+    position: relative;
+    padding: 9px 16px;
+    font-size: 14px;
+}
+
+.ap-com-programar {
+    margin-top: 14px;
+}
+
+.ap-com-programar-fields {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ap-com-programar-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ap-slate-600);
+}
+
+.ap-com-programar-fields input {
+    width: auto;
+    min-width: 150px;
+}
+
+.ap-com-quick-dates {
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.ap-com-programar-text {
+    margin: 10px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ap-primary);
+}
+
+.ap-com-programar-text:first-letter {
+    text-transform: uppercase;
+}
+
+.ap-com-programar-text.is-error {
+    color: var(--ap-danger);
+}
+
+.ap-com-editing {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--ap-warning-bg);
+    border: 1px solid #fde68a;
+    color: #92400e;
+    border-radius: var(--ap-radius-md);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ap-com-result-title.is-scheduled {
+    color: var(--ap-primary);
+}
+
+.ap-com-result-title.is-scheduled:first-letter,
+.ap-com-item-when:first-letter {
+    text-transform: uppercase;
+}
+
+.ap-com-result-text {
+    font-size: 14px;
+    color: var(--ap-slate-600);
+    margin: 0 0 14px;
+}
+
+.ap-com-item.is-programado {
+    border-left: 4px solid var(--ap-primary);
+}
+
+.ap-com-item.is-cancelado {
+    opacity: 0.6;
+}
+
+.ap-com-item-when {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ap-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-com-item-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ap-com-pill {
+    background: var(--ap-slate-100);
+    color: var(--ap-slate-700);
+    border: 1px solid var(--ap-slate-200);
+}
+
+.ap-empty-state-sm {
+    padding: 12px 0;
+}
+
+.ap-empty-state-sm p {
+    margin: 0;
+}
+
+/* Comedor: cursos agrupados por etapa */
+.ap-comedor-etapa {
+    margin-bottom: 14px;
+}
+
+.ap-comedor-etapa-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ap-slate-600);
+    margin-bottom: 8px;
+}
+
+.ap-comedor-etapa[hidden],
+.ap-comedor-etapa-hidden[hidden] {
+    display: none;
+}
