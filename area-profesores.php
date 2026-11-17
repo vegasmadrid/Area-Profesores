@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.0.0');
+define('AREA_PROFESORES_VERSION', '1.1.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,7 @@ require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-admin.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-shortcode.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-access.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-enlaces.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-chat.php';
 
 /**
  * Main Plugin Class
@@ -50,6 +51,7 @@ class Area_Profesores_Plugin {
         Area_Profesores_Shortcode::get_instance();
         Area_Profesores_Access::get_instance();
         Area_Profesores_Enlaces::get_instance();
+        Area_Profesores_Chat::get_instance();
 
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
@@ -102,6 +104,18 @@ class Area_Profesores_Plugin {
                 'confirm_delete'    => __('¿Estás seguro de que deseas eliminar este registro?', 'area-profesores'),
                 'confirm_approve'   => __('¿Aprobar esta solicitud y dar acceso al profesor?', 'area-profesores'),
                 'confirm_reject'    => __('¿Rechazar esta solicitud de acceso?', 'area-profesores'),
+                'com_publish'       => __('Publicar en %d espacio(s)', 'area-profesores'),
+                'com_none'          => __('Ningún espacio seleccionado', 'area-profesores'),
+                'com_selected'      => __('%d espacio(s) seleccionado(s)', 'area-profesores'),
+                'com_confirm'       => __('Se va a publicar el comunicado en %d espacio(s) de Google Chat. Las familias lo recibirán al momento y no se puede deshacer desde aquí. ¿Continuar?', 'area-profesores'),
+                'com_sending'       => __('Publicando…', 'area-profesores'),
+                'com_empty'         => __('Escribe un mensaje o adjunta una imagen.', 'area-profesores'),
+                'com_bad_image'     => __('Formato no admitido. Usa una imagen JPG, PNG o GIF de menos de 8 MB.', 'area-profesores'),
+                'com_all_ok'        => __('Publicado en los %d espacios', 'area-profesores'),
+                'com_some_fail'     => __('Publicado en %1$d de %2$d espacios', 'area-profesores'),
+                'com_ok'            => __('Publicado', 'area-profesores'),
+                'com_placeholder'   => __('El texto aparecerá aquí…', 'area-profesores'),
+                'com_net_error'     => __('Error de conexión. Revisa el historial antes de volver a publicar para no duplicar el comunicado.', 'area-profesores'),
             )
         ));
     }

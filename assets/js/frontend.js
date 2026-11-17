@@ -433,6 +433,217 @@
                            .html(message)
                            .slideDown(200);
         }
+
+        // =========================================================================
+        // Comunicados a familias (Google Chat) - solo Dirección
+        // =========================================================================
+        var $comForm = $('#ap-comunicado-form');
+        if ($comForm.length) {
+            var i18n = AreaProfesoresData.i18n;
+            var $comMsg = $('#ap-com-mensaje');
+            var $comTitle = $('#ap-com-titulo');
+            var $comFile = $('#ap-com-imagen');
+            var $comSubmit = $('#ap-com-submit');
+            var $comAlert = $('#ap-comunicado-alert');
+            var $comResult = $('#ap-com-result');
+            var lastComunicadoId = 0;
+            var lastFailed = [];
+            var previewUrl = null;
+            var fmt = function(str) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                var i = 0;
+                return String(str).replace(/%(\d+\$)?d/g, function(m, pos) {
+                    return pos ? args[parseInt(pos, 10) - 1] : args[i++];
+                });
+            };
+            var escapeHtml = function(s) {
+                return $('<div>').text(s || '').html();
+            };
+
+            // Google Chat-like formatting for the preview.
+            var chatFormat = function(text) {
+                var html = escapeHtml(text);
+                html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+                html = html.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s.,;:!?)])/g, '$1<strong>$2</strong>');
+                html = html.replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s.,;:!?)])/g, '$1<em>$2</em>');
+                html = html.replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s.,;:!?)])/g, '$1<s>$2</s>');
+                return html.replace(/\n/g, '<br>');
+            };
+
+            var updatePreview = function() {
+                var title = $.trim($comTitle.val());
+                var msg = $comMsg.val();
+                var text = (title ? '*' + title + '*\n\n' : '') + msg;
+                $('#ap-com-count').text((title ? title.length + 2 : 0) + msg.length);
+                $('#ap-com-preview-text').html($.trim(text) ? chatFormat($.trim(text)) : '<em>' + escapeHtml(i18n.com_placeholder) + '</em>');
+            };
+
+            var selectedSpaces = function() {
+                return $comForm.find('input[name="espacios[]"]:checked');
+            };
+
+            var updateSelection = function() {
+                var n = selectedSpaces().length;
+                $comSubmit.prop('disabled', n === 0);
+                $comSubmit.find('.ap-com-submit-label').text(n ? fmt(i18n.com_publish, n) : fmt(i18n.com_publish, 0));
+                $('#ap-com-selected').text(n ? fmt(i18n.com_selected, n) : i18n.com_none);
+
+                $comForm.find('.ap-com-chip').each(function() {
+                    $(this).toggleClass('is-selected', $(this).find('input').is(':checked'));
+                });
+                $comForm.find('.ap-com-grupo').each(function() {
+                    var $boxes = $(this).find('input[name="espacios[]"]');
+                    var checked = $boxes.filter(':checked').length;
+                    var $g = $(this).find('.ap-com-grupo-check');
+                    $g.prop('checked', checked > 0 && checked === $boxes.length);
+                    $g.prop('indeterminate', checked > 0 && checked < $boxes.length);
+                });
+            };
+
+            $comMsg.add($comTitle).on('input', updatePreview);
+            $comForm.on('change', 'input[name="espacios[]"]', updateSelection);
+            $comForm.on('change', '.ap-com-grupo-check', function() {
+                $(this).closest('.ap-com-grupo').find('input[name="espacios[]"]').prop('checked', $(this).is(':checked'));
+                updateSelection();
+            });
+            $comForm.on('click', '[data-ap-select]', function() {
+                $comForm.find('input[name="espacios[]"]').prop('checked', $(this).data('ap-select') === 'all');
+                updateSelection();
+            });
+
+            // Image selection + preview
+            var clearImage = function() {
+                $comFile.val('');
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+                $('#ap-com-image-preview').hide();
+                $('#ap-com-dropzone').show();
+                $('#ap-com-preview-img').hide().attr('src', '');
+            };
+            var showImage = function(file) {
+                var okType = /^image\/(jpeg|png|gif)$/.test(file.type);
+                if (!okType || file.size > 8 * 1024 * 1024) {
+                    clearImage();
+                    showComAlert('error', i18n.com_bad_image);
+                    return;
+                }
+                $comAlert.hide();
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); }
+                previewUrl = URL.createObjectURL(file);
+                $('#ap-com-image-preview').show().find('img').attr('src', previewUrl);
+                $('#ap-com-dropzone').hide();
+                $('#ap-com-preview-img').attr('src', previewUrl).show();
+            };
+            $comFile.on('change', function() {
+                if (this.files && this.files[0]) { showImage(this.files[0]); } else { clearImage(); }
+            });
+            $('#ap-com-image-remove').on('click', clearImage);
+            $('#ap-com-dropzone').on('dragover dragenter', function(e) {
+                e.preventDefault(); $(this).addClass('is-dragover');
+            }).on('dragleave drop', function(e) {
+                e.preventDefault(); $(this).removeClass('is-dragover');
+                if (e.type === 'drop' && e.originalEvent.dataTransfer.files.length) {
+                    try { $comFile[0].files = e.originalEvent.dataTransfer.files; } catch (err) { return; }
+                    showImage(e.originalEvent.dataTransfer.files[0]);
+                }
+            });
+
+            function showComAlert(type, message) {
+                $comAlert.removeClass('ap-alert-success ap-alert-error')
+                         .addClass(type === 'success' ? 'ap-alert-success' : 'ap-alert-error')
+                         .text(message).show();
+                $('html, body').animate({ scrollTop: $comAlert.offset().top - 80 }, 200);
+            }
+
+            function renderResult(data) {
+                lastComunicadoId = data.comunicado_id;
+                lastFailed = [];
+                var $list = $comResult.find('.ap-com-result-list').empty();
+                $.each(data.resultados, function(_, r) {
+                    if (!r.ok) { lastFailed.push(r.id); }
+                    $('<li>').addClass(r.ok ? 'is-ok' : 'is-error')
+                        .append($('<strong>').text((r.ok ? '✓ ' : '✗ ') + r.nombre))
+                        .append(r.ok ? $('<span>').text(' — ' + i18n.com_ok) : $('<span>').text(' — ' + r.error))
+                        .appendTo($list);
+                });
+                $comResult.find('.ap-com-result-title').text(
+                    data.ok === data.total ? fmt(i18n.com_all_ok, data.total) : fmt(i18n.com_some_fail, data.ok, data.total)
+                ).toggleClass('is-error', data.ok !== data.total);
+                $('#ap-com-retry').toggle(lastFailed.length > 0);
+                if (data.historial_html) { $('#ap-com-historial').html(data.historial_html); }
+                $comForm.hide();
+                $comResult.show();
+                $('html, body').animate({ scrollTop: $comResult.offset().top - 80 }, 200);
+            }
+
+            function publish(formData, $btn, count) {
+                if (!window.confirm(fmt(i18n.com_confirm, count))) { return; }
+                var original = $btn.html();
+                $btn.prop('disabled', true).html('<span class="ap-spinner"></span>' + escapeHtml(i18n.com_sending));
+                formData.append('action', 'ap_chat_publicar');
+                formData.append('nonce', AreaProfesoresData.nonce);
+
+                $.ajax({
+                    url: AreaProfesoresData.ajax_url,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    timeout: 180000
+                }).done(function(res) {
+                    if (res && res.success) {
+                        renderResult(res.data);
+                    } else {
+                        showComAlert('error', (res && res.data && res.data.message) || i18n.error);
+                    }
+                }).fail(function(xhr) {
+                    var msg = xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message;
+                    showComAlert('error', msg || i18n.com_net_error);
+                }).always(function() {
+                    $btn.prop('disabled', false).html(original);
+                    updateSelection();
+                });
+            }
+
+            $comForm.on('submit', function(e) {
+                e.preventDefault();
+                var hasFile = $comFile[0].files && $comFile[0].files.length > 0;
+                if (!$.trim($comMsg.val()) && !hasFile) {
+                    showComAlert('error', i18n.com_empty);
+                    return;
+                }
+                var n = selectedSpaces().length;
+                if (!n) { return; }
+                publish(new FormData(this), $comSubmit, n);
+            });
+
+            function retry(comunicadoId, spaces, $btn) {
+                var fd = new FormData();
+                fd.append('comunicado_id', comunicadoId);
+                $.each(spaces, function(_, id) { fd.append('espacios[]', id); });
+                publish(fd, $btn, spaces.length);
+            }
+
+            $('#ap-com-retry').on('click', function() {
+                retry(lastComunicadoId, lastFailed, $(this));
+            });
+            $(document).on('click', '.ap-com-retry-old', function() {
+                retry($(this).data('comunicado'), $(this).data('espacios') || [], $(this));
+            });
+
+            $('#ap-com-new').on('click', function() {
+                $comForm[0].reset();
+                clearImage();
+                updatePreview();
+                updateSelection();
+                $comAlert.hide();
+                $comResult.hide();
+                $comForm.show();
+            });
+
+            updatePreview();
+            updateSelection();
+        }
     });
 
 })(jQuery);

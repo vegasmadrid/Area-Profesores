@@ -87,6 +87,15 @@ if (!defined('ABSPATH')) {
                 <span class="ap-tab-counter"><?php echo (int) $enlaces['total']; ?></span>
             <?php endif; ?>
         </button>
+
+        <?php if ($is_direccion) : ?>
+            <button type="button" class="ap-tab-btn" data-target="tab-comunicados">
+                <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                <span><?php esc_html_e('Comunicados', 'area-profesores'); ?></span>
+            </button>
+        <?php endif; ?>
     </nav>
 
     <!-- Content Sections -->
@@ -172,5 +181,12 @@ if (!defined('ABSPATH')) {
         <section id="tab-enlaces" class="ap-tab-content">
             <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/enlaces-utiles.php'; ?>
         </section>
+
+        <?php if ($is_direccion) : ?>
+            <!-- Pestaña 4: Comunicados a familias (Google Chat, solo Dirección) -->
+            <section id="tab-comunicados" class="ap-tab-content">
+                <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comunicados.php'; ?>
+            </section>
+        <?php endif; ?>
     </main>
 </div>

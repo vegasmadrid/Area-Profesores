@@ -499,3 +499,31 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Espacios de Chat */
+.ap-chat-help {
+    margin-top: 20px;
+}
+
+.ap-chat-help ol {
+    margin: 0 0 12px 18px;
+}
+
+.ap-chat-help li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.ap-chat-direccion-list {
+    margin: 0 0 12px 0;
+}
+
+.ap-chat-direccion-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ap-chat-direccion-list img {
+    border-radius: 50%;
+}

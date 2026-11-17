@@ -144,6 +144,11 @@ class Area_Profesores_Shortcode {
         $aviso = trim((string) Area_Profesores_Admin::get_setting('aviso_profesores', ''));
         $logout_url = Area_Profesores_Access::get_logout_url();
 
+        // Comunicados a familias (Google Chat), only for Dirección
+        $is_direccion = Area_Profesores_Chat::is_user_direccion($user_id);
+        $chat_grupos = $is_direccion ? Area_Profesores_Chat::get_espacios_agrupados() : array();
+        $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
+
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
         return ob_get_clean();

@@ -52,6 +52,22 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Resumen agrupado de dietas especiales y desglose completo clase por clase.
    - Navegación rápida por fechas y botón **"Imprimir para Cocina"**.
 
+9. **Comunicados a familias en Google Chat** (*Área Profesores > Espacios de Chat*):
+   - Publica **el mismo comunicado (texto + imagen) en varios espacios de Google Chat a la vez**, firmado como *Colegio Casa de la Virgen*.
+   - Solo pueden publicar los profesores marcados como **Dirección** (columna *Dirección* en *Área Profesores > Profesores* o en el perfil del usuario) y los administradores.
+   - Pestaña **Comunicados** en el Área de Profesores: título, mensaje con formato de Chat (`*negrita*`, `_cursiva_`, `~tachado~`), imagen JPG/PNG/GIF (máx. 8 MB), selección de espacios por grupo (Infantil, Primaria…) y vista previa.
+   - Tras publicar se muestra el resultado de cada espacio, con botón para **reintentar solo los que han fallado**, y un historial de los últimos comunicados.
+   - Cada espacio se conecta con un **webhook entrante** de Google Chat. El texto va en el mensaje (aparece en la notificación del móvil) y la imagen debajo, en una tarjeta.
+
+### Conectar los espacios de Google Chat
+
+1. **Consola de administración de Google** (una sola vez): *Aplicaciones › Google Workspace › Google Chat › Ajustes de las aplicaciones de Chat* y activa **"Permitir que los usuarios añadan y usen webhooks entrantes"**.
+2. En cada espacio de familias (desde el ordenador): nombre del espacio › **Aplicaciones e integraciones › Webhooks › Añadir webhooks**. Nombre: `Colegio Casa de la Virgen`; avatar: URL del logotipo.
+3. Copia la URL del webhook y dala de alta en **Área Profesores > Espacios de Chat** (nombre, grupo y orden). Pulsa **Probar** para comprobar que llega el mensaje (la prueba incluye el logotipo para verificar que las imágenes se ven).
+4. Marca como **Dirección** a quien pueda publicar en *Área Profesores > Profesores*.
+
+> La URL del webhook es secreta: quien la tenga puede publicar en el espacio. Las imágenes se guardan en la Biblioteca de medios y Google las descarga desde `wp-content/uploads`, por lo que la web debe servirse por **HTTPS**.
+
 ---
 
 ## 📦 Instalación

@@ -67,6 +67,7 @@ if (!defined('ABSPATH')) {
                         <th><?php esc_html_e('Nombre y Usuario', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Correo electrónico', 'area-profesores'); ?></th>
                         <th style="width: 170px; text-align: center;"><?php esc_html_e('¿Es Profesor?', 'area-profesores'); ?></th>
+                        <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Puede publicar comunicados en los espacios de Google Chat', 'area-profesores'); ?>"><?php esc_html_e('Dirección', 'area-profesores'); ?></th>
                         <th style="width: 220px;"><?php esc_html_e('Tutoría Asignada', 'area-profesores'); ?></th>
                         <th style="width: 120px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
@@ -74,7 +75,7 @@ if (!defined('ABSPATH')) {
                 <tbody>
                     <?php if (empty($users)) : ?>
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 24px;">
+                            <td colspan="7" style="text-align: center; padding: 24px;">
                                 <?php esc_html_e('No se encontraron usuarios que coincidan con la búsqueda.', 'area-profesores'); ?>
                             </td>
                         </tr>
@@ -107,6 +108,18 @@ if (!defined('ABSPATH')) {
                                         <span class="ap-toggle-slider"></span>
                                     </label>
                                     <span class="ap-ajax-status" id="status-<?php echo esc_attr($u->ID); ?>"></span>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="ap-toggle-switch">
+                                        <input type="checkbox"
+                                               class="ap-direccion-toggle"
+                                               name="is_direccion[<?php echo esc_attr($u->ID); ?>]"
+                                               value="1"
+                                               data-user-id="<?php echo esc_attr($u->ID); ?>"
+                                               <?php checked(Area_Profesores_Chat::has_direccion_flag($u->ID), true); ?>>
+                                        <span class="ap-toggle-slider"></span>
+                                    </label>
+                                    <span class="ap-ajax-status" id="status-dir-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
                                 <td>
                                     <select name="tutoria[<?php echo esc_attr($u->ID); ?>]" 

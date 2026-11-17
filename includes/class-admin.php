@@ -202,6 +202,7 @@ class Area_Profesores_Admin {
             $profesores_status = isset($_POST['is_profesor']) && is_array($_POST['is_profesor']) ? $_POST['is_profesor'] : array();
             $tutorias = isset($_POST['tutoria']) && is_array($_POST['tutoria']) ? $_POST['tutoria'] : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
+            $direccion_status = isset($_POST['is_direccion']) && is_array($_POST['is_direccion']) ? $_POST['is_direccion'] : array();
 
             foreach ($all_user_ids as $uid) {
                 $is_prof = isset($profesores_status[$uid]) ? '1' : '0';
@@ -209,6 +210,7 @@ class Area_Profesores_Admin {
 
                 update_user_meta($uid, '_ap_is_profesor', $is_prof);
                 update_user_meta($uid, '_ap_tutoria', $tutoria);
+                update_user_meta($uid, Area_Profesores_Chat::META_DIR, isset($direccion_status[$uid]) ? '1' : '0');
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
@@ -409,6 +411,15 @@ class Area_Profesores_Admin {
                 </td>
             </tr>
             <tr>
+                <th><label for="ap_is_direccion"><?php esc_html_e('Dirección', 'area-profesores'); ?></label></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="ap_is_direccion" id="ap_is_direccion" value="1" <?php checked(Area_Profesores_Chat::has_direccion_flag($user->ID)); ?>>
+                        <?php esc_html_e('Puede publicar comunicados a las familias en los espacios de Google Chat', 'area-profesores'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
                 <th><label for="ap_tutoria"><?php esc_html_e('Tutoría asignada', 'area-profesores'); ?></label></th>
                 <td>
                     <select name="ap_tutoria" id="ap_tutoria">
@@ -439,6 +450,7 @@ class Area_Profesores_Admin {
 
         update_user_meta($user_id, '_ap_is_profesor', $is_profesor);
         update_user_meta($user_id, '_ap_tutoria', $tutoria);
+        update_user_meta($user_id, Area_Profesores_Chat::META_DIR, isset($_POST['ap_is_direccion']) ? '1' : '0');
     }
 
     /**

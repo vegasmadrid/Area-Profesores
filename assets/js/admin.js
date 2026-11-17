@@ -56,6 +56,30 @@
             saveTeacherAjax(userId, isProfesor, tutoria, $status);
         });
 
+        // "Dirección" toggle (puede publicar comunicados en Google Chat)
+        $('.ap-direccion-toggle').on('change', function() {
+            var $toggle = $(this);
+            var userId = $toggle.data('user-id');
+            var $status = $('#status-dir-' + userId);
+
+            $status.text('Guardando...').css('color', '#64748b').show();
+            $.post(AreaProfesoresAdminData.ajax_url, {
+                action: 'ap_admin_save_direccion',
+                nonce: AreaProfesoresAdminData.nonce,
+                user_id: userId,
+                is_direccion: $toggle.is(':checked') ? 1 : 0
+            }, null, 'json').done(function(response) {
+                if (response && response.success) {
+                    $status.text('✓ Guardado').css('color', '#10b981');
+                    setTimeout(function() { $status.fadeOut(400); }, 2000);
+                } else {
+                    $status.text('Error').css('color', '#ef4444');
+                }
+            }).fail(function() {
+                $status.text('Error de red').css('color', '#ef4444');
+            });
+        });
+
         // =========================================================================
         // Solicitudes de Acceso (Aprobar, Rechazar, Eliminar)
         // =========================================================================
