@@ -140,7 +140,7 @@ if (!defined('ABSPATH')) {
                                     <a href="<?php echo esc_url(get_edit_user_link($u->ID)); ?>" class="button button-small" target="_blank">
                                         <?php esc_html_e('Perfil WP', 'area-profesores'); ?>
                                     </a>
-                                    <?php if (Area_Profesores_Admin::can_delete_user($u->ID)) : ?>
+                                    <?php if (method_exists('Area_Profesores_Admin', 'can_delete_user') && Area_Profesores_Admin::can_delete_user($u->ID)) : ?>
                                         <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=ap_delete_profesor&user_id=' . $u->ID), 'ap_delete_profesor_' . $u->ID)); ?>"
                                            class="button button-small ap-btn-delete-user"
                                            onclick="return confirm('<?php echo esc_js(sprintf(__('¿Eliminar definitivamente a %s de la web? Perderá el acceso y no se puede deshacer. Sus comunicados pasarán a tu nombre.', 'area-profesores'), $u->display_name)); ?>');">

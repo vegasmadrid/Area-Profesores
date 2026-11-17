@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.3.0
+ * Version:     1.3.1
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.3.0');
+define('AREA_PROFESORES_VERSION', '1.3.1');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -60,6 +60,10 @@ class Area_Profesores_Plugin {
         Area_Profesores_Aulas::get_instance();
         Area_Profesores_Directorio::get_instance();
 
+        // Create/upgrade the database tables after every plugin update (the activation
+        // hook does not run when the plugin files are replaced without reactivating it).
+        add_action('init', array($this, 'maybe_upgrade_db'), 1);
+
         // One-time data migrations (old 1A…6B tutorías → new courses).
         add_action('init', array('Area_Profesores_Cursos', 'maybe_migrate'), 5);
 
@@ -73,6 +77,17 @@ class Area_Profesores_Plugin {
     public function activate() {
         Area_Profesores_Comedor::create_tables();
         Area_Profesores_Solicitudes::create_tables();
+    }
+
+    /**
+     * Run the table creation when the plugin version changes.
+     */
+    public function maybe_upgrade_db() {
+        if (get_option('area_profesores_db_version') === AREA_PROFESORES_VERSION) {
+            return;
+        }
+        $this->activate();
+        update_option('area_profesores_db_version', AREA_PROFESORES_VERSION, true);
     }
 
     /**

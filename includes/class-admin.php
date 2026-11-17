@@ -282,7 +282,15 @@ class Area_Profesores_Admin {
 
         $user_query = new WP_User_Query($args);
         $users = $user_query->get_results();
-        $total_users = $user_query->get_total_users();
+        $total_users = (int) $user_query->get_total_users();
+        // Some plugins/hosts break the "found rows" count: count the matching users directly.
+        if ($total_users < count($users) || ($total_users === 0 && !empty($users))) {
+            $count_args = $args;
+            unset($count_args['number'], $count_args['offset']);
+            $count_args['fields'] = 'ID';
+            $count_args['count_total'] = false;
+            $total_users = count(get_users($count_args));
+        }
         $total_pages = ceil($total_users / $per_page);
 
         $available_classes = Area_Profesores_Comedor::get_available_classes();
