@@ -340,7 +340,6 @@ class Area_Profesores_Solicitudes {
         // Check if user already exists in WordPress
         $user = get_user_by('email', $solicitud->email);
         if ($user) {
-            update_user_meta($user->ID, '_ap_is_profesor', '1');
             if ($tutoria !== '') {
                 Area_Profesores_Cursos::set_asignacion($user->ID, $tutoria);
             }
@@ -479,7 +478,6 @@ class Area_Profesores_Solicitudes {
         ));
 
         if ($solicitud) {
-            update_user_meta($user_id, '_ap_is_profesor', '1');
             if (!empty($solicitud->tutoria_deseada)) {
                 Area_Profesores_Cursos::set_asignacion($user_id, $solicitud->tutoria_deseada);
             }
@@ -506,7 +504,6 @@ class Area_Profesores_Solicitudes {
         ));
 
         if ($solicitud) {
-            update_user_meta($user_id, '_ap_is_profesor', '1');
             // Only fill the assignment if the teacher has none yet (admins may have changed it).
             if (Area_Profesores_Cursos::get_codigo_asignacion($user_id) === '' && !empty($solicitud->tutoria_deseada)) {
                 Area_Profesores_Cursos::set_asignacion($user_id, $solicitud->tutoria_deseada);

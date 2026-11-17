@@ -7,10 +7,15 @@
  * even when "Restringir toda la web" is on.
  *
  * Attributes:
- * - titulo="…"           Heading (default "Espacios de familias en Google Chat").
+ * - titulo="…"           Heading (default "Espacios de familias").
  * - etapa="primaria"     Only one etapa (primer_ciclo, infantil, primaria, secundaria).
  * - tutor="si"           Also show the tutor/a of each course.
  * - otros="no"           Hide the "otros espacios" (AMPA, coro…).
+ * - logo="URL"            Other logo (default: "Logotipo para las familias" in Ajustes).
+ * - tribanda="no"         Hide the corporate tribanda.
+ *
+ * The page carries its own styles (school look: Montserrat, navy, light blue and
+ * orange), so the theme or Elementor cannot change its appearance.
  */
 
 if (!defined('ABSPATH')) {
@@ -48,13 +53,13 @@ class Area_Profesores_Directorio {
 
     public function render($atts = array()) {
         $atts = shortcode_atts(array(
-            'titulo' => __('Espacios de familias en Google Chat', 'area-profesores'),
+            'titulo' => __('Espacios de familias', 'area-profesores'),
             'etapa'  => '',
             'tutor'  => 'no',
             'otros'  => 'si',
+            'logo'   => '',
+            'tribanda' => 'si',
         ), $atts, self::SHORTCODE);
-
-        wp_enqueue_style('area-profesores-frontend');
 
         $mostrar_tutor = in_array(strtolower($atts['tutor']), array('si', 'sí', 'yes', '1', 'true'), true);
         $mostrar_otros = !in_array(strtolower($atts['otros']), array('no', '0', 'false'), true);
@@ -73,7 +78,9 @@ class Area_Profesores_Directorio {
         });
         $grupos = Area_Profesores_Chat::agrupar($espacios);
         $titulo = $atts['titulo'];
-        $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
+        $logo_url = $atts['logo'] !== '' ? esc_url_raw($atts['logo']) : Area_Profesores_Admin::get_setting('logo_familias_url', '');
+        $tribanda_url = in_array(strtolower($atts['tribanda']), array('no', '0', 'false'), true) ? '' : Area_Profesores_Admin::get_setting('tribanda_url', '');
+        $total = count($espacios);
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/espacios-publico.php';

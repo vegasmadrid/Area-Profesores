@@ -50,6 +50,7 @@ class Area_Profesores_Admin {
             'allowed_domain'            => 'casadelavirgen.es',
             'tribanda_url'              => 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png',
             'logo_url'                  => 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png',
+            'logo_familias_url'         => 'https://madrid.casadelavirgen.es/wp-content/uploads/elementor/thumbs/Logo_Color_Casa-de-la-Virgen_Colegio-copia-q58if27vst5qhnn7a4gmb1ham9rcffq7jtrdjo1n9c.png',
             'login_button_text'         => 'Accede usando tu cuenta de profesor',
             'only_approved_can_register'=> 'yes',
             'notification_emails'       => get_option('admin_email'),
@@ -85,25 +86,11 @@ class Area_Profesores_Admin {
     }
 
     /**
-     * Check if a user is marked as teacher
+     * Every registered user is a teacher: only teachers get an account (the
+     * access requests and the corporate Google login control who can register).
      */
     public static function is_user_profesor($user_id) {
-        if (!$user_id) {
-            return false;
-        }
-
-        $is_teacher = get_user_meta($user_id, '_ap_is_profesor', true);
-        if ($is_teacher === '1' || $is_teacher === 1 || $is_teacher === true) {
-            return true;
-        }
-
-        // Also check if user has 'administrator' role
-        $user = get_userdata($user_id);
-        if ($user && in_array('administrator', (array) $user->roles, true)) {
-            return true;
-        }
-
-        return false;
+        return $user_id && get_userdata($user_id) !== false;
     }
 
     /**
@@ -202,14 +189,11 @@ class Area_Profesores_Admin {
     public function render_profesores_page() {
         // Handle bulk form submission if needed
         if (isset($_POST['ap_save_profesores']) && check_admin_referer('ap_save_profesores_nonce')) {
-            $profesores_status = isset($_POST['is_profesor']) && is_array($_POST['is_profesor']) ? $_POST['is_profesor'] : array();
             $asignaciones = isset($_POST['asignacion']) && is_array($_POST['asignacion']) ? wp_unslash($_POST['asignacion']) : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
             $direccion_status = isset($_POST['is_direccion']) && is_array($_POST['is_direccion']) ? $_POST['is_direccion'] : array();
 
             foreach ($all_user_ids as $uid) {
-                $is_prof = isset($profesores_status[$uid]) ? '1' : '0';
-                update_user_meta($uid, '_ap_is_profesor', $is_prof);
                 if (isset($asignaciones[$uid])) {
                     Area_Profesores_Cursos::set_asignacion($uid, sanitize_text_field($asignaciones[$uid]));
                 }
@@ -227,7 +211,6 @@ class Area_Profesores_Admin {
 
         // Search and pagination parameters
         $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
-        $filter_profesor = isset($_GET['filter_profesor']) ? sanitize_text_field($_GET['filter_profesor']) : '';
         $filter_etapa = isset($_GET['filter_etapa']) ? sanitize_key($_GET['filter_etapa']) : '';
         if ($filter_etapa !== '' && $filter_etapa !== 'sin' && !array_key_exists($filter_etapa, Area_Profesores_Cursos::get_etapas())) {
             $filter_etapa = '';
@@ -243,29 +226,6 @@ class Area_Profesores_Admin {
             'orderby' => 'display_name',
             'order'   => 'ASC',
         );
-
-        if ($filter_profesor === 'yes') {
-            $args['meta_query'] = array(
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'value'   => '1',
-                    'compare' => '=',
-                )
-            );
-        } elseif ($filter_profesor === 'no') {
-            $args['meta_query'] = array(
-                'relation' => 'OR',
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'value'   => '1',
-                    'compare' => '!=',
-                ),
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'compare' => 'NOT EXISTS',
-                )
-            );
-        }
 
         if ($filter_etapa !== '') {
             $etapa_query = $filter_etapa === 'sin'
@@ -352,6 +312,7 @@ class Area_Profesores_Admin {
                 'allowed_domain'            => sanitize_text_field(wp_unslash($_POST['allowed_domain'])),
                 'tribanda_url'              => esc_url_raw(wp_unslash($_POST['tribanda_url'])),
                 'logo_url'                  => esc_url_raw(wp_unslash($_POST['logo_url'])),
+                'logo_familias_url'         => isset($_POST['logo_familias_url']) ? esc_url_raw(wp_unslash($_POST['logo_familias_url'])) : '',
                 'login_button_text'         => sanitize_text_field(wp_unslash($_POST['login_button_text'])),
                 'only_approved_can_register'=> isset($_POST['only_approved_can_register']) ? 'yes' : 'no',
                 'notification_emails'       => sanitize_text_field(wp_unslash($_POST['notification_emails'])),
@@ -376,6 +337,7 @@ class Area_Profesores_Admin {
             'allowed_domain'            => self::get_setting('allowed_domain', 'casadelavirgen.es'),
             'tribanda_url'              => self::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png'),
             'logo_url'                  => self::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png'),
+            'logo_familias_url'         => self::get_setting('logo_familias_url'),
             'login_button_text'         => self::get_setting('login_button_text', 'Accede usando tu cuenta de profesor'),
             'only_approved_can_register'=> self::get_setting('only_approved_can_register', 'yes'),
             'notification_emails'       => self::get_setting('notification_emails', get_option('admin_email')),
@@ -398,7 +360,7 @@ class Area_Profesores_Admin {
     }
 
     /**
-     * AJAX handler to quickly save individual teacher status and tutoria
+     * AJAX handler to quickly save a teacher's etapa / tutoría
      */
     public function ajax_save_teacher() {
         check_ajax_referer('area_profesores_admin_nonce', 'nonce');
@@ -408,12 +370,10 @@ class Area_Profesores_Admin {
         }
 
         $user_id = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
-        $is_profesor = !empty($_POST['is_profesor']) ? '1' : '0';
         if (!$user_id) {
             wp_send_json_error(array('message' => 'Usuario no válido'));
         }
 
-        update_user_meta($user_id, '_ap_is_profesor', $is_profesor);
         if (isset($_POST['asignacion'])) {
             Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['asignacion'])));
         }
@@ -468,20 +428,10 @@ class Area_Profesores_Admin {
             return;
         }
 
-        $is_profesor = get_user_meta($user->ID, '_ap_is_profesor', true);
         $codigo = Area_Profesores_Cursos::get_codigo_asignacion($user->ID);
         ?>
         <h2><?php esc_html_e('Configuración Área de Profesores', 'area-profesores'); ?></h2>
         <table class="form-table">
-            <tr>
-                <th><label for="ap_is_profesor"><?php esc_html_e('¿Es Profesor?', 'area-profesores'); ?></label></th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="ap_is_profesor" id="ap_is_profesor" value="1" <?php checked($is_profesor, '1'); ?>>
-                        <?php esc_html_e('Marcar este usuario como profesor (tendrá acceso al Área de Profesores)', 'area-profesores'); ?>
-                    </label>
-                </td>
-            </tr>
             <tr>
                 <th><label for="ap_is_direccion"><?php esc_html_e('Dirección', 'area-profesores'); ?></label></th>
                 <td>
@@ -512,8 +462,6 @@ class Area_Profesores_Admin {
             return;
         }
 
-        $is_profesor = isset($_POST['ap_is_profesor']) ? '1' : '0';
-        update_user_meta($user_id, '_ap_is_profesor', $is_profesor);
         if (isset($_POST['ap_asignacion'])) {
             Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['ap_asignacion'])));
         }

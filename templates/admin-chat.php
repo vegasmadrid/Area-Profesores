@@ -230,7 +230,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                     </ul>
                 <?php endif; ?>
                 <p>
-                    <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=area-profesores&filter_profesor=yes')); ?>"><?php esc_html_e('Marcar Dirección en Profesores', 'area-profesores'); ?></a>
+                    <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=area-profesores')); ?>"><?php esc_html_e('Marcar Dirección en Profesores', 'area-profesores'); ?></a>
                     <?php if ($area_page_id && get_post_status($area_page_id)) : ?>
                         <a class="button" href="<?php echo esc_url(get_permalink($area_page_id) . '#comunicados'); ?>" target="_blank" rel="noopener"><?php esc_html_e('Ir a publicar', 'area-profesores'); ?></a>
                     <?php endif; ?>

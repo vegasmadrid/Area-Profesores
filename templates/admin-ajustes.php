@@ -85,6 +85,21 @@ if (!defined('ABSPATH')) {
                         <?php endif; ?>
                     </td>
                 </tr>
+
+                <tr>
+                    <th scope="row"><label for="logo_familias_url"><?php esc_html_e('Logotipo para las familias', 'area-profesores'); ?></label></th>
+                    <td>
+                        <input type="url" name="logo_familias_url" id="logo_familias_url" value="<?php echo esc_url($settings['logo_familias_url']); ?>" class="large-text">
+                        <p class="description">
+                            <?php esc_html_e('Logotipo oficial del colegio (sin "Profesores") que se muestra en la página pública de espacios para las familias. Para que se vea nítido, sube el logo original a Medios y pega aquí su URL.', 'area-profesores'); ?>
+                        </p>
+                        <?php if (!empty($settings['logo_familias_url'])) : ?>
+                            <div style="margin-top: 8px;">
+                                <img src="<?php echo esc_url($settings['logo_familias_url']); ?>" alt="" style="max-height: 48px; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: #fff;">
+                            </div>
+                        <?php endif; ?>
+                    </td>
+                </tr>
             </table>
         </div>
 

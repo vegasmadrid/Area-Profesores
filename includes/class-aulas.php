@@ -68,8 +68,6 @@ class Area_Profesores_Aulas {
      */
     public static function get_profesores() {
         return get_users(array(
-            'meta_key'   => '_ap_is_profesor',
-            'meta_value' => '1',
             'orderby'    => 'display_name',
             'order'      => 'ASC',
         ));

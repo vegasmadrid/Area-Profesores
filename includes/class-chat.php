@@ -73,8 +73,7 @@ class Area_Profesores_Chat {
         if (user_can($user_id, 'manage_options')) {
             return true;
         }
-        return get_user_meta($user_id, self::META_DIR, true) === '1'
-            && Area_Profesores_Admin::is_user_profesor($user_id);
+        return get_user_meta($user_id, self::META_DIR, true) === '1';
     }
 
     /**

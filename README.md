@@ -62,6 +62,7 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - El plugin comprueba que cada webhook es del espacio correcto y avisa de los cursos sin espacio, de la zona horaria y de HTTPS.
 
 10. **Etapas y tutorías del profesorado**:
+   - **Todos los usuarios de la web son profesores** (ya no hay casilla "¿Es profesor?"): el acceso lo controlan las solicitudes y el login con la cuenta del colegio.
    - Cada profesor tiene una **etapa** (Primer Ciclo, Infantil, Primaria o Secundaria —que incluye Bachillerato—) y es **tutor/a de un curso** o **especialista**. Se asigna con un único desplegable en *Profesores*, en el perfil, en las *Solicitudes de acceso* y en el formulario de solicitud del login.
    - Cursos: 1 año A/B, 2 años A/B, 3-5 años A/B, 1º-6º EP A/B, 1º-4º ESO A/B, 1º y 2º Bachillerato.
    - Filtro por etapa en *Profesores*; *Apuntar Comedor* muestra los cursos de la etapa del profesor (con su curso preseleccionado y la etapa rellenada sola); los *Enlaces Útiles* pueden limitarse a una etapa.
@@ -75,7 +76,8 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 
 12. **Página pública de espacios `[espacios_familias]`**:
    - Página abierta (aunque la web esté restringida) con todos los espacios ordenados por etapa y curso, buscador y botón "Abrir en Google Chat", pensada para pasar a las familias.
-   - Opciones: `tutor="si"`, `etapa="primaria"`, `titulo="…"`, `otros="no"`. Cada espacio puede ocultarse desmarcando "Mostrar en la página pública".
+   - Con la estética de la web del colegio (Montserrat, azul marino, azul claro, naranja y tribanda corporativa) y estilos propios, así que el tema o Elementor no la descolocan. Usa el **Logotipo para las familias** de *Ajustes*.
+   - Opciones: `tutor="si"`, `etapa="primaria"`, `titulo="…"`, `otros="no"`, `logo="URL"`, `tribanda="no"`. Cada espacio puede ocultarse desmarcando "Mostrar en la página pública".
 
 ---
 

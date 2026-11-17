@@ -103,15 +103,8 @@ class Area_Profesores_Shortcode {
             return $this->render_restricted_view('not_logged_in');
         }
 
-        $user_id = get_current_user_id();
-
-        // Check 2: User is marked as a teacher?
-        if (!Area_Profesores_Admin::is_user_profesor($user_id)) {
-            return $this->render_restricted_view('not_a_teacher');
-        }
-
-        // User is an authorized teacher!
-        return $this->render_teacher_portal($user_id);
+        // Every registered user is a teacher.
+        return $this->render_teacher_portal(get_current_user_id());
     }
 
     /**

@@ -1,6 +1,6 @@
 /**
  * Área Profesores - Backend Admin JavaScript
- * Handles quick AJAX toggling of teacher status and tutoría assignment.
+ * Handles quick AJAX saving of the etapa/tutoría and Dirección of each teacher.
  */
 
 (function($) {
@@ -8,7 +8,7 @@
 
     $(document).ready(function() {
 
-        function saveTeacherAjax(userId, isProfesor, tutoria, $statusElem) {
+        function saveTeacherAjax(userId, asignacion, $statusElem) {
             $statusElem.text('Guardando...').css('color', '#64748b').show();
 
             $.ajax({
@@ -18,8 +18,7 @@
                     action: 'ap_admin_save_teacher',
                     nonce: AreaProfesoresAdminData.nonce,
                     user_id: userId,
-                    is_profesor: isProfesor ? 1 : 0,
-                    asignacion: tutoria
+                    asignacion: asignacion
                 },
                 dataType: 'json',
                 success: function(response) {
@@ -38,31 +37,10 @@
             });
         }
 
-        // Teacher toggle switch change
-        $('.ap-teacher-toggle').on('change', function() {
-            var $toggle = $(this);
-            var userId = $toggle.data('user-id');
-            var isProfesor = $toggle.is(':checked');
-            var $row = $toggle.closest('.ap-user-row');
-            var tutoria = $row.find('.ap-tutoria-select').val();
-            var $status = $('#status-' + userId);
-
-            if (isProfesor) {
-                $row.addClass('is-teacher');
-            } else {
-                $row.removeClass('is-teacher');
-            }
-
-            saveTeacherAjax(userId, isProfesor, tutoria, $status);
-        });
-
         // Etapa / tutoría select change (auto-save)
         $('.ap-tutoria-select').on('change', function() {
-            var $select = $(this);
-            var userId = $select.data('user-id');
-            var $row = $select.closest('.ap-user-row');
-            var isProfesor = $row.find('.ap-teacher-toggle').is(':checked');
-            saveTeacherAjax(userId, isProfesor, $select.val(), $('#status-' + userId));
+            var userId = $(this).data('user-id');
+            saveTeacherAjax(userId, $(this).val(), $('#status-' + userId));
         });
 
         // "Dirección" toggle (puede publicar comunicados en Google Chat)
@@ -225,18 +203,6 @@
                     }
                 }
             });
-        });
-
-        // Tutoría select change
-        $('.ap-tutoria-select').on('change', function() {
-            var $select = $(this);
-            var userId = $select.data('user-id');
-            var tutoria = $select.val();
-            var $row = $select.closest('.ap-user-row');
-            var isProfesor = $row.find('.ap-teacher-toggle').is(':checked');
-            var $status = $('#status-' + userId);
-
-            saveTeacherAjax(userId, isProfesor, tutoria, $status);
         });
 
         // =========================================================================
