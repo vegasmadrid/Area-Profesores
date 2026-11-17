@@ -37,6 +37,9 @@ class Area_Profesores_Admin {
 
         // AJAX handler for saving teacher status in admin table
         add_action('wp_ajax_ap_admin_save_teacher', array($this, 'ajax_save_teacher'));
+
+        // Delete a user from the Profesores list
+        add_action('admin_post_ap_delete_profesor', array($this, 'handle_delete_profesor'));
     }
 
     /**
@@ -214,6 +217,12 @@ class Area_Profesores_Admin {
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
+        }
+
+        if (isset($_GET['ap_deleted'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(sprintf(__('Usuario "%s" eliminado.', 'area-profesores'), sanitize_text_field(wp_unslash($_GET['ap_deleted'])))) . '</p></div>';
+        } elseif (isset($_GET['ap_delete_error'])) {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('No se puede eliminar ese usuario desde aquí (no puedes eliminarte a ti mismo ni a un administrador).', 'area-profesores') . '</p></div>';
         }
 
         // Search and pagination parameters
@@ -405,6 +414,42 @@ class Area_Profesores_Admin {
             'message' => __('Guardado', 'area-profesores'),
             'label'   => Area_Profesores_Cursos::get_codigo_label(Area_Profesores_Cursos::get_codigo_asignacion($user_id)),
         ));
+    }
+
+    /**
+     * Whether the current admin may delete this user from the Profesores list.
+     */
+    public static function can_delete_user($user_id) {
+        if (!current_user_can('delete_users') || (int) $user_id === get_current_user_id()) {
+            return false;
+        }
+        $user = get_userdata($user_id);
+        // Administrators are deleted from the WordPress Users screen, on purpose.
+        return $user && !in_array('administrator', (array) $user->roles, true) && !is_super_admin($user_id);
+    }
+
+    /**
+     * Delete a user (its announcements are reassigned to the admin who deletes it).
+     */
+    public function handle_delete_profesor() {
+        $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
+        check_admin_referer('ap_delete_profesor_' . $user_id);
+
+        $back = wp_get_referer() ? wp_get_referer() : admin_url('admin.php?page=area-profesores');
+        $back = remove_query_arg(array('ap_deleted', 'ap_delete_error'), $back);
+
+        if (!self::can_delete_user($user_id)) {
+            wp_safe_redirect(add_query_arg('ap_delete_error', 1, $back));
+            exit;
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        $user = get_userdata($user_id);
+        $name = $user ? $user->display_name : '';
+        wp_delete_user($user_id, get_current_user_id());
+
+        wp_safe_redirect(add_query_arg('ap_deleted', rawurlencode($name), $back));
+        exit;
     }
 
     /**

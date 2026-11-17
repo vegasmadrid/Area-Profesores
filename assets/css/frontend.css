@@ -2774,3 +2774,157 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-comedor-etapa-hidden[hidden] {
     display: none;
 }
+
+/* ==========================================================================
+   PÁGINA PÚBLICA DE ESPACIOS [espacios_familias]
+   ========================================================================== */
+.ap-directorio-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.ap-directorio-logo {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.ap-directorio-title {
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    line-height: 1.2;
+}
+
+.ap-directorio-intro {
+    margin: 0;
+    color: var(--ap-slate-600);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.ap-directorio-search input {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--ap-slate-300);
+    border-radius: var(--ap-radius-md);
+    background: #ffffff;
+}
+
+.ap-directorio-search input:focus {
+    outline: none;
+    border-color: var(--ap-primary);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
+}
+
+.ap-directorio-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 6px;
+}
+
+.ap-directorio-nav a {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--ap-primary-light);
+    color: var(--ap-primary);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.ap-directorio-grupo {
+    margin-top: 24px;
+    scroll-margin-top: 80px;
+}
+
+.ap-directorio-grupo[hidden],
+.ap-directorio-card[hidden],
+.ap-directorio-empty[hidden] {
+    display: none;
+}
+
+.ap-directorio-grupo-title {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ap-slate-600);
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--ap-slate-200);
+}
+
+.ap-directorio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.ap-directorio-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid var(--ap-slate-200);
+    border-radius: var(--ap-radius-lg);
+    box-shadow: var(--ap-shadow-sm);
+    text-decoration: none;
+    color: var(--ap-slate-800);
+    transition: all 0.15s ease;
+}
+
+.ap-directorio-card:hover,
+.ap-directorio-card:focus {
+    border-color: var(--ap-primary);
+    box-shadow: var(--ap-shadow-md);
+    transform: translateY(-1px);
+}
+
+.ap-directorio-curso {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+}
+
+.ap-directorio-promo,
+.ap-directorio-tutor {
+    font-size: 12px;
+    color: var(--ap-slate-500);
+}
+
+.ap-directorio-btn {
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ap-primary);
+}
+
+.ap-directorio-empty {
+    text-align: center;
+    color: var(--ap-slate-500);
+    padding: 24px 0;
+}
+
+@media (max-width: 600px) {
+    .ap-directorio-header {
+        align-items: flex-start;
+    }
+    .ap-directorio-logo {
+        width: 52px;
+        height: 52px;
+    }
+    .ap-directorio-title {
+        font-size: 21px;
+    }
+    .ap-directorio-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

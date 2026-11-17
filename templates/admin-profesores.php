@@ -77,7 +77,7 @@ if (!defined('ABSPATH')) {
                         <th style="width: 170px; text-align: center;"><?php esc_html_e('¿Es Profesor?', 'area-profesores'); ?></th>
                         <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Puede publicar comunicados en los espacios de Google Chat', 'area-profesores'); ?>"><?php esc_html_e('Dirección', 'area-profesores'); ?></th>
                         <th style="width: 250px;"><?php esc_html_e('Etapa y tutoría', 'area-profesores'); ?></th>
-                        <th style="width: 120px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
+                        <th style="width: 160px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,6 +140,13 @@ if (!defined('ABSPATH')) {
                                     <a href="<?php echo esc_url(get_edit_user_link($u->ID)); ?>" class="button button-small" target="_blank">
                                         <?php esc_html_e('Perfil WP', 'area-profesores'); ?>
                                     </a>
+                                    <?php if (Area_Profesores_Admin::can_delete_user($u->ID)) : ?>
+                                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=ap_delete_profesor&user_id=' . $u->ID), 'ap_delete_profesor_' . $u->ID)); ?>"
+                                           class="button button-small ap-btn-delete-user"
+                                           onclick="return confirm('<?php echo esc_js(sprintf(__('¿Eliminar definitivamente a %s de la web? Perderá el acceso y no se puede deshacer. Sus comunicados pasarán a tu nombre.', 'area-profesores'), $u->display_name)); ?>');">
+                                            <?php esc_html_e('Eliminar', 'area-profesores'); ?>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

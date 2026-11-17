@@ -7,8 +7,9 @@
  * using an incoming webhook per space. Messages are signed with the webhook name
  * configured in each space (e.g. "Colegio Casa de la Virgen").
  *
- * Spaces of the families belong to a promoción (cohort) + group, so the course they
- * show (e.g. "3º EP A") moves up automatically every September.
+ * Each family space belongs to a promoción (cohort) + group and has an assigned
+ * course (aula). The course only changes when an administrator runs
+ * "Pasar de curso" in "Área Profesores > Aulas".
  *
  * - Backend: "Área Profesores > Espacios de Chat".
  * - Frontend: pestaña "Comunicados" del Área de Profesores, visible solo para Dirección.
@@ -141,6 +142,9 @@ class Area_Profesores_Chat {
             'webhook'   => isset($e['webhook']) ? (string) $e['webhook'] : '',
             'activo'    => !isset($e['activo']) || !empty($e['activo']),
             'orden'     => isset($e['orden']) ? (int) $e['orden'] : 0,
+            'curso'     => isset($e['curso']) && Area_Profesores_Cursos::get_curso($e['curso']) ? $e['curso'] : '',
+            'publico'   => !isset($e['publico']) || !empty($e['publico']),
+            'nombre_chat' => isset($e['nombre_chat']) ? (string) $e['nombre_chat'] : '',
         );
     }
 
@@ -148,28 +152,24 @@ class Area_Profesores_Chat {
      * Add the computed fields (current course, etapa, display name, status).
      */
     private static function enrich($e) {
-        $e['curso'] = '';
         $e['etapa'] = '';
-        $e['egresada'] = false;
+        $promo_label = $e['promocion'] ? trim(sprintf(__('Promoción %d', 'area-profesores'), $e['promocion']) . ' ' . $e['letra']) : '';
 
         if ($e['tipo'] === 'promocion') {
-            $c = Area_Profesores_Cursos::get_curso_de_promocion($e['promocion'], $e['letra']);
+            $c = $e['curso'] !== '' ? Area_Profesores_Cursos::get_curso($e['curso']) : null;
             if ($c) {
-                $e['curso'] = $c['key'];
                 $e['etapa'] = $c['etapa'];
                 $e['titulo'] = $c['label'];
-                $e['subtitulo'] = trim(sprintf(__('Promoción %d', 'area-profesores'), $e['promocion']) . ' ' . $e['letra']);
+                $e['subtitulo'] = $promo_label;
                 $e['grupo_key'] = $c['etapa'];
                 $e['grupo_label'] = Area_Profesores_Cursos::get_etapa_label($c['etapa']);
                 $etapas = array_keys(Area_Profesores_Cursos::get_etapas());
                 $e['sort'] = array(array_search($c['etapa'], $etapas, true), $c['orden'], $e['letra']);
             } else {
-                $fin = Area_Profesores_Cursos::get_fin_curso_escolar();
-                $e['egresada'] = $e['promocion'] < $fin;
-                $e['titulo'] = trim(sprintf(__('Promoción %d', 'area-profesores'), $e['promocion']) . ' ' . $e['letra']);
-                $e['subtitulo'] = $e['egresada'] ? __('Promoción ya egresada', 'area-profesores') : __('Todavía no ha empezado', 'area-profesores');
+                $e['titulo'] = $promo_label !== '' ? $promo_label : __('Espacio sin curso', 'area-profesores');
+                $e['subtitulo'] = __('Sin curso asignado', 'area-profesores');
                 $e['grupo_key'] = 'sin_curso';
-                $e['grupo_label'] = __('Promociones sin curso este año', 'area-profesores');
+                $e['grupo_label'] = __('Espacios sin curso asignado', 'area-profesores');
                 $e['sort'] = array(98, -$e['promocion'], $e['letra']);
             }
         } else {
@@ -179,6 +179,7 @@ class Area_Profesores_Chat {
             $e['grupo_label'] = $e['grupo'] !== '' ? $e['grupo'] : __('Otros espacios', 'area-profesores');
             $e['sort'] = array(50, $e['orden'], $e['nombre']);
         }
+        $e['egresada'] = false;
 
         $e['conectado'] = $e['webhook'] !== '';
         $e['publicable'] = $e['activo'] && $e['conectado'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
@@ -283,7 +284,7 @@ class Area_Profesores_Chat {
         $sin = array();
         foreach (Area_Profesores_Cursos::get_cursos() as $key => $c) {
             if (!isset($con[$key])) {
-                $sin[$key] = $c['label'] . ' (' . sprintf(__('promoción %d', 'area-profesores'), Area_Profesores_Cursos::get_promocion($key)) . ')';
+                $sin[$key] = $c['label'];
             }
         }
         return $sin;
@@ -332,10 +333,28 @@ class Area_Profesores_Chat {
      * webhooks of spaces created by hand to their promoción.
      */
     public function maybe_migrate() {
-        if (get_option('ap_chat_version') === '2') {
+        $version = (string) get_option('ap_chat_version');
+        if ($version === '3') {
             return;
         }
+        if ($version !== '2') {
+            $this->migrate_v2();
+        }
 
+        // v3: the course of each space is stored (it no longer moves up automatically).
+        $raw = self::get_raw_espacios();
+        foreach ($raw as $id => $e) {
+            $n = self::normalize($e);
+            if ($n['tipo'] === 'promocion' && $n['curso'] === '' && $n['promocion']) {
+                $c = Area_Profesores_Cursos::get_curso_de_promocion($n['promocion'], $n['letra']);
+                $raw[$id]['curso'] = $c ? $c['key'] : '';
+            }
+        }
+        self::save_espacios($raw);
+        update_option('ap_chat_version', '3', false);
+    }
+
+    private function migrate_v2() {
         $raw = self::get_raw_espacios();
 
         // Index existing spaces by space ID.
@@ -373,6 +392,41 @@ class Area_Profesores_Chat {
 
         self::save_espacios($raw);
         update_option('ap_chat_version', '2', false);
+    }
+
+    /**
+     * Update some fields of a space (used by Aulas and "Pasar de curso").
+     */
+    public static function update_espacio($id, $fields) {
+        $raw = self::get_raw_espacios();
+        if (!isset($raw[$id])) {
+            return false;
+        }
+        $raw[$id] = array_merge((array) $raw[$id], $fields);
+        self::save_espacios($raw);
+        return true;
+    }
+
+    /**
+     * Replace the whole list (used to undo "Pasar de curso").
+     */
+    public static function restore_raw_espacios($raw) {
+        if (is_array($raw)) {
+            self::save_espacios($raw);
+        }
+    }
+
+    public static function export_raw_espacios() {
+        return self::get_raw_espacios();
+    }
+
+    /**
+     * Spaces assigned to a course.
+     */
+    public static function get_espacios_de_curso($curso) {
+        return array_filter(self::get_espacios(), function ($e) use ($curso) {
+            return $e['curso'] === $curso;
+        });
     }
 
     /* ---------------------------------------------------------------------
@@ -1127,11 +1181,14 @@ class Area_Profesores_Chat {
             'space_id' => $space_id,
             'webhook'  => $webhook !== '' ? esc_url_raw($webhook, array('https')) : '',
             'activo'   => !empty($_POST['activo']),
+            'publico'  => !empty($_POST['publico']),
+            'nombre_chat' => $old['nombre_chat'],
         );
 
         if ($tipo === 'promocion') {
             $data['promocion'] = isset($_POST['promocion']) ? absint($_POST['promocion']) : 0;
             $data['letra'] = isset($_POST['letra']) ? sanitize_text_field(wp_unslash($_POST['letra'])) : '';
+            $data['curso'] = isset($_POST['curso']) ? sanitize_text_field(wp_unslash($_POST['curso'])) : '';
             if ($data['promocion'] < 2000 || $data['promocion'] > 2100) {
                 self::flash(__('Indica el año de la promoción (por ejemplo, 2036).', 'area-profesores'), 'error');
                 wp_safe_redirect($this->admin_url($back));

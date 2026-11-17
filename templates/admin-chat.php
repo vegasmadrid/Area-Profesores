@@ -20,6 +20,8 @@ $form = $editing ? $editing : array(
     'webhook'   => '',
     'activo'    => true,
     'orden'     => '',
+    'curso'     => '',
+    'publico'   => true,
 );
 $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
 ?>
@@ -31,7 +33,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
             <h1 class="wp-heading-inline"><?php esc_html_e('Espacios de Google Chat', 'area-profesores'); ?></h1>
             <p class="ap-admin-lead">
                 <?php printf(
-                    esc_html__('Curso escolar %1$s · %2$d de %3$d espacios conectados. Cada espacio de familias va unido a su promoción, así que cada septiembre pasa solo al curso siguiente.', 'area-profesores'),
+                    esc_html__('Curso escolar %1$s · %2$d de %3$d espacios conectados. El curso de cada espacio se cambia en Aulas › "Pasar de curso".', 'area-profesores'),
                     esc_html(Area_Profesores_Cursos::get_curso_escolar_label()),
                     (int) $stats['conectados'],
                     (int) $stats['total']
@@ -125,6 +127,19 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                                 (int) ($fin_curso + 16), (int) ($fin_curso + 11), (int) $fin_curso
                             ); ?>
                         </p>
+                        <p>
+                            <label for="ap-espacio-curso"><strong><?php esc_html_e('Curso (aula) asignado', 'area-profesores'); ?></strong></label><br>
+                            <select id="ap-espacio-curso" name="curso" class="widefat">
+                                <option value=""><?php esc_html_e('— Sin curso —', 'area-profesores'); ?></option>
+                                <?php foreach (Area_Profesores_Cursos::get_cursos_por_etapa() as $ap_et => $ap_cs) : ?>
+                                    <optgroup label="<?php echo esc_attr(Area_Profesores_Cursos::get_etapa_label($ap_et)); ?>">
+                                        <?php foreach ($ap_cs as $ap_k => $ap_c) : ?>
+                                            <option value="<?php echo esc_attr($ap_k); ?>" <?php selected($form['curso'], $ap_k); ?>><?php echo esc_html($ap_c['label']); ?></option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
                     <?php else : ?>
                         <p>
                             <label for="ap-espacio-nombre"><strong><?php esc_html_e('Nombre *', 'area-profesores'); ?></strong></label><br>
@@ -167,7 +182,8 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                     </p>
 
                     <p>
-                        <label><input type="checkbox" name="activo" value="1" <?php checked($form['activo']); ?>> <?php esc_html_e('Activo (aparece al publicar comunicados)', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="activo" value="1" <?php checked($form['activo']); ?>> <?php esc_html_e('Activo (aparece al publicar comunicados)', 'area-profesores'); ?></label><br>
+                        <label><input type="checkbox" name="publico" value="1" <?php checked($form['publico']); ?>> <?php esc_html_e('Mostrar en la página pública de espacios para las familias', 'area-profesores'); ?></label>
                     </p>
 
                     <p>
@@ -194,7 +210,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                     <li><?php esc_html_e('Pulsa "Probar" en ese curso.', 'area-profesores'); ?></li>
                 </ol>
                 <p class="description">
-                    <?php esc_html_e('Cada septiembre: añade el espacio de la nueva promoción de 1 año. La promoción que termina 2º de Bachillerato deja de aparecer al publicar (puedes eliminarla).', 'area-profesores'); ?>
+                    <?php esc_html_e('Cada septiembre: usa "Pasar de curso" en Aulas y añade aquí el espacio de la nueva promoción de 1 año.', 'area-profesores'); ?>
                 </p>
             </div>
 
@@ -270,11 +286,14 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                     <tbody>
                         <tr class="ap-chat-group-row"><th colspan="3"><?php echo esc_html($grupo['label']); ?></th></tr>
                         <?php foreach ($grupo['espacios'] as $e) : ?>
-                            <tr<?php echo ($e['activo'] && !$e['egresada']) ? '' : ' style="opacity: .55;"'; ?>>
+                            <tr<?php echo ($e['activo'] && $e['grupo_key'] !== 'sin_curso') ? '' : ' style="opacity: .55;"'; ?>>
                                 <td>
                                     <strong><?php echo esc_html($e['titulo']); ?></strong>
                                     <?php if ($e['subtitulo'] !== '') : ?>
                                         <span class="ap-chat-sub"><?php echo esc_html($e['subtitulo']); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($e['nombre_chat'] !== '') : ?>
+                                        <br><span class="ap-chat-sub" style="margin-left:0;">💬 <?php echo esc_html($e['nombre_chat']); ?></span>
                                     <?php endif; ?>
                                     <?php if ($e['conectado']) : ?>
                                         <br><span class="ap-chat-mask"><?php echo esc_html(Area_Profesores_Chat::mask_webhook($e['webhook'])); ?></span>

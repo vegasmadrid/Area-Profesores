@@ -573,3 +573,45 @@
     padding: 6px 0;
     border-bottom: 1px solid #e2e8f0;
 }
+
+/* Aulas */
+.ap-aulas-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ap-aulas-table select.widefat {
+    max-width: 340px;
+}
+
+.ap-aula-warn {
+    display: block;
+    color: #b45309;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.ap-aulas-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.ap-google-steps li {
+    margin-bottom: 6px;
+}
+
+.ap-pasar-table select {
+    max-width: 260px;
+}
+
+.ap-btn-delete-user {
+    color: #b91c1c !important;
+    border-color: #fca5a5 !important;
+}
+
+.ap-aulas-table tr.ap-aula-changed td {
+    background: #eff6ff;
+}

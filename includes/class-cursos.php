@@ -198,6 +198,29 @@ class Area_Profesores_Cursos {
         return sprintf(__('%1$s · Promoción %2$d', 'area-profesores'), $c['label'], self::get_promocion($curso_key));
     }
 
+    /**
+     * Course the group moves to next school year ('' = leaves the school).
+     * 1 año A → 2 años A … 4º ESO A → 1º Bachillerato, 2º Bachillerato → ''.
+     */
+    public static function get_siguiente_curso($key) {
+        $c = self::get_curso($key);
+        if (!$c) {
+            return '';
+        }
+        $niveles = self::get_niveles();
+        $orden = array_keys($niveles);
+        $pos = array_search($c['nivel'], $orden, true);
+        if ($pos === false || !isset($orden[$pos + 1])) {
+            return '';
+        }
+        $next = $orden[$pos + 1];
+        $grupos = $niveles[$next]['grupos'];
+        if (in_array($c['grupo'], $grupos, true)) {
+            return $next . $c['grupo'];
+        }
+        return in_array('', $grupos, true) ? $next : $next . $grupos[0];
+    }
+
     /* ---------------------------------------------------------------------
      * Asignación de profesores (etapa + tutor/especialista + curso)
      * ------------------------------------------------------------------- */
