@@ -145,23 +145,11 @@ $ap_etapas = Area_Profesores_Cursos::get_etapas();
         <div class="ap-settings-card ap-chat-help">
             <h2 class="ap-settings-section-title"><span class="dashicons dashicons-warning"></span> <?php esc_html_e('Espacios sin curso asignado', 'area-profesores'); ?></h2>
             <p><?php echo esc_html(implode(', ', wp_list_pluck($sin_curso, 'titulo'))); ?></p>
-            <p class="description"><?php esc_html_e('No aparecen al publicar comunicados ni en la página de familias. Asígnales un aula arriba o, si ya han terminado en el colegio, márcalos como "Promoción anterior" en Espacios de Chat.', 'area-profesores'); ?></p>
+            <p class="description"><?php esc_html_e('No aparecen al publicar comunicados ni en los listados de espacios. Asígnales un aula arriba o, si ya han terminado en el colegio, márcalos como "Promoción anterior" en Espacios de Chat.', 'area-profesores'); ?></p>
         </div>
     <?php endif; ?>
 
     <div class="ap-aulas-cards">
-        <!-- Página para las familias -->
-        <div class="ap-settings-card ap-chat-help">
-            <h2 class="ap-settings-section-title"><span class="dashicons dashicons-admin-site-alt3"></span> <?php esc_html_e('Página para las familias', 'area-profesores'); ?></h2>
-            <?php $ap_fpid = Area_Profesores_Directorio::get_page_id(); ?>
-            <?php if ($ap_fpid) : ?>
-                <p><a href="<?php echo esc_url(get_permalink($ap_fpid)); ?>" target="_blank" rel="noopener"><?php echo esc_html(get_the_title($ap_fpid)); ?></a> — <code><?php echo esc_html(get_permalink($ap_fpid)); ?></code></p>
-            <?php else : ?>
-                <p><em><?php esc_html_e('Todavía no has elegido la página.', 'area-profesores'); ?></em></p>
-            <?php endif; ?>
-            <p><a class="button" href="<?php echo esc_url(admin_url('admin.php?page=area-profesores-chat#ap-familias')); ?>"><?php esc_html_e('Configurarla en Espacios de Chat', 'area-profesores'); ?></a></p>
-        </div>
-
         <!-- Google Chat API -->
         <div class="ap-settings-card ap-chat-help" id="ap-google">
             <h2 class="ap-settings-section-title"><span class="dashicons dashicons-admin-network"></span> <?php esc_html_e('Conexión con Google Chat (opcional)', 'area-profesores'); ?></h2>

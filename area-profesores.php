@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.6.0
+ * Version:     1.7.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.6.0');
+define('AREA_PROFESORES_VERSION', '1.7.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -28,7 +28,6 @@ require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-enlaces.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-chat.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-google.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-aulas.php';
-require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-directorio.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-api.php';
 
 /**
@@ -59,7 +58,6 @@ class Area_Profesores_Plugin {
         Area_Profesores_Chat::get_instance();
         Area_Profesores_Google::get_instance();
         Area_Profesores_Aulas::get_instance();
-        Area_Profesores_Directorio::get_instance();
         Area_Profesores_API::get_instance();
 
         // Create/upgrade the database tables after every plugin update (the activation
@@ -92,6 +90,21 @@ class Area_Profesores_Plugin {
 
         // "¿Es profesor?" no longer exists (every user is a teacher): remove the stored flag.
         delete_metadata('user', 0, '_ap_is_profesor', '', true);
+
+        // The public families page was removed (the families site has its own page):
+        // delete its settings and stop treating that page as public.
+        $settings = get_option('ap_settings', array());
+        if (is_array($settings)) {
+            if (!empty($settings['familias_page_id']) && !empty($settings['public_page_ids'])) {
+                $settings['public_page_ids'] = array_values(array_diff(array_map('absint', (array) $settings['public_page_ids']), array((int) $settings['familias_page_id'])));
+            }
+            foreach (array_keys($settings) as $key) {
+                if (strpos($key, 'familias_') === 0 || $key === 'logo_familias_url') {
+                    unset($settings[$key]);
+                }
+            }
+            update_option('ap_settings', $settings);
+        }
 
         update_option('area_profesores_db_version', AREA_PROFESORES_VERSION, true);
     }

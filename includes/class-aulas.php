@@ -424,4 +424,59 @@ class Area_Profesores_Aulas {
         wp_safe_redirect(self::url());
         exit;
     }
+
+    /**
+     * Data of the tutor of a course for the cards: name, photo URL and initials.
+     */
+    public static function get_tutor_card($users) {
+        if (empty($users)) {
+            return null;
+        }
+        $u = $users[0];
+        $partes = preg_split('/\s+/', trim($u->display_name));
+        $iniciales = mb_strtoupper(mb_substr($partes[0], 0, 1) . (isset($partes[1]) ? mb_substr($partes[1], 0, 1) : ''));
+        return array(
+            'nombre'    => $u->display_name,
+            // default=404: without a real photo the image fails and the initials are shown.
+            'foto'      => get_avatar_url($u->ID, array('size' => 96, 'default' => '404')),
+            'iniciales' => $iniciales,
+        );
+    }
+
+    /**
+     * Family Chat spaces for the "Espacios de aula" tab of the teachers' home screen.
+     *
+     * @return array { grupos, anteriores, tutores, mi_espacio, total }
+     */
+    public static function get_espacios_para_profesores($user_id) {
+        $todos = array_filter(Area_Profesores_Chat::get_espacios(), function ($e) {
+            return $e['activo'] && $e['chat_url'] !== '';
+        });
+        $actuales = array_filter($todos, function ($e) {
+            return !$e['archivada'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
+        });
+        $anteriores = array_values(array_filter($todos, function ($e) {
+            return $e['archivada'];
+        }));
+
+        // The space of the teacher's own class (tutors), shown first.
+        $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
+        $mi_espacio = null;
+        if ($mi_curso !== '') {
+            foreach ($actuales as $e) {
+                if ($e['curso'] === $mi_curso) {
+                    $mi_espacio = $e;
+                    break;
+                }
+            }
+        }
+
+        return array(
+            'grupos'     => Area_Profesores_Chat::agrupar($actuales),
+            'anteriores' => $anteriores,
+            'tutores'    => self::get_tutores_por_curso(),
+            'mi_espacio' => $mi_espacio,
+            'total'      => count($actuales),
+        );
+    }
 }

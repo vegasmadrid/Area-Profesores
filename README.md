@@ -74,14 +74,7 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - **Pasar de curso…**: muestra antes una lista con el curso actual y el curso nuevo de cada espacio (editable), avisa de cursos repetidos o sin espacio y, si hay conexión con Google, el **nuevo nombre del espacio en Google Chat**. Se puede **deshacer**.
    - **Conexión con Google Chat (opcional)**: con la API de Google Chat y una cuenta de administrador de Workspace se pueden **leer y cambiar los nombres de los espacios** (plantilla configurable, p. ej. `{curso} (PROMOCIÓN {promocion})`).
 
-12. **Página para las familias** (*Área Profesores > Espacios de Chat › Página para las familias*):
-   - Se elige la página y su contenido se genera solo (sin shortcode). Es pública solo si se marca como tal (misma lista que *Ajustes › Páginas públicas*).
-   - Opciones: título, texto de introducción, tribanda, nombre y **foto del tutor/a** (la de su cuenta de Google o sus iniciales), promociones anteriores, otros espacios y recuadro de ayuda.
-   - Estética de la web del colegio (Montserrat, azul marino, azul claro, naranja), con la cabecera y la **tribanda a todo el ancho**. Estilos propios, así que el tema o Elementor no la descolocan.
-   - Al final, **Promociones anteriores**: espacios de promociones que ya han terminado. Nunca se publica en ellos. "Pasar de curso" envía ahí automáticamente a la promoción que sale del colegio.
-   - El shortcode `[espacios_familias]` sigue funcionando con las mismas opciones como atributos.
-
-14. **Conexión con el Área Familias** (*Espacios de Chat › Conexión con el Área Familias*): genera una clave para que el plugin **Área Familias** (web de familias) muestre los espacios de aula actualizados. Solo envía los datos de la página de familias, nunca los webhooks.
+12. **Espacios de aula** (pestaña del Área de Profesores): todos los espacios de Google Chat de las familias, por etapa y curso, con el tutor/a, un buscador y la clase del propio tutor/a destacada arriba ("Tu clase"). Al final, las promociones anteriores (plegadas). La página para las familias está ahora en la web de familias (plugin **Área Familias**).
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

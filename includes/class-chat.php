@@ -1228,10 +1228,6 @@ class Area_Profesores_Chat {
 
         $programados = self::get_programados();
         $area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0));
-        $familias = Area_Profesores_Directorio::get_opciones();
-        $familias_page_id = Area_Profesores_Directorio::get_page_id();
-        $familias_publica = Area_Profesores_Directorio::is_page_public();
-        $paginas = get_pages(array('sort_column' => 'post_title'));
         $cron = self::get_cron_status();
 
         // Google must download the images over HTTPS from the uploads folder.

@@ -616,7 +616,7 @@
     background: #eff6ff;
 }
 
-/* Espacios de Chat: cron y página de familias */
+/* Espacios de Chat: cron */
 .ap-cron-title {
     margin: 18px 0 6px;
     font-size: 14px;
@@ -627,13 +627,4 @@
     background: #f8fafc;
 }
 
-.ap-familias-opciones {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin: 4px 0 10px;
-}
 
-.ap-familias-opciones .ap-familias-sub {
-    margin-left: 24px;
-}

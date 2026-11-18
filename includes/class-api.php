@@ -89,7 +89,7 @@ class Area_Profesores_API {
                 'curso'     => $e['curso'],
                 'etapa'     => $e['etapa'],
                 'tipo'      => $e['archivada'] ? 'anterior' : $e['tipo'],
-                'tutor'     => ($e['curso'] !== '' && !empty($tutores[$e['curso']])) ? Area_Profesores_Directorio::get_tutor_card($tutores[$e['curso']]) : null,
+                'tutor'     => ($e['curso'] !== '' && !empty($tutores[$e['curso']])) ? Area_Profesores_Aulas::get_tutor_card($tutores[$e['curso']]) : null,
             );
             if ($e['archivada']) {
                 $anteriores[] = $item;

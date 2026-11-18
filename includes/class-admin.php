@@ -50,7 +50,6 @@ class Area_Profesores_Admin {
             'allowed_domain'            => 'casadelavirgen.es',
             'tribanda_url'              => 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png',
             'logo_url'                  => 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png',
-            'logo_familias_url'         => 'https://madrid.casadelavirgen.es/wp-content/uploads/elementor/thumbs/Logo_Color_Casa-de-la-Virgen_Colegio-copia-q58if27vst5qhnn7a4gmb1ham9rcffq7jtrdjo1n9c.png',
             'login_button_text'         => 'Accede usando tu cuenta de profesor',
             'only_approved_can_register'=> 'yes',
             'notification_emails'       => get_option('admin_email'),
@@ -312,7 +311,6 @@ class Area_Profesores_Admin {
                 'allowed_domain'            => sanitize_text_field(wp_unslash($_POST['allowed_domain'])),
                 'tribanda_url'              => esc_url_raw(wp_unslash($_POST['tribanda_url'])),
                 'logo_url'                  => esc_url_raw(wp_unslash($_POST['logo_url'])),
-                'logo_familias_url'         => isset($_POST['logo_familias_url']) ? esc_url_raw(wp_unslash($_POST['logo_familias_url'])) : '',
                 'login_button_text'         => sanitize_text_field(wp_unslash($_POST['login_button_text'])),
                 'only_approved_can_register'=> isset($_POST['only_approved_can_register']) ? 'yes' : 'no',
                 'notification_emails'       => sanitize_text_field(wp_unslash($_POST['notification_emails'])),
@@ -329,7 +327,7 @@ class Area_Profesores_Admin {
                 'public_page_ids'           => isset($_POST['public_page_ids']) ? array_values(array_filter(array_map('absint', (array) wp_unslash($_POST['public_page_ids'])))) : array(),
             );
 
-            // Keep the settings saved from other screens (página de familias, etc.).
+            // Keep the settings saved from other screens.
             $existing = get_option('ap_settings', array());
             update_option('ap_settings', array_merge(is_array($existing) ? $existing : array(), $settings));
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Ajustes guardados correctamente.', 'area-profesores') . '</p></div>';
@@ -339,7 +337,6 @@ class Area_Profesores_Admin {
             'allowed_domain'            => self::get_setting('allowed_domain', 'casadelavirgen.es'),
             'tribanda_url'              => self::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png'),
             'logo_url'                  => self::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png'),
-            'logo_familias_url'         => self::get_setting('logo_familias_url'),
             'login_button_text'         => self::get_setting('login_button_text', 'Accede usando tu cuenta de profesor'),
             'only_approved_can_register'=> self::get_setting('only_approved_can_register', 'yes'),
             'notification_emails'       => self::get_setting('notification_emails', get_option('admin_email')),

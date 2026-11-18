@@ -142,7 +142,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                             </select>
                         </p>
                         <p>
-                            <label><input type="checkbox" name="archivada" value="1" <?php checked($form['archivada']); ?>> <strong><?php esc_html_e('Promoción anterior', 'area-profesores'); ?></strong> — <?php esc_html_e('ya ha terminado en el colegio: se muestra en "Promociones anteriores" de la página de familias y nunca se publica en ella.', 'area-profesores'); ?></label>
+                            <label><input type="checkbox" name="archivada" value="1" <?php checked($form['archivada']); ?>> <strong><?php esc_html_e('Promoción anterior', 'area-profesores'); ?></strong> — <?php esc_html_e('ya ha terminado en el colegio: se muestra en "Promociones anteriores" (Área Familias y pestaña Espacios de aula) y nunca se publica en ella.', 'area-profesores'); ?></label>
                         </p>
                         <p>
                             <label for="ap-espacio-nombre-ant"><strong><?php esc_html_e('Nombre que se muestra (opcional)', 'area-profesores'); ?></strong></label><br>
@@ -192,7 +192,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
 
                     <p>
                         <label><input type="checkbox" name="activo" value="1" <?php checked($form['activo']); ?>> <?php esc_html_e('Activo (aparece al publicar comunicados)', 'area-profesores'); ?></label><br>
-                        <label><input type="checkbox" name="publico" value="1" <?php checked($form['publico']); ?>> <?php esc_html_e('Mostrar en la página pública de espacios para las familias', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="publico" value="1" <?php checked($form['publico']); ?>> <?php esc_html_e('Mostrar en la web de familias (plugin Área Familias)', 'area-profesores'); ?></label>
                     </p>
 
                     <p>
@@ -298,7 +298,7 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                     <span class="dashicons dashicons-randomize"></span>
                     <?php esc_html_e('Conexión con el Área Familias', 'area-profesores'); ?>
                 </h2>
-                <p class="description" style="margin-top:0;"><?php esc_html_e('Permite que la web de familias (plugin "Área Familias") muestre los espacios de aula siempre actualizados. Solo envía los datos de la página de familias: nunca los webhooks.', 'area-profesores'); ?></p>
+                <p class="description" style="margin-top:0;"><?php esc_html_e('Permite que la web de familias (plugin "Área Familias") muestre los espacios de aula siempre actualizados. Solo envía el curso, la promoción, el enlace del espacio y el tutor/a: nunca los webhooks.', 'area-profesores'); ?></p>
                 <?php $ap_api_key = Area_Profesores_API::get_key(); ?>
                 <?php if ($ap_api_key !== '') : ?>
                     <p><strong><?php esc_html_e('Dirección del Área de Profesores', 'area-profesores'); ?></strong><br>
@@ -321,64 +321,6 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                 </form>
             </div>
 
-            <!-- Página para las familias -->
-            <div class="ap-settings-card ap-chat-help" id="ap-familias">
-                <h2 class="ap-settings-section-title">
-                    <span class="dashicons dashicons-admin-site-alt3"></span>
-                    <?php esc_html_e('Página para las familias', 'area-profesores'); ?>
-                </h2>
-                <p class="description" style="margin-top:0;"><?php esc_html_e('Página con todos los espacios ordenados por etapa y curso, con buscador, para pasar el enlace a las familias. Su contenido se genera solo (no hace falta shortcode).', 'area-profesores'); ?></p>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                    <input type="hidden" name="action" value="ap_save_familias">
-                    <?php wp_nonce_field('ap_save_familias'); ?>
-                    <p>
-                        <label for="ap-familias-page"><strong><?php esc_html_e('Página', 'area-profesores'); ?></strong></label><br>
-                        <select id="ap-familias-page" name="familias_page_id" class="widefat">
-                            <option value="0"><?php esc_html_e('— Ninguna —', 'area-profesores'); ?></option>
-                            <?php foreach ($paginas as $pg) : ?>
-                                <option value="<?php echo esc_attr($pg->ID); ?>" <?php selected($familias_page_id, $pg->ID); ?>><?php echo esc_html($pg->post_title); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if ($familias_page_id) : ?>
-                            <a href="<?php echo esc_url(get_permalink($familias_page_id)); ?>" target="_blank" rel="noopener"><?php esc_html_e('Ver página', 'area-profesores'); ?></a>
-                            · <code><?php echo esc_html(get_permalink($familias_page_id)); ?></code>
-                        <?php endif; ?>
-                    </p>
-                    <p>
-                        <label><input type="checkbox" name="familias_publica" value="1" <?php checked($familias_publica); ?>> <strong><?php esc_html_e('Página pública', 'area-profesores'); ?></strong> — <?php esc_html_e('se puede ver sin iniciar sesión (es la misma opción que Ajustes › Páginas públicas).', 'area-profesores'); ?></label>
-                        <?php if ($familias_page_id && !$familias_publica) : ?>
-                            <br><span class="ap-aula-warn"><?php esc_html_e('Ahora mismo las familias no pueden verla: solo los profesores con sesión iniciada.', 'area-profesores'); ?></span>
-                        <?php endif; ?>
-                    </p>
-                    <p>
-                        <label for="ap-familias-titulo"><strong><?php esc_html_e('Título', 'area-profesores'); ?></strong></label><br>
-                        <input type="text" id="ap-familias-titulo" name="familias_titulo" class="widefat" value="<?php echo esc_attr($familias['familias_titulo']); ?>">
-                    </p>
-                    <p>
-                        <label for="ap-familias-intro"><strong><?php esc_html_e('Texto de introducción', 'area-profesores'); ?></strong></label><br>
-                        <textarea id="ap-familias-intro" name="familias_intro" class="widefat" rows="3"><?php echo esc_textarea($familias['familias_intro']); ?></textarea>
-                        <span class="description"><?php esc_html_e('Puedes usar **texto** para la negrita.', 'area-profesores'); ?></span>
-                    </p>
-                    <fieldset class="ap-familias-opciones">
-                        <label><input type="checkbox" name="familias_tribanda" value="1" <?php checked($familias['familias_tribanda'], 'yes'); ?>> <?php esc_html_e('Mostrar la tribanda corporativa', 'area-profesores'); ?></label>
-                        <label><input type="checkbox" name="familias_tutor" value="1" id="ap-familias-tutor" <?php checked($familias['familias_tutor'], 'yes'); ?>> <?php esc_html_e('Mostrar el nombre del tutor/a de cada curso', 'area-profesores'); ?></label>
-                        <label class="ap-familias-sub"><input type="checkbox" name="familias_foto" value="1" id="ap-familias-foto" <?php checked($familias['familias_foto'], 'yes'); ?>> <?php esc_html_e('…con su foto (la de su cuenta de Google; si no tiene, sus iniciales)', 'area-profesores'); ?></label>
-                        <label><input type="checkbox" name="familias_anteriores" value="1" <?php checked($familias['familias_anteriores'], 'yes'); ?>> <?php esc_html_e('Mostrar las promociones anteriores al final', 'area-profesores'); ?></label>
-                        <label><input type="checkbox" name="familias_otros" value="1" <?php checked($familias['familias_otros'], 'yes'); ?>> <?php esc_html_e('Mostrar otros espacios (AMPA, coro…)', 'area-profesores'); ?></label>
-                        <label><input type="checkbox" name="familias_ayuda" value="1" <?php checked($familias['familias_ayuda'], 'yes'); ?>> <?php esc_html_e('Mostrar el recuadro "¿No puedes entrar en el espacio?"', 'area-profesores'); ?></label>
-                    </fieldset>
-                    <p class="description"><?php esc_html_e('El logo es el "Logotipo para las familias" de Ajustes. Un espacio concreto se puede ocultar desmarcando "Mostrar en la página pública" al editarlo.', 'area-profesores'); ?></p>
-                    <p><button type="submit" class="button button-primary"><?php esc_html_e('Guardar', 'area-profesores'); ?></button></p>
-                </form>
-                <script>
-                (function () {
-                    var t = document.getElementById('ap-familias-tutor'), f = document.getElementById('ap-familias-foto');
-                    if (!t || !f) { return; }
-                    var sync = function () { f.disabled = !t.checked; f.closest('label').style.opacity = t.checked ? 1 : .5; };
-                    t.addEventListener('change', sync); sync();
-                })();
-                </script>
-            </div>
         </div>
 
         <!-- Listado -->

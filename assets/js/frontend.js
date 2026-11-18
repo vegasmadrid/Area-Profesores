@@ -62,6 +62,35 @@
             $container.find('.ap-enlaces-no-results').toggle(visible === 0);
         });
 
+        // =========================================================================
+        // Espacios de aula: search ("3 ep" → 3º EP A/B; also by tutor/a)
+        // =========================================================================
+        $('#ap-ea-buscar').on('input', function() {
+            var norm = function(str) {
+                return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ºª]/g, '');
+            };
+            var words = norm($(this).val()).split(/[^a-z0-9]+/).filter(Boolean);
+            var total = 0;
+            var $tab = $('#tab-espacios');
+
+            $tab.find('.ap-ea-grupo').each(function() {
+                var visible = 0;
+                $(this).find('.ap-ea-card').each(function() {
+                    var tokens = norm($(this).data('search')).split(/[^a-z0-9]+/);
+                    var ok = words.every(function(w) {
+                        return tokens.some(function(t) { return t.indexOf(w) === 0; });
+                    });
+                    this.hidden = !ok;
+                    if (ok) { visible++; }
+                });
+                this.hidden = visible === 0;
+                // Open "Promociones anteriores" when the search finds something there.
+                if (words.length && visible && this.tagName === 'DETAILS') { this.open = true; }
+                total += visible;
+            });
+            $('#ap-ea-vacio').prop('hidden', total > 0);
+        });
+
         // Switch to form button from empty state
         $(document).on('click', '.ap-switch-to-form', function() {
             $('.ap-tab-btn[data-target="tab-comedor"]').trigger('click');

@@ -48,7 +48,6 @@ class Area_Profesores_Shortcode {
             'login_page_id'   => 'render_login_profesores',
             'area_page_id'    => 'render_shortcode',
             'comedor_page_id' => 'render_comedor_hoy',
-            'familias_page_id' => 'render_familias',
         );
 
         foreach ($pages as $setting => $callback) {
@@ -89,13 +88,6 @@ class Area_Profesores_Shortcode {
         $rendered[$post_id] = $this->$callback();
 
         return $rendered[$post_id];
-    }
-
-    /**
-     * Página de espacios para las familias (chosen in Espacios de Chat).
-     */
-    public function render_familias() {
-        return Area_Profesores_Directorio::render_pagina();
     }
 
     /**
@@ -149,6 +141,9 @@ class Area_Profesores_Shortcode {
         $is_direccion = Area_Profesores_Chat::is_user_direccion($user_id);
         $chat_grupos = $is_direccion ? Area_Profesores_Chat::get_espacios_agrupados() : array();
         $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
+
+        // Espacios de aula (family Chat spaces of every course)
+        $espacios_aula = Area_Profesores_Aulas::get_espacios_para_profesores($user_id);
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';

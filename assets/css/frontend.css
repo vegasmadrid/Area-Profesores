@@ -262,7 +262,8 @@
     box-shadow: var(--ap-shadow-sm);
     border: 1px solid var(--ap-slate-200);
     margin-bottom: 24px;
-    overflow-x: auto;
+    /* All tabs visible: they go onto a second line when they do not fit. */
+    flex-wrap: wrap;
 }
 
 .ap-tab-btn {
@@ -2773,4 +2774,100 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-comedor-etapa[hidden],
 .ap-comedor-etapa-hidden[hidden] {
     display: none;
+}
+
+/* ==========================================================================
+   ESPACIOS DE AULA (pestaña del Área de Profesores)
+   ========================================================================== */
+.ap-ea-grupo {
+    margin-top: 24px;
+}
+
+.ap-ea-grupo[hidden],
+.ap-ea-card[hidden],
+.ap-ea-vacio[hidden] {
+    display: none !important;
+}
+
+.ap-ea-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.ap-ea-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--ap-slate-200);
+    border-left: 4px solid var(--ap-primary);
+    border-radius: var(--ap-radius-md);
+    color: var(--ap-slate-800);
+    text-decoration: none !important;
+    transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+}
+
+.ap-ea-card:hover,
+.ap-ea-card:focus {
+    box-shadow: var(--ap-shadow);
+    transform: translateY(-1px);
+    border-color: var(--ap-primary-border);
+    color: var(--ap-slate-800);
+}
+
+.ap-ea-card.is-mine {
+    border-left-color: #dc8e2b;
+    background: #fffaf3;
+}
+
+.ap-ea-curso {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ap-slate-900);
+    line-height: 1.2;
+}
+
+.ap-ea-promo {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--ap-slate-500);
+}
+
+.ap-ea-tutor {
+    font-size: 12px;
+    color: var(--ap-slate-600);
+    margin-top: 2px;
+}
+
+.ap-ea-btn {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ap-primary);
+}
+
+.ap-ea-anteriores summary {
+    cursor: pointer;
+    list-style: revert;
+}
+
+.ap-ea-anteriores .ap-ea-card {
+    border-left-color: var(--ap-slate-300);
+    background: var(--ap-slate-50);
+}
+
+.ap-ea-vacio {
+    text-align: center;
+    color: var(--ap-slate-500);
+    padding: 20px 0 0;
+}
+
+@media (max-width: 600px) {
+    .ap-ea-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
