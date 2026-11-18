@@ -329,7 +329,9 @@ class Area_Profesores_Admin {
                 'public_page_ids'           => isset($_POST['public_page_ids']) ? array_values(array_filter(array_map('absint', (array) wp_unslash($_POST['public_page_ids'])))) : array(),
             );
 
-            update_option('ap_settings', $settings);
+            // Keep the settings saved from other screens (página de familias, etc.).
+            $existing = get_option('ap_settings', array());
+            update_option('ap_settings', array_merge(is_array($existing) ? $existing : array(), $settings));
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Ajustes guardados correctamente.', 'area-profesores') . '</p></div>';
         }
 

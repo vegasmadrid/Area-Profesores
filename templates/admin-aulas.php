@@ -145,25 +145,21 @@ $ap_etapas = Area_Profesores_Cursos::get_etapas();
         <div class="ap-settings-card ap-chat-help">
             <h2 class="ap-settings-section-title"><span class="dashicons dashicons-warning"></span> <?php esc_html_e('Espacios sin curso asignado', 'area-profesores'); ?></h2>
             <p><?php echo esc_html(implode(', ', wp_list_pluck($sin_curso, 'titulo'))); ?></p>
-            <p class="description"><?php esc_html_e('Por ejemplo, la promoción que ha terminado 2º de Bachillerato. No aparecen al publicar comunicados ni en la página pública; puedes eliminarlos en Espacios de Chat.', 'area-profesores'); ?></p>
+            <p class="description"><?php esc_html_e('No aparecen al publicar comunicados ni en la página de familias. Asígnales un aula arriba o, si ya han terminado en el colegio, márcalos como "Promoción anterior" en Espacios de Chat.', 'area-profesores'); ?></p>
         </div>
     <?php endif; ?>
 
     <div class="ap-aulas-cards">
-        <!-- Página pública -->
+        <!-- Página para las familias -->
         <div class="ap-settings-card ap-chat-help">
-            <h2 class="ap-settings-section-title"><span class="dashicons dashicons-admin-site-alt3"></span> <?php esc_html_e('Página pública de espacios', 'area-profesores'); ?></h2>
-            <p><?php echo wp_kses(__('Crea una página con el shortcode <code>[espacios_familias]</code> y comparte su enlace con las familias. Es pública aunque la web esté restringida y muestra todos los espacios ordenados por etapa y curso, con un buscador.', 'area-profesores'), array('code' => array())); ?></p>
-            <p class="description"><?php echo wp_kses(__('Opciones: <code>[espacios_familias tutor="si"]</code> muestra también el nombre del tutor/a; <code>etapa="primaria"</code> muestra solo una etapa; <code>titulo="…"</code> cambia el título.', 'area-profesores'), array('code' => array())); ?></p>
-            <?php if (!empty($public_pages)) : ?>
-                <ul>
-                    <?php foreach ($public_pages as $pid) : ?>
-                        <li><a href="<?php echo esc_url(get_permalink($pid)); ?>" target="_blank" rel="noopener"><?php echo esc_html(get_the_title($pid)); ?></a> — <code><?php echo esc_html(get_permalink($pid)); ?></code></li>
-                    <?php endforeach; ?>
-                </ul>
+            <h2 class="ap-settings-section-title"><span class="dashicons dashicons-admin-site-alt3"></span> <?php esc_html_e('Página para las familias', 'area-profesores'); ?></h2>
+            <?php $ap_fpid = Area_Profesores_Directorio::get_page_id(); ?>
+            <?php if ($ap_fpid) : ?>
+                <p><a href="<?php echo esc_url(get_permalink($ap_fpid)); ?>" target="_blank" rel="noopener"><?php echo esc_html(get_the_title($ap_fpid)); ?></a> — <code><?php echo esc_html(get_permalink($ap_fpid)); ?></code></p>
             <?php else : ?>
-                <p><em><?php esc_html_e('Todavía no hay ninguna página con este shortcode.', 'area-profesores'); ?></em></p>
+                <p><em><?php esc_html_e('Todavía no has elegido la página.', 'area-profesores'); ?></em></p>
             <?php endif; ?>
+            <p><a class="button" href="<?php echo esc_url(admin_url('admin.php?page=area-profesores-chat#ap-familias')); ?>"><?php esc_html_e('Configurarla en Espacios de Chat', 'area-profesores'); ?></a></p>
         </div>
 
         <!-- Google Chat API -->

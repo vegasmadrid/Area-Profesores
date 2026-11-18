@@ -74,7 +74,7 @@ foreach (Area_Profesores_Cursos::get_cursos() as $k => $c) {
                                 <td style="font-size:18px; color:#64748b;">→</td>
                                 <td>
                                     <select name="nuevo_curso[<?php echo esc_attr($e['id']); ?>]" class="ap-pasar-curso">
-                                        <option value="" <?php selected($f['nuevo_curso'], ''); ?>><?php esc_html_e('— Sale del colegio / sin curso —', 'area-profesores'); ?></option>
+                                        <option value="" <?php selected($f['nuevo_curso'], ''); ?>><?php esc_html_e('— Sale del colegio (pasa a Promociones anteriores) —', 'area-profesores'); ?></option>
                                         <?php foreach (Area_Profesores_Cursos::get_cursos_por_etapa() as $ap_et => $ap_cs) : ?>
                                             <optgroup label="<?php echo esc_attr(Area_Profesores_Cursos::get_etapa_label($ap_et)); ?>">
                                                 <?php foreach ($ap_cs as $ap_k => $ap_c) : ?>

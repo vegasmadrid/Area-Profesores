@@ -48,6 +48,7 @@ class Area_Profesores_Shortcode {
             'login_page_id'   => 'render_login_profesores',
             'area_page_id'    => 'render_shortcode',
             'comedor_page_id' => 'render_comedor_hoy',
+            'familias_page_id' => 'render_familias',
         );
 
         foreach ($pages as $setting => $callback) {
@@ -88,6 +89,13 @@ class Area_Profesores_Shortcode {
         $rendered[$post_id] = $this->$callback();
 
         return $rendered[$post_id];
+    }
+
+    /**
+     * Página de espacios para las familias (chosen in Espacios de Chat).
+     */
+    public function render_familias() {
+        return Area_Profesores_Directorio::render_pagina();
     }
 
     /**

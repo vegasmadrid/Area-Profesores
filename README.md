@@ -74,10 +74,15 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - **Pasar de curso…**: muestra antes una lista con el curso actual y el curso nuevo de cada espacio (editable), avisa de cursos repetidos o sin espacio y, si hay conexión con Google, el **nuevo nombre del espacio en Google Chat**. Se puede **deshacer**.
    - **Conexión con Google Chat (opcional)**: con la API de Google Chat y una cuenta de administrador de Workspace se pueden **leer y cambiar los nombres de los espacios** (plantilla configurable, p. ej. `{curso} (PROMOCIÓN {promocion})`).
 
-12. **Página pública de espacios `[espacios_familias]`**:
-   - Página abierta (aunque la web esté restringida) con todos los espacios ordenados por etapa y curso, buscador y botón "Abrir en Google Chat", pensada para pasar a las familias.
-   - Con la estética de la web del colegio (Montserrat, azul marino, azul claro, naranja y tribanda corporativa) y estilos propios, así que el tema o Elementor no la descolocan. Usa el **Logotipo para las familias** de *Ajustes*.
-   - Opciones: `tutor="si"`, `etapa="primaria"`, `titulo="…"`, `otros="no"`, `logo="URL"`, `tribanda="no"`. Cada espacio puede ocultarse desmarcando "Mostrar en la página pública".
+12. **Página para las familias** (*Área Profesores > Espacios de Chat › Página para las familias*):
+   - Se elige la página y su contenido se genera solo (sin shortcode). Es pública solo si se marca como tal (misma lista que *Ajustes › Páginas públicas*).
+   - Opciones: título, texto de introducción, tribanda, nombre y **foto del tutor/a** (la de su cuenta de Google o sus iniciales), promociones anteriores, otros espacios y recuadro de ayuda.
+   - Estética de la web del colegio (Montserrat, azul marino, azul claro, naranja), con la cabecera y la **tribanda a todo el ancho**. Estilos propios, así que el tema o Elementor no la descolocan.
+   - Al final, **Promociones anteriores**: espacios de promociones que ya han terminado. Nunca se publica en ellos. "Pasar de curso" envía ahí automáticamente a la promoción que sale del colegio.
+   - El shortcode `[espacios_familias]` sigue funcionando con las mismas opciones como atributos.
+
+13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
+   `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`
 
 ---
 

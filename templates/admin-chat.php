@@ -22,6 +22,7 @@ $form = $editing ? $editing : array(
     'orden'     => '',
     'curso'     => '',
     'publico'   => true,
+    'archivada' => false,
 );
 $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
 ?>
@@ -140,6 +141,14 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                                 <?php endforeach; ?>
                             </select>
                         </p>
+                        <p>
+                            <label><input type="checkbox" name="archivada" value="1" <?php checked($form['archivada']); ?>> <strong><?php esc_html_e('Promoción anterior', 'area-profesores'); ?></strong> — <?php esc_html_e('ya ha terminado en el colegio: se muestra en "Promociones anteriores" de la página de familias y nunca se publica en ella.', 'area-profesores'); ?></label>
+                        </p>
+                        <p>
+                            <label for="ap-espacio-nombre-ant"><strong><?php esc_html_e('Nombre que se muestra (opcional)', 'area-profesores'); ?></strong></label><br>
+                            <input type="text" id="ap-espacio-nombre-ant" name="nombre_anterior" class="widefat" value="<?php echo esc_attr($form['nombre']); ?>" placeholder="<?php esc_attr_e('Ej: 2º Bachillerato', 'area-profesores'); ?>">
+                            <span class="description"><?php esc_html_e('Para las promociones anteriores: el último curso que tuvieron (se muestra debajo de "Promoción 2026").', 'area-profesores'); ?></span>
+                        </p>
                     <?php else : ?>
                         <p>
                             <label for="ap-espacio-nombre"><strong><?php esc_html_e('Nombre *', 'area-profesores'); ?></strong></label><br>
@@ -237,8 +246,8 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                 </p>
             </div>
 
-            <!-- Programados -->
-            <div class="ap-settings-card ap-chat-help">
+            <!-- Programados y cron -->
+            <div class="ap-settings-card ap-chat-help" id="ap-cron">
                 <h2 class="ap-settings-section-title">
                     <span class="dashicons dashicons-clock"></span>
                     <?php esc_html_e('Comunicados programados', 'area-profesores'); ?>
@@ -251,14 +260,95 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                             <li>
                                 <strong><?php echo esc_html($pr['titulo_lista']); ?></strong><br>
                                 <span><?php echo esc_html($pr['programado_texto']); ?> · <?php echo esc_html(sprintf(_n('%d espacio', '%d espacios', count($pr['espacios']), 'area-profesores'), count($pr['espacios']))); ?></span>
-                                <?php if ($pr['retrasado']) : ?><br><span style="color:#b45309;"><?php esc_html_e('Pendiente: saldrá en la próxima visita a la web.', 'area-profesores'); ?></span><?php endif; ?>
+                                <?php if ($pr['retrasado']) : ?><br><span style="color:#b45309;"><?php esc_html_e('Retrasado: el cron no se está ejecutando.', 'area-profesores'); ?></span><?php endif; ?>
                             </li>
                         <?php endforeach; ?>
                     </ul>
                 <?php endif; ?>
-                <p class="description">
-                    <?php esc_html_e('WordPress envía los programados cuando hay visitas a la web. Para que salgan a la hora exacta, pide a tu proveedor de hosting un cron del servidor que llame a wp-cron.php cada 5 minutos.', 'area-profesores'); ?>
+
+                <h3 class="ap-cron-title"><?php esc_html_e('Envío automático (cron)', 'area-profesores'); ?></h3>
+                <p>
+                    <?php if ($cron['ok']) : ?>
+                        <span class="ap-status-pill ap-status-success"><?php esc_html_e('Funcionando', 'area-profesores'); ?></span>
+                    <?php elseif ($cron['last']) : ?>
+                        <span class="ap-status-pill ap-status-warning"><?php esc_html_e('Parado', 'area-profesores'); ?></span>
+                    <?php else : ?>
+                        <span class="ap-status-pill ap-status-warning"><?php esc_html_e('Sin datos todavía', 'area-profesores'); ?></span>
+                    <?php endif; ?>
+                    <?php if ($cron['last']) : ?>
+                        <?php printf(esc_html__('Última ejecución: hace %s.', 'area-profesores'), esc_html(human_time_diff($cron['last'], time()))); ?>
+                    <?php endif; ?>
                 </p>
+                <p class="description">
+                    <?php esc_html_e('El plugin revisa cada 5 minutos si hay comunicados que enviar. Para que funcione siempre, aunque nadie visite la web, crea en cPanel › Trabajos de cron una tarea cada 5 minutos con este comando:', 'area-profesores'); ?>
+                </p>
+                <p><input type="text" class="widefat code ap-cron-cmd" readonly onclick="this.select()" value="<?php echo esc_attr('wget -q -O /dev/null "' . $cron['url'] . '" >/dev/null 2>&1'); ?>"></p>
+                <p class="description">
+                    <?php if ($cron['disabled']) : ?>
+                        <?php esc_html_e('DISABLE_WP_CRON está activado en wp-config.php: WordPress solo ejecuta las tareas desde ese cron del servidor.', 'area-profesores'); ?>
+                    <?php else : ?>
+                        <?php echo wp_kses(__('Cuando el cron del servidor funcione (aquí verás "Funcionando"), añade <code>define(\'DISABLE_WP_CRON\', true);</code> en wp-config.php para que WordPress no lo lance además en cada visita.', 'area-profesores'), array('code' => array())); ?>
+                    <?php endif; ?>
+                </p>
+            </div>
+
+            <!-- Página para las familias -->
+            <div class="ap-settings-card ap-chat-help" id="ap-familias">
+                <h2 class="ap-settings-section-title">
+                    <span class="dashicons dashicons-admin-site-alt3"></span>
+                    <?php esc_html_e('Página para las familias', 'area-profesores'); ?>
+                </h2>
+                <p class="description" style="margin-top:0;"><?php esc_html_e('Página con todos los espacios ordenados por etapa y curso, con buscador, para pasar el enlace a las familias. Su contenido se genera solo (no hace falta shortcode).', 'area-profesores'); ?></p>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="ap_save_familias">
+                    <?php wp_nonce_field('ap_save_familias'); ?>
+                    <p>
+                        <label for="ap-familias-page"><strong><?php esc_html_e('Página', 'area-profesores'); ?></strong></label><br>
+                        <select id="ap-familias-page" name="familias_page_id" class="widefat">
+                            <option value="0"><?php esc_html_e('— Ninguna —', 'area-profesores'); ?></option>
+                            <?php foreach ($paginas as $pg) : ?>
+                                <option value="<?php echo esc_attr($pg->ID); ?>" <?php selected($familias_page_id, $pg->ID); ?>><?php echo esc_html($pg->post_title); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if ($familias_page_id) : ?>
+                            <a href="<?php echo esc_url(get_permalink($familias_page_id)); ?>" target="_blank" rel="noopener"><?php esc_html_e('Ver página', 'area-profesores'); ?></a>
+                            · <code><?php echo esc_html(get_permalink($familias_page_id)); ?></code>
+                        <?php endif; ?>
+                    </p>
+                    <p>
+                        <label><input type="checkbox" name="familias_publica" value="1" <?php checked($familias_publica); ?>> <strong><?php esc_html_e('Página pública', 'area-profesores'); ?></strong> — <?php esc_html_e('se puede ver sin iniciar sesión (es la misma opción que Ajustes › Páginas públicas).', 'area-profesores'); ?></label>
+                        <?php if ($familias_page_id && !$familias_publica) : ?>
+                            <br><span class="ap-aula-warn"><?php esc_html_e('Ahora mismo las familias no pueden verla: solo los profesores con sesión iniciada.', 'area-profesores'); ?></span>
+                        <?php endif; ?>
+                    </p>
+                    <p>
+                        <label for="ap-familias-titulo"><strong><?php esc_html_e('Título', 'area-profesores'); ?></strong></label><br>
+                        <input type="text" id="ap-familias-titulo" name="familias_titulo" class="widefat" value="<?php echo esc_attr($familias['familias_titulo']); ?>">
+                    </p>
+                    <p>
+                        <label for="ap-familias-intro"><strong><?php esc_html_e('Texto de introducción', 'area-profesores'); ?></strong></label><br>
+                        <textarea id="ap-familias-intro" name="familias_intro" class="widefat" rows="3"><?php echo esc_textarea($familias['familias_intro']); ?></textarea>
+                        <span class="description"><?php esc_html_e('Puedes usar **texto** para la negrita.', 'area-profesores'); ?></span>
+                    </p>
+                    <fieldset class="ap-familias-opciones">
+                        <label><input type="checkbox" name="familias_tribanda" value="1" <?php checked($familias['familias_tribanda'], 'yes'); ?>> <?php esc_html_e('Mostrar la tribanda corporativa', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="familias_tutor" value="1" id="ap-familias-tutor" <?php checked($familias['familias_tutor'], 'yes'); ?>> <?php esc_html_e('Mostrar el nombre del tutor/a de cada curso', 'area-profesores'); ?></label>
+                        <label class="ap-familias-sub"><input type="checkbox" name="familias_foto" value="1" id="ap-familias-foto" <?php checked($familias['familias_foto'], 'yes'); ?>> <?php esc_html_e('…con su foto (la de su cuenta de Google; si no tiene, sus iniciales)', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="familias_anteriores" value="1" <?php checked($familias['familias_anteriores'], 'yes'); ?>> <?php esc_html_e('Mostrar las promociones anteriores al final', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="familias_otros" value="1" <?php checked($familias['familias_otros'], 'yes'); ?>> <?php esc_html_e('Mostrar otros espacios (AMPA, coro…)', 'area-profesores'); ?></label>
+                        <label><input type="checkbox" name="familias_ayuda" value="1" <?php checked($familias['familias_ayuda'], 'yes'); ?>> <?php esc_html_e('Mostrar el recuadro "¿No puedes entrar en el espacio?"', 'area-profesores'); ?></label>
+                    </fieldset>
+                    <p class="description"><?php esc_html_e('El logo es el "Logotipo para las familias" de Ajustes. Un espacio concreto se puede ocultar desmarcando "Mostrar en la página pública" al editarlo.', 'area-profesores'); ?></p>
+                    <p><button type="submit" class="button button-primary"><?php esc_html_e('Guardar', 'area-profesores'); ?></button></p>
+                </form>
+                <script>
+                (function () {
+                    var t = document.getElementById('ap-familias-tutor'), f = document.getElementById('ap-familias-foto');
+                    if (!t || !f) { return; }
+                    var sync = function () { f.disabled = !t.checked; f.closest('label').style.opacity = t.checked ? 1 : .5; };
+                    t.addEventListener('change', sync); sync();
+                })();
+                </script>
             </div>
         </div>
 

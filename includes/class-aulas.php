@@ -148,24 +148,14 @@ class Area_Profesores_Aulas {
         $aulas = self::get_aulas();
         $profesores = self::get_profesores();
         $espacios_promocion = array_filter(Area_Profesores_Chat::get_espacios(), function ($e) {
-            return $e['tipo'] === 'promocion';
+            return $e['tipo'] === 'promocion' && !$e['archivada'];
         });
         $sin_curso = array_filter($espacios_promocion, function ($e) {
             return $e['curso'] === '';
         });
         $backup = get_option(self::BACKUP_OPTION);
-        $public_pages = self::get_paginas_publicas();
 
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/admin-aulas.php';
-    }
-
-    /**
-     * Pages that contain the [espacios_familias] shortcode.
-     */
-    public static function get_paginas_publicas() {
-        global $wpdb;
-        $ids = $wpdb->get_col("SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('page','post') AND post_content LIKE '%[espacios_familias%'");
-        return array_map('intval', $ids);
     }
 
     /**
@@ -174,7 +164,7 @@ class Area_Profesores_Aulas {
     private function get_filas_cambio($modo) {
         $filas = array();
         foreach (Area_Profesores_Chat::get_espacios() as $e) {
-            if ($e['tipo'] !== 'promocion') {
+            if ($e['tipo'] !== 'promocion' || $e['archivada']) {
                 continue;
             }
             if ($modo === 'renombrar' && $e['curso'] === '') {
@@ -307,6 +297,7 @@ class Area_Profesores_Aulas {
         $nombres = isset($_POST['nuevo_nombre']) && is_array($_POST['nuevo_nombre']) ? wp_unslash($_POST['nuevo_nombre']) : array();
         $renombrar = !empty($_POST['renombrar']) && Area_Profesores_Google::is_connected();
         $espacios = Area_Profesores_Chat::get_espacios();
+        $archivadas = array();
 
         if ($modo === 'pasar') {
             // Snapshot to allow undoing the change.
@@ -322,9 +313,16 @@ class Area_Profesores_Aulas {
                 if (!isset($espacios[$eid]) || $espacios[$eid]['tipo'] !== 'promocion') {
                     continue;
                 }
-                Area_Profesores_Chat::update_espacio($eid, array(
-                    'curso' => Area_Profesores_Cursos::get_curso($curso) ? $curso : '',
-                ));
+                $nuevo = Area_Profesores_Cursos::get_curso($curso) ? $curso : '';
+                $cambios = array('curso' => $nuevo);
+                if ($nuevo === '') {
+                    // The promotion leaves the school: keep it in "Promociones anteriores",
+                    // remembering its last course ("2º Bachillerato (Promoción 2027)").
+                    $cambios['archivada'] = true;
+                    $cambios['nombre'] = $espacios[$eid]['titulo']; // Last course, e.g. "2º Bachillerato".
+                    $archivadas[] = $espacios[$eid]['subtitulo'];
+                }
+                Area_Profesores_Chat::update_espacio($eid, $cambios);
             }
         }
 
@@ -348,6 +346,9 @@ class Area_Profesores_Aulas {
         }
 
         $msg = $modo === 'pasar' ? __('Cambio de curso aplicado.', 'area-profesores') : '';
+        if ($archivadas) {
+            $msg .= ' ' . sprintf(__('Pasan a "Promociones anteriores": %s.', 'area-profesores'), implode(', ', $archivadas));
+        }
         if ($renombrar) {
             $msg .= ' ' . sprintf(_n('%d espacio renombrado en Google Chat.', '%d espacios renombrados en Google Chat.', $ok, 'area-profesores'), $ok);
         }
@@ -371,7 +372,9 @@ class Area_Profesores_Aulas {
             $actual = Area_Profesores_Chat::export_raw_espacios();
             foreach ($actual as $eid => $e) {
                 if (isset($backup['espacios'][$eid])) {
-                    $actual[$eid]['curso'] = isset($backup['espacios'][$eid]['curso']) ? $backup['espacios'][$eid]['curso'] : '';
+                    foreach (array('curso' => '', 'archivada' => false, 'nombre' => '') as $campo => $defecto) {
+                        $actual[$eid][$campo] = isset($backup['espacios'][$eid][$campo]) ? $backup['espacios'][$eid][$campo] : $defecto;
+                    }
                 }
             }
             Area_Profesores_Chat::restore_raw_espacios($actual);

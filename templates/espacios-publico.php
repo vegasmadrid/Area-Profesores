@@ -3,7 +3,8 @@
  * Public page: list of the family Chat spaces ([espacios_familias]).
  * Self-contained styles with the look of the school's website.
  *
- * Variables: $grupos, $titulo, $logo_url, $tribanda_url, $mostrar_tutor, $tutores, $total
+ * Variables: $grupos, $anteriores, $titulo, $intro (HTML), $mostrar_ayuda, $logo_url,
+ *            $tribanda_url, $mostrar_tutor, $mostrar_foto, $tutores
  */
 
 if (!defined('ABSPATH')) {
@@ -36,12 +37,26 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
     text-align: left;
 }
 .apdf *, .apdf *::before, .apdf *::after { box-sizing: border-box; }
+/* Header and tribanda across the full width of the window, like the school's website */
+html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
+.apdf .apdf-bleed {
+    position: relative;
+    width: 100vw;
+    max-width: 100vw;
+    left: 50%;
+    margin-left: -50vw;
+}
+.apdf .apdf-header {
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(49, 50, 128, .06);
+}
 .apdf .apdf-hero {
     display: flex;
     align-items: center;
     gap: 20px;
-    padding: 18px 4px 14px;
-    margin: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 20px 16px;
 }
 .apdf .apdf-logo {
     display: block;
@@ -78,9 +93,8 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 }
 .apdf .apdf-tribanda {
     display: block;
-    width: 100%;
     line-height: 0;
-    margin: 0 0 26px;
+    margin-bottom: 26px;
     overflow: hidden;
 }
 .apdf .apdf-tribanda img {
@@ -157,6 +171,7 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
     line-height: 1.2;
     transition: background .15s, color .15s;
 }
+.apdf .apdf-nav a.apdf-nav-ant { border-color: #b9bdd6; color: var(--apdf-muted); }
 .apdf .apdf-nav a:hover,
 .apdf .apdf-nav a:focus {
     background: var(--apdf-navy);
@@ -236,10 +251,48 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
     color: var(--apdf-muted);
 }
 .apdf .apdf-tutor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 13px;
     color: var(--apdf-muted);
-    margin-top: 2px;
+    margin-top: 8px;
+    line-height: 1.3;
 }
+.apdf .apdf-tutor b { display: block; color: var(--apdf-ink); font-weight: 600; }
+.apdf .apdf-foto {
+    position: relative;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--apdf-sky);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--apdf-line);
+}
+.apdf .apdf-foto img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0;
+    border: 0;
+    border-radius: 50%;
+}
+.apdf .apdf-grupo-anteriores .apdf-grupo-title { color: var(--apdf-muted); }
+.apdf .apdf-grupo-anteriores .apdf-grupo-title::after { background: var(--apdf-sky); }
+.apdf .apdf-grupo-desc { margin: -6px 0 14px; font-size: 14px; color: var(--apdf-muted); }
+.apdf .apdf-grupo-anteriores a.apdf-card { border-top-color: #b9bdd6; background: #fbfbfe; }
+.apdf .apdf-grupo-anteriores .apdf-curso { color: #4b4f7a; font-size: 19px; }
+.apdf .apdf-grupo-anteriores .apdf-btn { background: #fff; color: var(--apdf-navy); box-shadow: inset 0 0 0 2px var(--apdf-navy); }
+.apdf .apdf-grupo-anteriores a.apdf-card:hover .apdf-btn { background: var(--apdf-navy); color: #fff; }
 .apdf .apdf-btn {
     display: inline-flex;
     align-items: center;
@@ -275,7 +328,7 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 }
 .apdf .apdf-ayuda strong { color: var(--apdf-navy); }
 @media (max-width: 600px) {
-    .apdf .apdf-hero { gap: 14px; padding-top: 10px; }
+    .apdf .apdf-hero { gap: 14px; padding: 10px 16px 12px; }
     .apdf .apdf-logo { max-width: 92px; max-height: 64px; }
     .apdf .apdf-kicker { font-size: 11px; }
     .apdf .apdf-tribanda { margin-bottom: 18px; }
@@ -293,26 +346,30 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 </style>
 
 <div class="apdf">
-    <header class="apdf-hero">
-        <?php if (!empty($logo_url)) : ?>
-            <img class="apdf-logo" src="<?php echo esc_url($logo_url); ?>" alt="<?php esc_attr_e('Colegio Casa de la Virgen', 'area-profesores'); ?>">
-        <?php endif; ?>
-        <div class="apdf-hero-text">
-            <p class="apdf-kicker"><?php esc_html_e('Colegio Casa de la Virgen · Google Chat', 'area-profesores'); ?></p>
-            <h2 class="apdf-title"><?php echo esc_html($titulo); ?></h2>
-        </div>
-    </header>
+    <div class="apdf-bleed apdf-header">
+        <header class="apdf-hero">
+            <?php if (!empty($logo_url)) : ?>
+                <img class="apdf-logo" src="<?php echo esc_url($logo_url); ?>" alt="<?php esc_attr_e('Colegio Casa de la Virgen', 'area-profesores'); ?>">
+            <?php endif; ?>
+            <div class="apdf-hero-text">
+                <p class="apdf-kicker"><?php esc_html_e('Colegio Casa de la Virgen · Google Chat', 'area-profesores'); ?></p>
+                <h2 class="apdf-title"><?php echo esc_html($titulo); ?></h2>
+            </div>
+        </header>
+    </div>
 
     <?php if (!empty($tribanda_url)) : ?>
-        <div class="apdf-tribanda" aria-hidden="true"><img src="<?php echo esc_url($tribanda_url); ?>" alt=""></div>
+        <div class="apdf-bleed apdf-tribanda" aria-hidden="true"><img src="<?php echo esc_url($tribanda_url); ?>" alt=""></div>
+    <?php else : ?>
+        <div style="height:22px"></div>
     <?php endif; ?>
 
-    <?php if (empty($grupos)) : ?>
+    <?php if (empty($grupos) && empty($anteriores)) : ?>
         <p class="apdf-vacio"><?php esc_html_e('Todavía no hay espacios publicados.', 'area-profesores'); ?></p>
     <?php else : ?>
-        <p class="apdf-intro">
-            <?php echo wp_kses(__('Busca el curso de tu hijo o hija y pulsa <strong>Abrir en Google Chat</strong>. Entra con la cuenta de Google con la que el colegio te ha añadido al espacio.', 'area-profesores'), array('strong' => array())); ?>
-        </p>
+        <?php if ($intro !== '') : ?>
+            <p class="apdf-intro"><?php echo wp_kses(nl2br($intro), array('strong' => array(), 'br' => array())); ?></p>
+        <?php endif; ?>
 
         <div class="apdf-search">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 2a8 8 0 0 1 6.32 12.9l5.39 5.4-1.41 1.4-5.4-5.39A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z"/></svg>
@@ -323,6 +380,9 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
             <?php foreach ($grupos as $gkey => $g) : ?>
                 <a href="#apdf-<?php echo esc_attr(sanitize_title($gkey)); ?>"><?php echo esc_html($g['label']); ?> <span><?php echo (int) count($g['espacios']); ?></span></a>
             <?php endforeach; ?>
+            <?php if (!empty($anteriores)) : ?>
+                <a class="apdf-nav-ant" href="#apdf-anteriores"><?php esc_html_e('Anteriores', 'area-profesores'); ?></a>
+            <?php endif; ?>
         </nav>
 
         <?php foreach ($grupos as $gkey => $g) : ?>
@@ -330,16 +390,21 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
                 <h3 class="apdf-grupo-title"><?php echo esc_html($g['label']); ?></h3>
                 <div class="apdf-grid">
                     <?php foreach ($g['espacios'] as $e) :
-                        $tutor = ($mostrar_tutor && $e['curso'] !== '' && !empty($tutores[$e['curso']])) ? $tutores[$e['curso']][0]->display_name : '';
-                        $buscar = $e['titulo'] . ' ' . $e['subtitulo'] . ' ' . $g['label'] . ' ' . $tutor;
+                        $tutor = ($mostrar_tutor && $e['curso'] !== '' && !empty($tutores[$e['curso']])) ? Area_Profesores_Directorio::get_tutor_card($tutores[$e['curso']]) : null;
+                        $buscar = $e['titulo'] . ' ' . $e['subtitulo'] . ' ' . $g['label'] . ' ' . ($tutor ? $tutor['nombre'] : '');
                     ?>
                         <a class="apdf-card" href="<?php echo esc_url($e['chat_url']); ?>" target="_blank" rel="noopener" data-search="<?php echo esc_attr($buscar); ?>">
                             <span class="apdf-curso"><?php echo esc_html($e['titulo']); ?></span>
                             <?php if ($e['subtitulo'] !== '') : ?>
                                 <span class="apdf-promo"><?php echo esc_html($e['subtitulo']); ?></span>
                             <?php endif; ?>
-                            <?php if ($tutor !== '') : ?>
-                                <span class="apdf-tutor"><?php printf(esc_html__('Tutor/a: %s', 'area-profesores'), esc_html($tutor)); ?></span>
+                            <?php if ($tutor) : ?>
+                                <span class="apdf-tutor">
+                                    <?php if ($mostrar_foto) : ?>
+                                        <span class="apdf-foto" aria-hidden="true"><?php echo esc_html($tutor['iniciales']); ?><?php if ($tutor['foto']) : ?><img src="<?php echo esc_url($tutor['foto']); ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?></span>
+                                    <?php endif; ?>
+                                    <span><?php esc_html_e('Tutor/a', 'area-profesores'); ?><b><?php echo esc_html($tutor['nombre']); ?></b></span>
+                                </span>
                             <?php endif; ?>
                             <span class="apdf-btn"><?php echo $apdf_icono_chat; // phpcs:ignore WordPress.Security.EscapeOutput ?> <?php esc_html_e('Abrir en Google Chat', 'area-profesores'); ?></span>
                         </a>
@@ -348,11 +413,31 @@ $apdf_icono_chat = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
             </section>
         <?php endforeach; ?>
 
+        <?php if (!empty($anteriores)) : ?>
+            <section class="apdf-grupo apdf-grupo-anteriores" id="apdf-anteriores">
+                <h3 class="apdf-grupo-title"><?php esc_html_e('Promociones anteriores', 'area-profesores'); ?></h3>
+                <p class="apdf-grupo-desc"><?php esc_html_e('Espacios de las promociones que ya han terminado en el colegio. Se mantienen como recuerdo.', 'area-profesores'); ?></p>
+                <div class="apdf-grid">
+                    <?php foreach ($anteriores as $e) : ?>
+                        <a class="apdf-card" href="<?php echo esc_url($e['chat_url']); ?>" target="_blank" rel="noopener" data-search="<?php echo esc_attr($e['titulo'] . ' ' . $e['subtitulo'] . ' anteriores'); ?>">
+                            <span class="apdf-curso"><?php echo esc_html($e['titulo']); ?></span>
+                            <?php if ($e['subtitulo'] !== '') : ?>
+                                <span class="apdf-promo"><?php echo esc_html($e['subtitulo']); ?></span>
+                            <?php endif; ?>
+                            <span class="apdf-btn"><?php echo $apdf_icono_chat; // phpcs:ignore WordPress.Security.EscapeOutput ?> <?php esc_html_e('Abrir en Google Chat', 'area-profesores'); ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <p class="apdf-vacio" id="apdf-vacio" hidden><?php esc_html_e('No hay ningún curso que coincida con la búsqueda.', 'area-profesores'); ?></p>
 
-        <div class="apdf-ayuda">
-            <?php echo wp_kses(__('<strong>¿No puedes entrar en el espacio?</strong> Comprueba que usas la cuenta de Google que diste al colegio. Si sigue sin funcionar, habla con el tutor o la tutora de tu hijo o hija.', 'area-profesores'), array('strong' => array())); ?>
-        </div>
+        <?php if ($mostrar_ayuda) : ?>
+            <div class="apdf-ayuda">
+                <?php echo wp_kses(__('<strong>¿No puedes entrar en el espacio?</strong> Comprueba que usas la cuenta de Google que diste al colegio. Si sigue sin funcionar, habla con el tutor o la tutora de tu hijo o hija.', 'area-profesores'), array('strong' => array())); ?>
+            </div>
+        <?php endif; ?>
 
         <script>
         (function () {

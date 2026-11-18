@@ -45,6 +45,11 @@ class Area_Profesores_Chat {
         add_action('init', array($this, 'rescue_overdue'), 30);
         add_action(self::CRON_HOOK, array($this, 'cron_enviar_programado'));
 
+        // Recurring check every 5 minutes (runs with WP-Cron or the server cron of cPanel).
+        add_filter('cron_schedules', array($this, 'add_cron_schedule'));
+        add_action('init', array($this, 'schedule_tick'), 40);
+        add_action('ap_chat_cron_tick', array($this, 'cron_tick'));
+
         // Backend
         add_action('admin_menu', array($this, 'register_admin_menu'), 15);
         add_action('admin_post_ap_save_espacio', array($this, 'handle_save'));
@@ -144,6 +149,8 @@ class Area_Profesores_Chat {
             'curso'     => isset($e['curso']) && Area_Profesores_Cursos::get_curso($e['curso']) ? $e['curso'] : '',
             'publico'   => !isset($e['publico']) || !empty($e['publico']),
             'nombre_chat' => isset($e['nombre_chat']) ? (string) $e['nombre_chat'] : '',
+            // Promoción anterior (ya ha terminado en el colegio): solo se muestra, nunca se publica.
+            'archivada' => !empty($e['archivada']),
         );
     }
 
@@ -154,7 +161,16 @@ class Area_Profesores_Chat {
         $e['etapa'] = '';
         $promo_label = $e['promocion'] ? trim(sprintf(__('Promoción %d', 'area-profesores'), $e['promocion']) . ' ' . $e['letra']) : '';
 
-        if ($e['tipo'] === 'promocion') {
+        if ($e['archivada']) {
+            $e['curso'] = '';
+            $e['titulo'] = $promo_label !== '' ? $promo_label : ($e['nombre'] !== '' ? $e['nombre'] : __('Promoción anterior', 'area-profesores'));
+            // Subtitle: last course of the promotion, without repeating "(Promoción …)".
+            $ultimo = trim(preg_replace('/\s*\(?promoci[oó]n\s+\d{4}\s*[A-Z]?\)?\s*/iu', ' ', $e['nombre']));
+            $e['subtitulo'] = $ultimo !== '' && $ultimo !== $e['titulo'] ? $ultimo : '';
+            $e['grupo_key'] = 'anteriores';
+            $e['grupo_label'] = __('Promociones anteriores', 'area-profesores');
+            $e['sort'] = array(99, -$e['promocion'], $e['letra']);
+        } elseif ($e['tipo'] === 'promocion') {
             $c = $e['curso'] !== '' ? Area_Profesores_Cursos::get_curso($e['curso']) : null;
             if ($c) {
                 $e['etapa'] = $c['etapa'];
@@ -181,7 +197,7 @@ class Area_Profesores_Chat {
         $e['egresada'] = false;
 
         $e['conectado'] = $e['webhook'] !== '';
-        $e['publicable'] = $e['activo'] && $e['conectado'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
+        $e['publicable'] = !$e['archivada'] && $e['activo'] && $e['conectado'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
         $e['chat_url'] = $e['space_id'] !== '' ? 'https://chat.google.com/room/' . rawurlencode($e['space_id']) : '';
 
         return $e;
@@ -333,7 +349,11 @@ class Area_Profesores_Chat {
      */
     public function maybe_migrate() {
         $version = (string) get_option('ap_chat_version');
+        if ($version === '4') {
+            return;
+        }
         if ($version === '3') {
+            $this->migrate_v4();
             return;
         }
         if ($version !== '2') {
@@ -351,6 +371,49 @@ class Area_Profesores_Chat {
         }
         self::save_espacios($raw);
         update_option('ap_chat_version', '3', false);
+        $this->migrate_v4();
+    }
+
+    /**
+     * v4: previous promotions of the school (already graduated), kept for the families' page.
+     */
+    private function migrate_v4() {
+        $anteriores = array(
+            // promoción, grupo, ID del espacio, nombre que tenía
+            array(2028, 'B', 'AAAATAWXH_4', '4º ESO B (Promoción 2028 B)'),
+            array(2027, 'B', 'AAAAfK3828g', 'Promoción 2027 B'),
+            array(2026, '',  'AAAA49vErh0', '2º Bachillerato (Promoción 2026)'),
+            array(2026, 'B', 'AAAAsSTEtWs', 'Promoción 2026 B'),
+            array(2025, '',  'AAAAZ6wuf4E', 'Promoción 2025'),
+            array(2024, '',  'AAAAML6Bnbk', 'Promoción 2024'),
+        );
+
+        $raw = self::get_raw_espacios();
+        $existentes = array();
+        foreach ($raw as $e) {
+            $n = self::normalize($e);
+            if ($n['space_id'] !== '') {
+                $existentes[$n['space_id']] = true;
+            }
+        }
+        foreach ($anteriores as $a) {
+            list($promo, $letra, $sid, $nombre) = $a;
+            if (isset($existentes[$sid])) {
+                continue;
+            }
+            $raw['a' . $promo . strtolower($letra !== '' ? $letra : 'u') . substr(md5($sid), 0, 4)] = array(
+                'tipo'      => 'promocion',
+                'promocion' => $promo,
+                'letra'     => $letra,
+                'space_id'  => $sid,
+                'nombre'    => $nombre,
+                'archivada' => true,
+                'activo'    => true,
+                'publico'   => true,
+            );
+        }
+        self::save_espacios($raw);
+        update_option('ap_chat_version', '4', false);
     }
 
     private function migrate_v2() {
@@ -628,11 +691,48 @@ class Area_Profesores_Chat {
      * Safety net when WP-Cron did not run (few visits, cron disabled…):
      * at most every 2 minutes, send scheduled announcements that are overdue.
      */
-    public function rescue_overdue() {
-        if (get_transient('ap_chat_rescue_check')) {
-            return;
+    public function add_cron_schedule($schedules) {
+        $schedules['ap_cinco_minutos'] = array(
+            'interval' => 5 * MINUTE_IN_SECONDS,
+            'display'  => __('Cada 5 minutos (Área Profesores)', 'area-profesores'),
+        );
+        return $schedules;
+    }
+
+    public function schedule_tick() {
+        if (!wp_next_scheduled('ap_chat_cron_tick')) {
+            wp_schedule_event(time() + 60, 'ap_cinco_minutos', 'ap_chat_cron_tick');
         }
-        set_transient('ap_chat_rescue_check', 1, 2 * MINUTE_IN_SECONDS);
+    }
+
+    /**
+     * Runs from cron: remembers when it ran (to show it in the backend) and sends what is due.
+     */
+    public function cron_tick() {
+        update_option('ap_chat_cron_last', time(), false);
+        $this->rescue_overdue(true);
+    }
+
+    /**
+     * Last time the cron ran (0 = never) and whether it looks healthy.
+     */
+    public static function get_cron_status() {
+        $last = (int) get_option('ap_chat_cron_last', 0);
+        return array(
+            'last'     => $last,
+            'ok'       => $last && $last > time() - 20 * MINUTE_IN_SECONDS,
+            'disabled' => defined('DISABLE_WP_CRON') && DISABLE_WP_CRON,
+            'url'      => site_url('wp-cron.php?doing_wp_cron'),
+        );
+    }
+
+    public function rescue_overdue($force = false) {
+        if (!$force) {
+            if (get_transient('ap_chat_rescue_check')) {
+                return;
+            }
+            set_transient('ap_chat_rescue_check', 1, 2 * MINUTE_IN_SECONDS);
+        }
 
         $ids = get_posts(array(
             'post_type'      => self::POST_TYPE,
@@ -641,7 +741,7 @@ class Area_Profesores_Chat {
             'fields'         => 'ids',
             'meta_query'     => array(
                 array('key' => '_ap_estado', 'value' => 'programado'),
-                array('key' => '_ap_programado_gmt', 'value' => time() - 120, 'compare' => '<=', 'type' => 'NUMERIC'),
+                array('key' => '_ap_programado_gmt', 'value' => $force ? time() : time() - 120, 'compare' => '<=', 'type' => 'NUMERIC'),
             ),
         ));
 
@@ -1128,6 +1228,11 @@ class Area_Profesores_Chat {
 
         $programados = self::get_programados();
         $area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0));
+        $familias = Area_Profesores_Directorio::get_opciones();
+        $familias_page_id = Area_Profesores_Directorio::get_page_id();
+        $familias_publica = Area_Profesores_Directorio::is_page_public();
+        $paginas = get_pages(array('sort_column' => 'post_title'));
+        $cron = self::get_cron_status();
 
         // Google must download the images over HTTPS from the uploads folder.
         $uploads = wp_upload_dir();
@@ -1188,6 +1293,11 @@ class Area_Profesores_Chat {
             $data['promocion'] = isset($_POST['promocion']) ? absint($_POST['promocion']) : 0;
             $data['letra'] = isset($_POST['letra']) ? sanitize_text_field(wp_unslash($_POST['letra'])) : '';
             $data['curso'] = isset($_POST['curso']) ? sanitize_text_field(wp_unslash($_POST['curso'])) : '';
+            $data['archivada'] = !empty($_POST['archivada']);
+            $data['nombre'] = isset($_POST['nombre_anterior']) ? sanitize_text_field(wp_unslash($_POST['nombre_anterior'])) : $old['nombre'];
+            if ($data['archivada']) {
+                $data['curso'] = ''; // An archived promotion has no course and is never published.
+            }
             if ($data['promocion'] < 2000 || $data['promocion'] > 2100) {
                 self::flash(__('Indica el año de la promoción (por ejemplo, 2036).', 'area-profesores'), 'error');
                 wp_safe_redirect($this->admin_url($back));

@@ -615,3 +615,25 @@
 .ap-aulas-table tr.ap-aula-changed td {
     background: #eff6ff;
 }
+
+/* Espacios de Chat: cron y página de familias */
+.ap-cron-title {
+    margin: 18px 0 6px;
+    font-size: 14px;
+}
+
+.ap-cron-cmd {
+    font-size: 12px;
+    background: #f8fafc;
+}
+
+.ap-familias-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 4px 0 10px;
+}
+
+.ap-familias-opciones .ap-familias-sub {
+    margin-left: 24px;
+}
