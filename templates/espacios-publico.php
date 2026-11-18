@@ -56,17 +56,19 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 20px;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 18px 20px 16px;
+    /* Like the school's website: the logo sits at the left edge of the window,
+       not inside the content margins. */
+    max-width: none;
+    margin: 0;
+    padding: 10px 12px;
 }
 .apdf .apdf-hero > .apdf-logo { justify-self: start; }
 .apdf .apdf-logo {
     display: block;
     width: auto;
     height: auto;
-    max-width: 150px;
-    max-height: 88px;
+    max-width: 170px;
+    max-height: 100px;
     object-fit: contain;
     flex-shrink: 0;
     margin: 0;
@@ -332,7 +334,7 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
 }
 .apdf .apdf-ayuda strong { color: var(--apdf-navy); }
 @media (max-width: 600px) {
-    .apdf .apdf-hero { grid-template-columns: auto 1fr; gap: 12px; padding: 10px 16px 12px; }
+    .apdf .apdf-hero { grid-template-columns: auto 1fr; gap: 12px; padding: 8px 10px; }
     .apdf .apdf-tribanda img { height: 24px; }
     .apdf .apdf-logo { max-width: 92px; max-height: 64px; }
     .apdf .apdf-kicker { font-size: 11px; }
