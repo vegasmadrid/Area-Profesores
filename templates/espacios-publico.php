@@ -51,13 +51,16 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
     box-shadow: 0 1px 0 rgba(49, 50, 128, .06);
 }
 .apdf .apdf-hero {
-    display: flex;
+    /* Logo on the left, texts centered on the page (the 3rd column balances the logo) */
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 20px;
     max-width: 1100px;
     margin: 0 auto;
     padding: 18px 20px 16px;
 }
+.apdf .apdf-hero > .apdf-logo { justify-self: start; }
 .apdf .apdf-logo {
     display: block;
     width: auto;
@@ -70,7 +73,7 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
     border: 0;
     box-shadow: none;
 }
-.apdf .apdf-hero-text { min-width: 0; }
+.apdf .apdf-hero-text { min-width: 0; text-align: center; grid-column: 2; }
 .apdf .apdf-kicker {
     margin: 0 0 2px;
     font-size: 13px;
@@ -101,7 +104,8 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
     display: block;
     width: 100%;
     max-width: none;
-    height: auto;
+    height: 36px;
+    object-fit: fill;
     transform: rotate(180deg);
     margin: 0;
     border: 0;
@@ -328,7 +332,8 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
 }
 .apdf .apdf-ayuda strong { color: var(--apdf-navy); }
 @media (max-width: 600px) {
-    .apdf .apdf-hero { gap: 14px; padding: 10px 16px 12px; }
+    .apdf .apdf-hero { grid-template-columns: auto 1fr; gap: 12px; padding: 10px 16px 12px; }
+    .apdf .apdf-tribanda img { height: 24px; }
     .apdf .apdf-logo { max-width: 92px; max-height: 64px; }
     .apdf .apdf-kicker { font-size: 11px; }
     .apdf .apdf-tribanda { margin-bottom: 18px; }
@@ -352,7 +357,7 @@ html:has(.apdf), body:has(.apdf) { overflow-x: clip; }
                 <img class="apdf-logo" src="<?php echo esc_url($logo_url); ?>" alt="<?php esc_attr_e('Colegio Casa de la Virgen', 'area-profesores'); ?>">
             <?php endif; ?>
             <div class="apdf-hero-text">
-                <p class="apdf-kicker"><?php esc_html_e('Colegio Casa de la Virgen · Google Chat', 'area-profesores'); ?></p>
+                <p class="apdf-kicker"><?php esc_html_e('Colegio Casa de la Virgen · Espacios de aula', 'area-profesores'); ?></p>
                 <h2 class="apdf-title"><?php echo esc_html($titulo); ?></h2>
             </div>
         </header>
