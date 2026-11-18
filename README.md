@@ -81,6 +81,8 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Al final, **Promociones anteriores**: espacios de promociones que ya han terminado. Nunca se publica en ellos. "Pasar de curso" envía ahí automáticamente a la promoción que sale del colegio.
    - El shortcode `[espacios_familias]` sigue funcionando con las mismas opciones como atributos.
 
+14. **Conexión con el Área Familias** (*Espacios de Chat › Conexión con el Área Familias*): genera una clave para que el plugin **Área Familias** (web de familias) muestre los espacios de aula actualizados. Solo envía los datos de la página de familias, nunca los webhooks.
+
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`
 

@@ -292,6 +292,35 @@ $fin_curso = Area_Profesores_Cursos::get_fin_curso_escolar();
                 </p>
             </div>
 
+            <!-- Conexión con el Área Familias -->
+            <div class="ap-settings-card ap-chat-help" id="ap-api">
+                <h2 class="ap-settings-section-title">
+                    <span class="dashicons dashicons-randomize"></span>
+                    <?php esc_html_e('Conexión con el Área Familias', 'area-profesores'); ?>
+                </h2>
+                <p class="description" style="margin-top:0;"><?php esc_html_e('Permite que la web de familias (plugin "Área Familias") muestre los espacios de aula siempre actualizados. Solo envía los datos de la página de familias: nunca los webhooks.', 'area-profesores'); ?></p>
+                <?php $ap_api_key = Area_Profesores_API::get_key(); ?>
+                <?php if ($ap_api_key !== '') : ?>
+                    <p><strong><?php esc_html_e('Dirección del Área de Profesores', 'area-profesores'); ?></strong><br>
+                        <input type="text" class="widefat code ap-cron-cmd" readonly onclick="this.select()" value="<?php echo esc_attr(home_url('/')); ?>"></p>
+                    <p><strong><?php esc_html_e('Clave de conexión', 'area-profesores'); ?></strong><br>
+                        <input type="text" class="widefat code ap-cron-cmd" readonly onclick="this.select()" value="<?php echo esc_attr($ap_api_key); ?>"></p>
+                    <p class="description"><?php esc_html_e('Pega estos dos datos en la web de familias: Área Familias › Espacios de aula.', 'area-profesores'); ?></p>
+                <?php else : ?>
+                    <p><span class="ap-status-pill ap-status-warning"><?php esc_html_e('Desactivada', 'area-profesores'); ?></span></p>
+                <?php endif; ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <input type="hidden" name="action" value="ap_api_key">
+                    <?php wp_nonce_field('ap_api_key'); ?>
+                    <button type="submit" class="button <?php echo $ap_api_key === '' ? 'button-primary' : ''; ?>" <?php echo $ap_api_key !== '' ? 'onclick="return confirm(\'' . esc_js(__('La clave actual dejará de funcionar y tendrás que pegar la nueva en el Área Familias. ¿Continuar?', 'area-profesores')) . '\');"' : ''; ?>>
+                        <?php echo $ap_api_key === '' ? esc_html__('Activar y generar clave', 'area-profesores') : esc_html__('Generar clave nueva', 'area-profesores'); ?>
+                    </button>
+                    <?php if ($ap_api_key !== '') : ?>
+                        <button type="submit" name="borrar" value="1" class="button button-link-delete" onclick="return confirm('<?php echo esc_js(__('¿Desactivar la conexión? La web de familias dejará de recibir los espacios.', 'area-profesores')); ?>');"><?php esc_html_e('Desactivar', 'area-profesores'); ?></button>
+                    <?php endif; ?>
+                </form>
+            </div>
+
             <!-- Página para las familias -->
             <div class="ap-settings-card ap-chat-help" id="ap-familias">
                 <h2 class="ap-settings-section-title">

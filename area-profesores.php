@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.5.2
+ * Version:     1.6.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.5.2');
+define('AREA_PROFESORES_VERSION', '1.6.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -29,6 +29,7 @@ require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-chat.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-google.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-aulas.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-directorio.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-api.php';
 
 /**
  * Main Plugin Class
@@ -59,6 +60,7 @@ class Area_Profesores_Plugin {
         Area_Profesores_Google::get_instance();
         Area_Profesores_Aulas::get_instance();
         Area_Profesores_Directorio::get_instance();
+        Area_Profesores_API::get_instance();
 
         // Create/upgrade the database tables after every plugin update (the activation
         // hook does not run when the plugin files are replaced without reactivating it).
