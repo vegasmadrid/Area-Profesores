@@ -766,18 +766,11 @@ class Area_Profesores_Chat {
         }
 
         $area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0));
-        $link = $area_page_id ? get_permalink($area_page_id) . '#comunicados' : home_url('/');
-
-        $body = sprintf(__('El comunicado programado "%s" no se ha podido publicar en todos los espacios:', 'area-profesores'), $post->post_title)
-            . "\n\n" . implode("\n", $lines) . "\n\n"
-            . __('Puedes reintentar los espacios con error desde la pestaña Comunicados del Área de Profesores:', 'area-profesores')
-            . "\n" . $link . "\n";
-
-        wp_mail(
-            $author->user_email,
-            __('[Área Profesores] Comunicado programado con errores', 'area-profesores'),
-            $body
-        );
+        Area_Profesores_Correos::enviar('programado_errores', $author->user_email, array(
+            'titulo'     => $post->post_title,
+            'resultados' => implode("\n", $lines),
+            'enlace'     => $area_page_id ? get_permalink($area_page_id) . '#comunicados' : home_url('/'),
+        ));
     }
 
     /**

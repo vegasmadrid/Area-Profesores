@@ -229,15 +229,17 @@ class Area_Profesores_API {
         $hijos = $A::alumnos_de_familias(array($fid), true);
         $hijos = isset($hijos[$fid]) ? $hijos[$fid] : array();
 
-        $para = $A::get_secretaria_emails();
+        $conf = Area_Profesores_Correos::get('familia_datos');
+        $para = $conf['secretaria'] ? $A::get_secretaria_emails() : array();
         $lineas_hijos = array();
         foreach ($hijos as $h) {
             $c = Area_Profesores_Cursos::get_curso($h['curso']);
             $lineas_hijos[] = '- ' . $h['nombre'] . ($c ? ' (' . $c['label'] . ')' : '');
-            $para = array_merge($para, $A::emails_tutores($h['curso']));
+            if ($conf['tutores']) {
+                $para = array_merge($para, $A::emails_tutores($h['curso']));
+            }
         }
-        $para = array_values(array_unique(array_filter($para)));
-        if (!$para) {
+        if (!$para && !$conf['extra']) {
             $para = array(get_option('admin_email'));
         }
 
@@ -246,12 +248,12 @@ class Area_Profesores_API {
             $lineas[] = '- ' . $c[0] . ': ' . ($c[1] !== '' ? $c[1] : '—') . '  →  ' . ($c[2] !== '' ? $c[2] : '—');
         }
 
-        $body = sprintf(__('La familia %1$s (%2$s) ha actualizado sus datos desde el Área Familias:', 'area-profesores'), $f['nombre'], $email) . "\n\n"
-            . implode("\n", $lineas) . "\n\n"
-            . __('Alumnos:', 'area-profesores') . "\n" . implode("\n", $lineas_hijos) . "\n\n"
-            . __('Secretaría: recuerda actualizarlo también en Alexia.', 'area-profesores') . "\n";
-
-        wp_mail($para, sprintf(__('[Área Profesores] Cambio de datos de la familia %s', 'area-profesores'), $f['nombre']), $body);
+        Area_Profesores_Correos::enviar('familia_datos', $para, array(
+            'familia' => $f['nombre'],
+            'correo'  => $email,
+            'cambios' => implode("\n", $lineas),
+            'alumnos' => implode("\n", $lineas_hijos),
+        ));
     }
 
     public function check_key(WP_REST_Request $request) {

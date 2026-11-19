@@ -653,3 +653,13 @@
 .ap-bajas-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
 .ap-clases-resumen { display: block; margin-top: 4px; font-size: 12px; color: #64748b; }
 .ap-fam-bloque + .ap-fam-bloque { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e2e8f0; }
+
+/* Correos automáticos */
+.ap-correos-indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.ap-correos-indice a { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 14px; text-decoration: none; font-weight: 600; }
+.ap-correo-card { margin: 18px 0; scroll-margin-top: 40px; }
+.ap-correo-info { color: #475569; background: #f8fafc; border-radius: 8px; padding: 10px 14px; }
+.ap-correo-para label { display: inline-block; margin-right: 18px; }
+.ap-correo-vars { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: -4px; }
+.ap-correo-vars span { color: #64748b; font-size: 12px; }
+.ap-correo-cuerpo { font-family: inherit; }
