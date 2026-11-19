@@ -91,6 +91,10 @@ class Area_Profesores_Alumnos_Admin {
         } elseif ($tab === 'familias') {
             $f_q = isset($_GET['q']) ? sanitize_text_field(wp_unslash($_GET['q'])) : '';
             $data['familias'] = Area_Profesores_Alumnos::buscar_familias($f_q);
+            foreach ($data['familias'] as &$ap_f) {
+                $ap_f['contactos'] = Area_Profesores_Alumnos::get_contactos($ap_f['id']);
+            }
+            unset($ap_f);
             $data['hijos_de'] = Area_Profesores_Alumnos::alumnos_de_familias(wp_list_pluck($data['familias'], 'id'));
             $data['f_q'] = $f_q;
             if (isset($_GET['editar'])) {
@@ -160,9 +164,10 @@ class Area_Profesores_Alumnos_Admin {
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $contactos = array();
         $nombres = isset($_POST['ct_nombre']) ? (array) wp_unslash($_POST['ct_nombre']) : array();
+        $tels = isset($_POST['ct_telefono']) ? (array) wp_unslash($_POST['ct_telefono']) : array();
         $dirs = isset($_POST['ct_direccion']) ? (array) wp_unslash($_POST['ct_direccion']) : array();
         foreach ($nombres as $i => $n) {
-            $contactos[] = array('nombre' => $n, 'direccion' => isset($dirs[$i]) ? $dirs[$i] : '');
+            $contactos[] = array('nombre' => $n, 'telefono' => isset($tels[$i]) ? $tels[$i] : '', 'direccion' => isset($dirs[$i]) ? $dirs[$i] : '');
         }
         $id = Area_Profesores_Alumnos::guardar_familia(array(
             'nombre'    => isset($_POST['nombre']) ? wp_unslash($_POST['nombre']) : '',
@@ -171,12 +176,6 @@ class Area_Profesores_Alumnos_Admin {
             'notas'     => isset($_POST['notas']) ? wp_unslash($_POST['notas']) : '',
             'contactos' => $contactos,
         ), $id);
-
-        if (!empty($_POST['reimportar_datos'])) {
-            // Let the next Alexia import update the phone and addresses again.
-            global $wpdb;
-            $wpdb->update(Area_Profesores_Alumnos::t('familias'), array('editado_por_familia' => null), array('id' => $id));
-        }
 
         self::flash(__('Familia guardada.', 'area-profesores'));
         wp_safe_redirect(self::url(array('tab' => 'familias', 'editar' => $id)));

@@ -13,8 +13,9 @@
  *      children (course, tutor, class space) and its own details (parents,
  *      address, emergency phone).
  * POST /area-profesores/v1/familia/datos
- *      The family updates its emergency phone and addresses; the tutors of its
- *      children and Secretaría are notified by e-mail.
+ *      The family updates the emergency phone and address of each parent; the
+ *      change is saved right away and the tutors of its children and
+ *      Secretaría are notified by e-mail (to update Alexia).
  */
 
 if (!defined('ABSPATH')) {
@@ -129,7 +130,7 @@ class Area_Profesores_API {
                 'nombre'    => $f['nombre'],
                 'telefono'  => $f['telefono'],
                 'contactos' => array_map(function ($c) {
-                    return array('id' => (int) $c['id'], 'nombre' => $c['nombre'], 'direccion' => $c['direccion']);
+                    return array('id' => (int) $c['id'], 'nombre' => $c['nombre'], 'telefono' => (string) $c['telefono'], 'direccion' => $c['direccion']);
                 }, $A::get_contactos($f['id'])),
                 'hijos'     => array_map('intval', wp_list_pluck(isset($hijos_por_familia[$f['id']]) ? $hijos_por_familia[$f['id']] : array(), 'id')),
             );
@@ -172,28 +173,45 @@ class Area_Profesores_API {
         set_transient($limite, $n + 1, HOUR_IN_SECONDS);
 
         $f = $A::get_familia($fid);
-        $telefono = sanitize_text_field((string) $request->get_param('telefono'));
+        $tels = (array) $request->get_param('telefonos');
         $dirs = (array) $request->get_param('direcciones');
+        $valido = function ($t) {
+            return $t === '' || (mb_strlen($t) <= 100 && preg_match('/\d{6,}/', str_replace(array(' ', '-', '.'), '', $t)));
+        };
 
         $cambios = array();
-        if (mb_strlen($telefono) > 100 || !preg_match('/\d{6,}/', str_replace(array(' ', '-', '.'), '', $telefono))) {
-            return new WP_Error('area_telefono', __('Escribe un teléfono de emergencia válido.', 'area-profesores'), array('status' => 400));
+        $contactos = array();
+        $alguno = false;
+        foreach ($f['contactos'] as $c) {
+            $id = (string) $c['id'];
+            $tel = array_key_exists($id, $tels) ? mb_substr(sanitize_text_field((string) $tels[$id]), 0, 100) : (string) $c['telefono'];
+            $dir = array_key_exists($id, $dirs) ? mb_substr(sanitize_text_field((string) $dirs[$id]), 0, 250) : $c['direccion'];
+            if (!$valido($tel)) {
+                return new WP_Error('area_telefono', sprintf(__('El teléfono de %s no es válido.', 'area-profesores'), $c['nombre']), array('status' => 400));
+            }
+            if ($tel !== '') {
+                $alguno = true;
+            }
+            if ($tel !== (string) $c['telefono']) {
+                $cambios[] = array(sprintf(__('Teléfono de emergencia de %s', 'area-profesores'), $c['nombre']), (string) $c['telefono'], $tel);
+            }
+            if ($dir !== $c['direccion']) {
+                $cambios[] = array(sprintf(__('Dirección de %s', 'area-profesores'), $c['nombre']), $c['direccion'], $dir);
+            }
+            $contactos[] = array('nombre' => $c['nombre'], 'telefono' => $tel, 'direccion' => $dir);
         }
-        if ($telefono !== $f['telefono']) {
-            $cambios[] = array(__('Teléfono de emergencia', 'area-profesores'), $f['telefono'], $telefono);
+        if ($f['contactos'] && !$alguno) {
+            return new WP_Error('area_telefono', __('Indica al menos un teléfono de emergencia.', 'area-profesores'), array('status' => 400));
         }
 
-        $contactos = array();
-        foreach ($f['contactos'] as $c) {
-            $nueva = array_key_exists((string) $c['id'], $dirs) ? mb_substr(sanitize_text_field((string) $dirs[(string) $c['id']]), 0, 250) : $c['direccion'];
-            if ($nueva !== $c['direccion']) {
-                $cambios[] = array(sprintf(__('Dirección de %s', 'area-profesores'), $c['nombre']), $c['direccion'], $nueva);
-            }
-            $contactos[] = array('nombre' => $c['nombre'], 'direccion' => $nueva);
+        // The old family phone (from an earlier import) is replaced by the parents' phones.
+        $telefono_familia = $f['telefono'];
+        if ($cambios && $telefono_familia !== '' && $alguno) {
+            $telefono_familia = '';
         }
 
         if ($cambios) {
-            $A::guardar_familia(array('nombre' => $f['nombre'], 'emails' => $f['emails'], 'telefono' => $telefono, 'notas' => $f['notas'], 'contactos' => $contactos), $fid, 'familia');
+            $A::guardar_familia(array('nombre' => $f['nombre'], 'emails' => $f['emails'], 'telefono' => $telefono_familia, 'notas' => $f['notas'], 'contactos' => $contactos), $fid, 'familia');
             global $wpdb;
             $wpdb->update($A::t('familias'), array('editado_por_familia' => $A::now()), array('id' => $fid));
             self::avisar_cambios($fid, $email, $cambios);

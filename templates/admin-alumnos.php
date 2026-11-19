@@ -130,13 +130,12 @@ $tabs = array(
                 <thead><tr>
                     <th><?php esc_html_e('Alumno', 'area-profesores'); ?></th>
                     <th style="width:110px;"><?php esc_html_e('Curso', 'area-profesores'); ?></th>
-                    <th><?php esc_html_e('Familia', 'area-profesores'); ?></th>
-                    <th style="width:150px;"><?php esc_html_e('Teléfono de emergencia', 'area-profesores'); ?></th>
+                    <th><?php esc_html_e('Padres / tutores y teléfonos de emergencia', 'area-profesores'); ?></th>
                     <th style="width:70px;"></th>
                 </tr></thead>
                 <tbody>
                     <?php if (empty($data['alumnos'])) : ?>
-                        <tr><td colspan="5" style="text-align:center; padding:28px;"><?php esc_html_e('No hay alumnos con estos filtros. Si todavía no has importado nada, ve a "Importar de Alexia".', 'area-profesores'); ?></td></tr>
+                        <tr><td colspan="4" style="text-align:center; padding:28px;"><?php esc_html_e('No hay alumnos con estos filtros. Si todavía no has importado nada, ve a "Importar de Alexia".', 'area-profesores'); ?></td></tr>
                     <?php endif; ?>
                     <?php foreach ($data['alumnos'] as $a) : $fams = $data['familias_de'][$a['id']] ?? array(); ?>
                         <tr<?php echo $a['estado'] === 'baja' ? ' class="ap-row-baja"' : ''; ?>>
@@ -144,11 +143,15 @@ $tabs = array(
                             <td><?php echo esc_html($ap_curso_label($a['curso'])); ?></td>
                             <td>
                                 <?php foreach ($fams as $fm) : ?>
-                                    <div><a href="<?php echo esc_url($ap_url(array('tab' => 'familias', 'editar' => $fm['id']))); ?>"><?php echo esc_html($fm['nombre']); ?></a> <span class="ap-mini"><?php echo esc_html(implode(', ', wp_list_pluck($fm['contactos'], 'nombre'))); ?></span></div>
+                                    <div class="ap-fam-bloque">
+                                        <a href="<?php echo esc_url($ap_url(array('tab' => 'familias', 'editar' => $fm['id']))); ?>"><?php echo esc_html($fm['nombre']); ?></a>
+                                        <?php foreach (Area_Profesores_Alumnos::contactos_con_telefono($fm) as $ct) : ?>
+                                            <div class="ap-mini"><?php echo esc_html($ct['nombre'] !== '' ? $ct['nombre'] : __('Teléfono', 'area-profesores')); ?><?php if ($ct['telefono'] !== '') : ?>: <strong><?php echo esc_html($ct['telefono']); ?></strong><?php endif; ?></div>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php endforeach; ?>
                                 <?php if (!$fams) : ?><span class="ap-mini">—</span><?php endif; ?>
                             </td>
-                            <td><?php echo esc_html(implode(' / ', array_filter(wp_list_pluck($fams, 'telefono')))); ?></td>
                             <td><a class="button button-small" href="<?php echo esc_url($ap_url(array('tab' => 'alumnos', 'editar' => $a['id'], 'curso' => $fl['f_curso'], 'estado' => $fl['f_estado'], 'q' => $fl['f_q']))); ?>"><?php esc_html_e('Editar', 'area-profesores'); ?></a></td>
                         </tr>
                     <?php endforeach; ?>
@@ -162,7 +165,7 @@ $tabs = array(
             <div class="ap-settings-card ap-edit-card">
                 <h2 class="ap-settings-section-title"><span class="dashicons dashicons-groups"></span> <?php echo $fm['id'] ? esc_html($fm['nombre']) : esc_html__('Nueva familia', 'area-profesores'); ?></h2>
                 <?php if (!empty($fm['editado_por_familia'])) : ?>
-                    <div class="notice notice-info inline"><p><?php printf(esc_html__('La familia actualizó su teléfono o dirección desde el Área Familias el %s. Mientras tanto, las importaciones de Alexia no cambian esos datos.', 'area-profesores'), esc_html(date_i18n(get_option('date_format') . ' H:i', strtotime($fm['editado_por_familia'])))); ?></p></div>
+                    <div class="notice notice-info inline"><p><?php printf(esc_html__('La familia actualizó sus teléfonos o direcciones desde el Área Familias el %s (ya se ven aquí y en "Mis alumnos", y Secretaría recibió el aviso). Hasta que Alexia tenga los mismos datos, las importaciones no los vuelven a cambiar.', 'area-profesores'), esc_html(date_i18n(get_option('date_format') . ' H:i', strtotime($fm['editado_por_familia'])))); ?></p></div>
                 <?php endif; ?>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                     <input type="hidden" name="action" value="ap_familia_guardar">
@@ -170,18 +173,22 @@ $tabs = array(
                     <?php wp_nonce_field('ap_familia_guardar'); ?>
                     <div class="ap-form-grid">
                         <p><label><strong><?php esc_html_e('Nombre de la familia', 'area-profesores'); ?></strong><br><input type="text" name="nombre" class="widefat" value="<?php echo esc_attr($fm['nombre']); ?>"></label></p>
-                        <p><label><strong><?php esc_html_e('Teléfono de emergencia', 'area-profesores'); ?></strong><br><input type="text" name="telefono" class="widefat" value="<?php echo esc_attr($fm['telefono']); ?>"></label></p>
+                        <?php if (!empty($fm['telefono'])) : ?>
+                            <p><label><strong><?php esc_html_e('Teléfono antiguo de la familia', 'area-profesores'); ?></strong><br><input type="text" name="telefono" class="widefat" value="<?php echo esc_attr($fm['telefono']); ?>"></label>
+                                <span class="description"><?php esc_html_e('De una importación anterior. Pásalo al padre o la madre que corresponda y deja este campo vacío.', 'area-profesores'); ?></span></p>
+                        <?php endif; ?>
                     </div>
-                    <p><label><strong><?php esc_html_e('Correos familiares', 'area-profesores'); ?></strong> <span class="description"><?php esc_html_e('(con estos correos la familia entra en el Área Familias y ve a sus hijos; uno por línea)', 'area-profesores'); ?></span><br>
+                    <p><label><strong><?php esc_html_e('Correos familiares', 'area-profesores'); ?></strong> <span class="description"><?php esc_html_e('(cuentas con las que la familia entra en el Área Familias; normalmente una compartida por los padres; uno por línea)', 'area-profesores'); ?></span><br>
                         <textarea name="emails" class="widefat" rows="2"><?php echo esc_textarea(implode("\n", Area_Profesores_Alumnos::emails_array($fm['emails']))); ?></textarea></label></p>
 
                     <h3><?php esc_html_e('Padres / tutores', 'area-profesores'); ?></h3>
                     <table class="widefat ap-contactos-table">
-                        <thead><tr><th><?php esc_html_e('Nombre', 'area-profesores'); ?></th><th><?php esc_html_e('Dirección', 'area-profesores'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Nombre', 'area-profesores'); ?></th><th style="width:200px;"><?php esc_html_e('Teléfono de emergencia', 'area-profesores'); ?></th><th><?php esc_html_e('Dirección', 'area-profesores'); ?></th></tr></thead>
                         <tbody>
-                            <?php foreach (array_merge($fm['contactos'], array(array('nombre' => '', 'direccion' => ''), array('nombre' => '', 'direccion' => ''))) as $ct) : ?>
+                            <?php foreach (array_merge($fm['contactos'], array(array('nombre' => '', 'telefono' => '', 'direccion' => ''), array('nombre' => '', 'telefono' => '', 'direccion' => ''))) as $ct) : ?>
                                 <tr>
                                     <td><input type="text" name="ct_nombre[]" class="widefat" value="<?php echo esc_attr($ct['nombre']); ?>"></td>
+                                    <td><input type="text" name="ct_telefono[]" class="widefat" value="<?php echo esc_attr(isset($ct['telefono']) ? $ct['telefono'] : ''); ?>"></td>
                                     <td><input type="text" name="ct_direccion[]" class="widefat" value="<?php echo esc_attr($ct['direccion']); ?>"></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -190,9 +197,6 @@ $tabs = array(
                     <p class="description"><?php esc_html_e('Deja una fila vacía para quitarla.', 'area-profesores'); ?></p>
 
                     <p><label><strong><?php esc_html_e('Notas internas', 'area-profesores'); ?></strong><br><textarea name="notas" class="widefat" rows="2"><?php echo esc_textarea((string) $fm['notas']); ?></textarea></label></p>
-                    <?php if (!empty($fm['editado_por_familia'])) : ?>
-                        <p><label><input type="checkbox" name="reimportar_datos" value="1"> <?php esc_html_e('Ya está actualizado en Alexia: que las próximas importaciones vuelvan a actualizar el teléfono y las direcciones', 'area-profesores'); ?></label></p>
-                    <?php endif; ?>
 
                     <?php if ($fm['id']) : ?>
                         <h3><?php esc_html_e('Hijos', 'area-profesores'); ?></h3>
@@ -232,7 +236,7 @@ $tabs = array(
                 <thead><tr>
                     <th><?php esc_html_e('Familia', 'area-profesores'); ?></th>
                     <th><?php esc_html_e('Correos familiares', 'area-profesores'); ?></th>
-                    <th style="width:150px;"><?php esc_html_e('Teléfono de emergencia', 'area-profesores'); ?></th>
+                    <th><?php esc_html_e('Padres / tutores y teléfonos', 'area-profesores'); ?></th>
                     <th><?php esc_html_e('Hijos', 'area-profesores'); ?></th>
                     <th style="width:70px;"></th>
                 </tr></thead>
@@ -244,7 +248,7 @@ $tabs = array(
                         <tr>
                             <td><strong><?php echo esc_html($fm['nombre']); ?></strong><?php if (!empty($fm['editado_por_familia'])) : ?> <span class="ap-status-pill ap-status-warning" title="<?php esc_attr_e('La familia actualizó sus datos desde el Área Familias', 'area-profesores'); ?>"><?php esc_html_e('Datos de la familia', 'area-profesores'); ?></span><?php endif; ?></td>
                             <td class="ap-mini"><?php echo esc_html(str_replace(',', ', ', $fm['emails'])); ?></td>
-                            <td><?php echo esc_html($fm['telefono']); ?></td>
+                            <td><?php foreach (Area_Profesores_Alumnos::contactos_con_telefono($fm) as $ct) : ?><div class="ap-mini"><?php echo esc_html($ct['nombre'] !== '' ? $ct['nombre'] : __('Teléfono', 'area-profesores')); ?><?php if ($ct['telefono'] !== '') : ?>: <strong><?php echo esc_html($ct['telefono']); ?></strong><?php endif; ?></div><?php endforeach; ?></td>
                             <td><?php foreach ($data['hijos_de'][$fm['id']] ?? array() as $a) : ?><div><?php echo esc_html($a['nombre']); ?> <span class="ap-mini"><?php echo esc_html($ap_curso_label($a['curso'])); ?></span></div><?php endforeach; ?></td>
                             <td><a class="button button-small" href="<?php echo esc_url($ap_url(array('tab' => 'familias', 'editar' => $fm['id'], 'q' => $data['f_q']))); ?>"><?php esc_html_e('Editar', 'area-profesores'); ?></a></td>
                         </tr>
@@ -308,7 +312,7 @@ $tabs = array(
                 $ap_lista(__('Alumnos con cambios', 'area-profesores'), $pl['alumnos_cambios']);
                 $ap_lista(__('Familias nuevas', 'area-profesores'), $pl['familias_nuevas']);
                 $ap_lista(__('Familias con cambios', 'area-profesores'), $pl['familias_cambios']);
-                $ap_lista(__('Familias cuyo teléfono y dirección se conservan (los cambiaron desde el Área Familias)', 'area-profesores'), $pl['conservados']);
+                $ap_lista(__('Familias que actualizaron sus teléfonos o direcciones desde el Área Familias y Alexia todavía tiene los datos antiguos (se mantienen los de la familia)', 'area-profesores'), $pl['conservados']);
                 ?>
 
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">

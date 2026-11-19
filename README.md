@@ -77,12 +77,12 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 12. **Espacios de aula** (pestaña del Área de Profesores): todos los espacios de Google Chat de las familias, por etapa y curso, con el tutor/a, un buscador y la clase del propio tutor/a destacada arriba ("Tu clase"). Al final, las promociones anteriores (plegadas). La página para las familias está ahora en la web de familias (plugin **Área Familias**).
 
 15. **Alumnos y familias** (*Área Profesores > Alumnos y familias*):
-   - Base de datos de **alumnos** (curso, alta/baja), **familias** (correos familiares, teléfono de emergencia) con sus **padres/tutores** (nombre y dirección). Un alumno puede estar en dos familias (padres separados).
+   - Base de datos de **alumnos** (curso, alta/baja), **familias** (correos familiares, normalmente una cuenta compartida por los padres) con sus **padres/tutores**, cada uno con **su teléfono de emergencia** y su dirección. Un alumno puede estar en dos familias (padres separados, con una segunda cuenta).
    - **Importación del "Listado de familias" de Alexia** tal cual (.xls, también .xlsx/.csv), una etapa cada vez (Infantil, Primaria, ESO, Bachillerato), con **vista previa** de altas, cambios y posibles bajas antes de aplicar. Reimportar el mismo fichero no duplica nada. Lector de Excel propio, sin librerías externas.
    - Edición en cualquier momento (alumnos, familias, vincular a otra familia, bajas) e **historial** de cambios (backend, importación o la propia familia).
-   - Si la familia cambia su teléfono o dirección desde el Área Familias, las importaciones no lo sobrescriben hasta que se marque como actualizado en Alexia.
-16. **Mis alumnos** (pestaña del Área de Profesores): el tutor/a ve su clase; los especialistas, las clases que se les asignan en su perfil (*Clases asignadas*); Dirección y **Secretaría** (nueva columna en *Profesores*), todos los cursos. Con padres/tutores y teléfono de emergencia (sin direcciones), buscador e impresión.
-17. **API para el Área Familias**: hijos y datos de la familia que ha iniciado sesión, y actualización de su teléfono de emergencia y direcciones, con aviso por correo al tutor/a y a Secretaría.
+   - Si la familia cambia un teléfono o una dirección desde el Área Familias, **se actualiza al momento** aquí y en "Mis alumnos", y se avisa por correo al tutor/a y a Secretaría (para cambiarlo en Alexia). Mientras Alexia tenga los datos antiguos, la importación no los deshace; cuando coinciden, todo vuelve a la normalidad solo.
+16. **Mis alumnos** (pestaña del Área de Profesores): el tutor/a ve su clase; los especialistas, las clases que se les asignan en su perfil (*Clases asignadas*); Dirección y **Secretaría** (nueva columna en *Profesores*), todos los cursos. Cada padre/madre en su línea con su propio teléfono de emergencia (sin direcciones), buscador e impresión.
+17. **API para el Área Familias**: hijos y datos de la familia que ha iniciado sesión, y actualización del teléfono de emergencia y la dirección de cada padre/madre, con aviso por correo al tutor/a y a Secretaría.
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

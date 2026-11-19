@@ -4,8 +4,8 @@
  *
  * Tables:
  * - ap_alumnos            pupils (name, school e-mail, course, alta/baja)
- * - ap_familias           families (name, family e-mails, emergency phone)
- * - ap_familia_contactos  parents/guardians of each family (name, address)
+ * - ap_familias           families (name, family e-mails shared by the parents)
+ * - ap_familia_contactos  parents/guardians of each family (name, own emergency phone, address)
  * - ap_alumno_familia     pupil ↔ family (many to many: separated parents = 2 families)
  * - ap_alumnos_historial  who changed what and when
  *
@@ -68,6 +68,7 @@ class Area_Profesores_Alumnos {
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             familia_id BIGINT(20) UNSIGNED NOT NULL,
             nombre VARCHAR(200) NOT NULL DEFAULT '',
+            telefono VARCHAR(100) NOT NULL DEFAULT '',
             direccion VARCHAR(255) NOT NULL DEFAULT '',
             orden INT(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
@@ -363,16 +364,15 @@ class Area_Profesores_Alumnos {
             $despues = array();
             foreach ((array) $data['contactos'] as $ct) {
                 $nombre = sanitize_text_field(isset($ct['nombre']) ? $ct['nombre'] : '');
+                $tel = sanitize_text_field(isset($ct['telefono']) ? $ct['telefono'] : '');
                 $dir = sanitize_text_field(isset($ct['direccion']) ? $ct['direccion'] : '');
-                if ($nombre === '' && $dir === '') {
+                if ($nombre === '' && $dir === '' && $tel === '') {
                     continue;
                 }
-                $wpdb->insert(self::t('familia_contactos'), array('familia_id' => $id, 'nombre' => $nombre, 'direccion' => $dir, 'orden' => $orden++));
-                $despues[] = $nombre . ' · ' . $dir;
+                $wpdb->insert(self::t('familia_contactos'), array('familia_id' => $id, 'nombre' => $nombre, 'telefono' => $tel, 'direccion' => $dir, 'orden' => $orden++));
+                $despues[] = self::contacto_txt(array('nombre' => $nombre, 'telefono' => $tel, 'direccion' => $dir));
             }
-            $antes_txt = array_map(function ($c) {
-                return $c['nombre'] . ' · ' . $c['direccion'];
-            }, $antes);
+            $antes_txt = array_map(array(__CLASS__, 'contacto_txt'), $antes);
             if ($old && $antes_txt !== $despues) {
                 $cambios['contactos'] = array(implode(' | ', $antes_txt), implode(' | ', $despues));
             }
@@ -384,6 +384,33 @@ class Area_Profesores_Alumnos {
             self::log($origen, 'familia', $id, 'editar', $cambios);
         }
         return $id;
+    }
+
+    /**
+     * "Ana García · 600 000 000 · C/ Mayor, 1" (history and comparisons).
+     */
+    public static function contacto_txt($c) {
+        return implode(' · ', array_filter(array(
+            isset($c['nombre']) ? $c['nombre'] : '',
+            isset($c['telefono']) ? $c['telefono'] : '',
+            isset($c['direccion']) ? $c['direccion'] : '',
+        ), 'strlen'));
+    }
+
+    /**
+     * Parents of a family with a phone, for the lists: array of {nombre, telefono}.
+     * Families imported before phones were per parent keep their old family phone.
+     */
+    public static function contactos_con_telefono($familia) {
+        $out = array();
+        foreach (isset($familia['contactos']) ? $familia['contactos'] : array() as $c) {
+            $out[] = array('nombre' => $c['nombre'], 'telefono' => isset($c['telefono']) ? $c['telefono'] : '');
+        }
+        $alguno = array_filter(wp_list_pluck($out, 'telefono'), 'strlen');
+        if (!$alguno && !empty($familia['telefono'])) {
+            $out[] = array('nombre' => '', 'telefono' => $familia['telefono']);
+        }
+        return $out;
     }
 
     public static function vincular($alumno_id, $familia_id, $origen = 'backend') {

@@ -3014,3 +3014,39 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
         width: 100%;
     }
 }
+
+/* Mis alumnos: one line per parent, aligned with their phone */
+.ap-ma-padres div,
+.ap-ma-tel div {
+    min-height: 22px;
+    line-height: 22px;
+}
+
+.ap-ma-sin {
+    color: var(--ap-slate-400);
+}
+
+@media (max-width: 640px) {
+    .ap-ma-padres div,
+    .ap-ma-tel div {
+        min-height: 0;
+        line-height: 1.5;
+    }
+}
+
+.ap-ma-tel-inline {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .ap-ma-tabla td.ap-ma-tel {
+        display: none;
+    }
+    .ap-ma-tel-inline {
+        display: inline;
+    }
+    .ap-ma-tel-inline a {
+        color: var(--ap-primary);
+        text-decoration: none;
+    }
+}

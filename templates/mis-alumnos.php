@@ -58,18 +58,31 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
                             <tr data-search="<?php echo esc_attr($a['nombre']); ?>">
                                 <td class="ap-ma-n"><?php echo (int) $i + 1; ?></td>
                                 <td class="ap-ma-alumno"><?php echo esc_html($a['nombre']); ?></td>
-                                <td>
-                                    <?php foreach ($a['familias'] as $fm) : ?>
-                                        <div><?php echo esc_html(implode(', ', wp_list_pluck($fm['contactos'], 'nombre')) ?: $fm['nombre']); ?></div>
+                                <?php
+                                // One line per parent, each with their own emergency phone.
+                                $ap_padres = array();
+                                foreach ($a['familias'] as $fm) {
+                                    foreach (Area_Profesores_Alumnos::contactos_con_telefono($fm) as $ct) {
+                                        $ap_padres[] = $ct;
+                                    }
+                                }
+                                ?>
+                                <td class="ap-ma-padres">
+                                    <?php foreach ($ap_padres as $ct) : ?>
+                                        <div><?php echo esc_html($ct['nombre'] !== '' ? $ct['nombre'] : '—'); ?><?php if ($ct['telefono'] !== '') : ?><span class="ap-ma-tel-inline"> · <a href="tel:<?php echo esc_attr(preg_replace('/[^\d+]/', '', explode('/', $ct['telefono'])[0])); ?>"><?php echo esc_html($ct['telefono']); ?></a></span><?php endif; ?></div>
                                     <?php endforeach; ?>
                                 </td>
                                 <td class="ap-ma-tel">
-                                    <?php foreach ($a['familias'] as $fm) : ?>
-                                        <?php if ($fm['telefono'] !== '') : ?>
-                                            <?php foreach (preg_split('/\s*\/\s*/', $fm['telefono']) as $tel) : $num = preg_replace('/[^\d+]/', '', $tel); ?>
-                                                <div><?php if (strlen($num) >= 9) : ?><a href="tel:<?php echo esc_attr($num); ?>"><?php echo esc_html($tel); ?></a><?php else : echo esc_html($tel); endif; ?></div>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
+                                    <?php foreach ($ap_padres as $ct) : ?>
+                                        <div>
+                                            <?php if ($ct['telefono'] === '') : ?>
+                                                <span class="ap-ma-sin">—</span>
+                                            <?php else : ?>
+                                                <?php foreach (preg_split('/\s*\/\s*/', $ct['telefono']) as $k => $tel) : $num = preg_replace('/[^\d+]/', '', $tel); ?>
+                                                    <?php echo $k ? ' / ' : ''; ?><?php if (strlen($num) >= 9) : ?><a href="tel:<?php echo esc_attr($num); ?>"><?php echo esc_html($tel); ?></a><?php else : echo esc_html($tel); endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php endforeach; ?>
                                 </td>
                             </tr>

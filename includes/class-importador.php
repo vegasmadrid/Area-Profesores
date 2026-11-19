@@ -5,7 +5,7 @@
  * The report has one block per family:
  *   Familia: <nombre>
  *   Padres/Tutores | Dirección | Teléfonos y correo electrónico
- *   <padre/madre>  | <dirección> | <correo o teléfono>
+ *   <padre/madre>  | <dirección> | <correo o teléfono>   (one item per parent)
  *   Hijos          | Nivel     | Datos de contacto
  *   <hijo/a>       | EP-3ºA    | <correo del alumno>
  * with the page header repeated on every page. Columns are located by their
@@ -96,7 +96,7 @@ class Area_Profesores_Importador {
 
             if ($sec === 'p') {
                 if ($nombre !== '') {
-                    $f['padres'][] = array('nombre' => $nombre, 'direccion' => $extra);
+                    $f['padres'][] = array('nombre' => $nombre, 'telefono' => '', 'direccion' => $extra);
                 } elseif ($extra !== '' && $f['padres']) {
                     $last = count($f['padres']) - 1;
                     $f['padres'][$last]['direccion'] = trim($f['padres'][$last]['direccion'] . ' ' . $extra);
@@ -112,8 +112,14 @@ class Area_Profesores_Importador {
                                 $f['emails'][] = $e;
                             }
                         }
-                    } elseif (preg_match('/\d{6,}/', str_replace(' ', '', $line)) && !in_array($line, $f['telefonos'], true)) {
-                        $f['telefonos'][] = $line;
+                    } elseif (preg_match('/\d{6,}/', str_replace(' ', '', $line))) {
+                        // The phone belongs to the parent of this row (or of the row above).
+                        if ($f['padres']) {
+                            $last = count($f['padres']) - 1;
+                            $f['padres'][$last]['telefono'] = trim($f['padres'][$last]['telefono'] . ($f['padres'][$last]['telefono'] !== '' ? ' / ' : '') . $line);
+                        } elseif (!in_array($line, $f['telefonos'], true)) {
+                            $f['telefonos'][] = $line;
+                        }
                     }
                 }
             } else {
@@ -394,18 +400,24 @@ class Area_Profesores_Importador {
                 }
                 $datos = array('nombre' => $pf['nombre'] !== '' ? $pf['nombre'] : $existente['nombre'], 'emails' => $emails, 'telefono' => $existente['telefono']);
 
-                // If the family updated its phone/address on the web, keep it.
-                if (!empty($existente['editado_por_familia'])) {
+                $old_ct = $A::get_contactos($fid);
+                $ct_old = array_map(array($A, 'contacto_txt'), $old_ct);
+                $ct_new = array_map(array($A, 'contacto_txt'), $pf['padres']);
+
+                // The family changed its phones/addresses on the web: they are already
+                // in use. Until Alexia has the same data, the import does not undo them.
+                if (!empty($existente['editado_por_familia']) && $ct_old !== $ct_new) {
                     $res['conservados'][] = $existente['nombre'];
                 } else {
-                    $old_ct = $A::get_contactos($fid);
-                    $ct_old = array_map(function ($c) { return $c['nombre'] . '|' . $c['direccion']; }, $old_ct);
-                    $ct_new = array_map(function ($c) { return $c['nombre'] . '|' . $c['direccion']; }, $pf['padres']);
+                    if (!empty($existente['editado_por_familia']) && $aplicar) {
+                        // Alexia is up to date: back to normal.
+                        $wpdb->update($A::t('familias'), array('editado_por_familia' => null), array('id' => $fid));
+                    }
                     if ($nueva['telefono'] !== $existente['telefono']) {
                         $cambios[] = __('teléfono', 'area-profesores');
                     }
                     if ($ct_old !== $ct_new) {
-                        $cambios[] = __('padres/dirección', 'area-profesores');
+                        $cambios[] = __('padres, teléfonos o direcciones', 'area-profesores');
                         $datos['contactos'] = $pf['padres'];
                     }
                     $datos['telefono'] = $nueva['telefono'];
