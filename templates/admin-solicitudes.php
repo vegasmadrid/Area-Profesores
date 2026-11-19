@@ -105,16 +105,11 @@ if (!defined('ABSPATH')) {
                             <td>
                                 <?php if ($sol->estado === 'pendiente') : ?>
                                     <select class="ap-solicitud-tutoria-select" data-id="<?php echo esc_attr($sol->id); ?>" style="width: 100%;">
-                                        <option value=""><?php esc_html_e('-- Sin tutoría --', 'area-profesores'); ?></option>
-                                        <?php foreach ($available_classes as $val => $lbl) : ?>
-                                            <option value="<?php echo esc_attr($val); ?>" <?php selected($sol->tutoria_deseada, $val); ?>>
-                                                <?php echo esc_html($lbl); ?>
-                                            </option>
-                                        <?php endforeach; ?>
+                                        <?php echo Area_Profesores_Cursos::render_codigo_options($sol->tutoria_deseada); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                                     </select>
                                 <?php else : ?>
                                     <span class="ap-badge-tutoria-plain">
-                                        <?php echo esc_html(!empty($sol->tutoria_deseada) && isset($available_classes[$sol->tutoria_deseada]) ? $available_classes[$sol->tutoria_deseada] : ($sol->tutoria_deseada ?: '—')); ?>
+                                        <?php echo esc_html(!empty($sol->tutoria_deseada) ? Area_Profesores_Cursos::get_codigo_label($sol->tutoria_deseada) : '—'); ?>
                                     </span>
                                 <?php endif; ?>
                             </td>

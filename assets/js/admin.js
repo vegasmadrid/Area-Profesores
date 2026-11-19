@@ -1,6 +1,6 @@
 /**
  * Área Profesores - Backend Admin JavaScript
- * Handles quick AJAX toggling of teacher status and tutoría assignment.
+ * Handles quick AJAX saving of the etapa/tutoría and Dirección of each teacher.
  */
 
 (function($) {
@@ -8,7 +8,7 @@
 
     $(document).ready(function() {
 
-        function saveTeacherAjax(userId, isProfesor, tutoria, $statusElem) {
+        function saveTeacherAjax(userId, asignacion, $statusElem) {
             $statusElem.text('Guardando...').css('color', '#64748b').show();
 
             $.ajax({
@@ -18,8 +18,7 @@
                     action: 'ap_admin_save_teacher',
                     nonce: AreaProfesoresAdminData.nonce,
                     user_id: userId,
-                    is_profesor: isProfesor ? 1 : 0,
-                    tutoria: tutoria
+                    asignacion: asignacion
                 },
                 dataType: 'json',
                 success: function(response) {
@@ -38,22 +37,34 @@
             });
         }
 
-        // Teacher toggle switch change
-        $('.ap-teacher-toggle').on('change', function() {
+        // Etapa / tutoría select change (auto-save)
+        $('.ap-tutoria-select').on('change', function() {
+            var userId = $(this).data('user-id');
+            saveTeacherAjax(userId, $(this).val(), $('#status-' + userId));
+        });
+
+        // "Dirección" toggle (puede publicar comunicados en Google Chat)
+        $('.ap-direccion-toggle').on('change', function() {
             var $toggle = $(this);
             var userId = $toggle.data('user-id');
-            var isProfesor = $toggle.is(':checked');
-            var $row = $toggle.closest('.ap-user-row');
-            var tutoria = $row.find('.ap-tutoria-select').val();
-            var $status = $('#status-' + userId);
+            var $status = $('#status-dir-' + userId);
 
-            if (isProfesor) {
-                $row.addClass('is-teacher');
-            } else {
-                $row.removeClass('is-teacher');
-            }
-
-            saveTeacherAjax(userId, isProfesor, tutoria, $status);
+            $status.text('Guardando...').css('color', '#64748b').show();
+            $.post(AreaProfesoresAdminData.ajax_url, {
+                action: 'ap_admin_save_direccion',
+                nonce: AreaProfesoresAdminData.nonce,
+                user_id: userId,
+                is_direccion: $toggle.is(':checked') ? 1 : 0
+            }, null, 'json').done(function(response) {
+                if (response && response.success) {
+                    $status.text('✓ Guardado').css('color', '#10b981');
+                    setTimeout(function() { $status.fadeOut(400); }, 2000);
+                } else {
+                    $status.text('Error').css('color', '#ef4444');
+                }
+            }).fail(function() {
+                $status.text('Error de red').css('color', '#ef4444');
+            });
         });
 
         // =========================================================================
@@ -192,18 +203,6 @@
                     }
                 }
             });
-        });
-
-        // Tutoría select change
-        $('.ap-tutoria-select').on('change', function() {
-            var $select = $(this);
-            var userId = $select.data('user-id');
-            var tutoria = $select.val();
-            var $row = $select.closest('.ap-user-row');
-            var isProfesor = $row.find('.ap-teacher-toggle').is(':checked');
-            var $status = $('#status-' + userId);
-
-            saveTeacherAjax(userId, isProfesor, tutoria, $status);
         });
 
         // =========================================================================

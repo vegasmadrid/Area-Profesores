@@ -37,6 +37,9 @@ class Area_Profesores_Admin {
 
         // AJAX handler for saving teacher status in admin table
         add_action('wp_ajax_ap_admin_save_teacher', array($this, 'ajax_save_teacher'));
+
+        // Delete a user from the Profesores list
+        add_action('admin_post_ap_delete_profesor', array($this, 'handle_delete_profesor'));
     }
 
     /**
@@ -82,25 +85,11 @@ class Area_Profesores_Admin {
     }
 
     /**
-     * Check if a user is marked as teacher
+     * Every registered user is a teacher: only teachers get an account (the
+     * access requests and the corporate Google login control who can register).
      */
     public static function is_user_profesor($user_id) {
-        if (!$user_id) {
-            return false;
-        }
-
-        $is_teacher = get_user_meta($user_id, '_ap_is_profesor', true);
-        if ($is_teacher === '1' || $is_teacher === 1 || $is_teacher === true) {
-            return true;
-        }
-
-        // Also check if user has 'administrator' role
-        $user = get_userdata($user_id);
-        if ($user && in_array('administrator', (array) $user->roles, true)) {
-            return true;
-        }
-
-        return false;
+        return $user_id && get_userdata($user_id) !== false;
     }
 
     /**
@@ -199,24 +188,32 @@ class Area_Profesores_Admin {
     public function render_profesores_page() {
         // Handle bulk form submission if needed
         if (isset($_POST['ap_save_profesores']) && check_admin_referer('ap_save_profesores_nonce')) {
-            $profesores_status = isset($_POST['is_profesor']) && is_array($_POST['is_profesor']) ? $_POST['is_profesor'] : array();
-            $tutorias = isset($_POST['tutoria']) && is_array($_POST['tutoria']) ? $_POST['tutoria'] : array();
+            $asignaciones = isset($_POST['asignacion']) && is_array($_POST['asignacion']) ? wp_unslash($_POST['asignacion']) : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
+            $direccion_status = isset($_POST['is_direccion']) && is_array($_POST['is_direccion']) ? $_POST['is_direccion'] : array();
 
             foreach ($all_user_ids as $uid) {
-                $is_prof = isset($profesores_status[$uid]) ? '1' : '0';
-                $tutoria = isset($tutorias[$uid]) ? sanitize_text_field(wp_unslash($tutorias[$uid])) : '';
-
-                update_user_meta($uid, '_ap_is_profesor', $is_prof);
-                update_user_meta($uid, '_ap_tutoria', $tutoria);
+                if (isset($asignaciones[$uid])) {
+                    Area_Profesores_Cursos::set_asignacion($uid, sanitize_text_field($asignaciones[$uid]));
+                }
+                update_user_meta($uid, Area_Profesores_Chat::META_DIR, isset($direccion_status[$uid]) ? '1' : '0');
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
         }
 
+        if (isset($_GET['ap_deleted'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(sprintf(__('Usuario "%s" eliminado.', 'area-profesores'), sanitize_text_field(wp_unslash($_GET['ap_deleted'])))) . '</p></div>';
+        } elseif (isset($_GET['ap_delete_error'])) {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('No se puede eliminar ese usuario desde aquí (no puedes eliminarte a ti mismo ni a un administrador).', 'area-profesores') . '</p></div>';
+        }
+
         // Search and pagination parameters
         $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
-        $filter_profesor = isset($_GET['filter_profesor']) ? sanitize_text_field($_GET['filter_profesor']) : '';
+        $filter_etapa = isset($_GET['filter_etapa']) ? sanitize_key($_GET['filter_etapa']) : '';
+        if ($filter_etapa !== '' && $filter_etapa !== 'sin' && !array_key_exists($filter_etapa, Area_Profesores_Cursos::get_etapas())) {
+            $filter_etapa = '';
+        }
         $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
         $per_page = 20;
 
@@ -229,32 +226,30 @@ class Area_Profesores_Admin {
             'order'   => 'ASC',
         );
 
-        if ($filter_profesor === 'yes') {
-            $args['meta_query'] = array(
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'value'   => '1',
-                    'compare' => '=',
+        if ($filter_etapa !== '') {
+            $etapa_query = $filter_etapa === 'sin'
+                ? array(
+                    'relation' => 'OR',
+                    array('key' => Area_Profesores_Cursos::META_ETAPA, 'value' => '', 'compare' => '='),
+                    array('key' => Area_Profesores_Cursos::META_ETAPA, 'compare' => 'NOT EXISTS'),
                 )
-            );
-        } elseif ($filter_profesor === 'no') {
-            $args['meta_query'] = array(
-                'relation' => 'OR',
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'value'   => '1',
-                    'compare' => '!=',
-                ),
-                array(
-                    'key'     => '_ap_is_profesor',
-                    'compare' => 'NOT EXISTS',
-                )
-            );
+                : array('key' => Area_Profesores_Cursos::META_ETAPA, 'value' => $filter_etapa, 'compare' => '=');
+            $args['meta_query'] = isset($args['meta_query'])
+                ? array('relation' => 'AND', $args['meta_query'], $etapa_query)
+                : array($etapa_query);
         }
 
         $user_query = new WP_User_Query($args);
         $users = $user_query->get_results();
-        $total_users = $user_query->get_total_users();
+        $total_users = (int) $user_query->get_total_users();
+        // Some plugins/hosts break the "found rows" count: count the matching users directly.
+        if ($total_users < count($users) || ($total_users === 0 && !empty($users))) {
+            $count_args = $args;
+            unset($count_args['number'], $count_args['offset']);
+            $count_args['fields'] = 'ID';
+            $count_args['count_total'] = false;
+            $total_users = count(get_users($count_args));
+        }
         $total_pages = ceil($total_users / $per_page);
 
         $available_classes = Area_Profesores_Comedor::get_available_classes();
@@ -332,7 +327,9 @@ class Area_Profesores_Admin {
                 'public_page_ids'           => isset($_POST['public_page_ids']) ? array_values(array_filter(array_map('absint', (array) wp_unslash($_POST['public_page_ids'])))) : array(),
             );
 
-            update_option('ap_settings', $settings);
+            // Keep the settings saved from other screens.
+            $existing = get_option('ap_settings', array());
+            update_option('ap_settings', array_merge(is_array($existing) ? $existing : array(), $settings));
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Ajustes guardados correctamente.', 'area-profesores') . '</p></div>';
         }
 
@@ -362,7 +359,7 @@ class Area_Profesores_Admin {
     }
 
     /**
-     * AJAX handler to quickly save individual teacher status and tutoria
+     * AJAX handler to quickly save a teacher's etapa / tutoría
      */
     public function ajax_save_teacher() {
         check_ajax_referer('area_profesores_admin_nonce', 'nonce');
@@ -372,17 +369,54 @@ class Area_Profesores_Admin {
         }
 
         $user_id = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
-        $is_profesor = !empty($_POST['is_profesor']) ? '1' : '0';
-        $tutoria = isset($_POST['tutoria']) ? sanitize_text_field(wp_unslash($_POST['tutoria'])) : '';
-
         if (!$user_id) {
             wp_send_json_error(array('message' => 'Usuario no válido'));
         }
 
-        update_user_meta($user_id, '_ap_is_profesor', $is_profesor);
-        update_user_meta($user_id, '_ap_tutoria', $tutoria);
+        if (isset($_POST['asignacion'])) {
+            Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['asignacion'])));
+        }
 
-        wp_send_json_success(array('message' => __('Guardado', 'area-profesores')));
+        wp_send_json_success(array(
+            'message' => __('Guardado', 'area-profesores'),
+            'label'   => Area_Profesores_Cursos::get_codigo_label(Area_Profesores_Cursos::get_codigo_asignacion($user_id)),
+        ));
+    }
+
+    /**
+     * Whether the current admin may delete this user from the Profesores list.
+     */
+    public static function can_delete_user($user_id) {
+        if (!current_user_can('delete_users') || (int) $user_id === get_current_user_id()) {
+            return false;
+        }
+        $user = get_userdata($user_id);
+        // Administrators are deleted from the WordPress Users screen, on purpose.
+        return $user && !in_array('administrator', (array) $user->roles, true) && !is_super_admin($user_id);
+    }
+
+    /**
+     * Delete a user (its announcements are reassigned to the admin who deletes it).
+     */
+    public function handle_delete_profesor() {
+        $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
+        check_admin_referer('ap_delete_profesor_' . $user_id);
+
+        $back = wp_get_referer() ? wp_get_referer() : admin_url('admin.php?page=area-profesores');
+        $back = remove_query_arg(array('ap_deleted', 'ap_delete_error'), $back);
+
+        if (!self::can_delete_user($user_id)) {
+            wp_safe_redirect(add_query_arg('ap_delete_error', 1, $back));
+            exit;
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        $user = get_userdata($user_id);
+        $name = $user ? $user->display_name : '';
+        wp_delete_user($user_id, get_current_user_id());
+
+        wp_safe_redirect(add_query_arg('ap_deleted', rawurlencode($name), $back));
+        exit;
     }
 
     /**
@@ -393,33 +427,26 @@ class Area_Profesores_Admin {
             return;
         }
 
-        $is_profesor = get_user_meta($user->ID, '_ap_is_profesor', true);
-        $tutoria = get_user_meta($user->ID, '_ap_tutoria', true);
-        $available_classes = Area_Profesores_Comedor::get_available_classes();
+        $codigo = Area_Profesores_Cursos::get_codigo_asignacion($user->ID);
         ?>
         <h2><?php esc_html_e('Configuración Área de Profesores', 'area-profesores'); ?></h2>
         <table class="form-table">
             <tr>
-                <th><label for="ap_is_profesor"><?php esc_html_e('¿Es Profesor?', 'area-profesores'); ?></label></th>
+                <th><label for="ap_is_direccion"><?php esc_html_e('Dirección', 'area-profesores'); ?></label></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="ap_is_profesor" id="ap_is_profesor" value="1" <?php checked($is_profesor, '1'); ?>>
-                        <?php esc_html_e('Marcar este usuario como profesor (tendrá acceso al Área de Profesores)', 'area-profesores'); ?>
+                        <input type="checkbox" name="ap_is_direccion" id="ap_is_direccion" value="1" <?php checked(Area_Profesores_Chat::has_direccion_flag($user->ID)); ?>>
+                        <?php esc_html_e('Puede publicar comunicados a las familias en los espacios de Google Chat', 'area-profesores'); ?>
                     </label>
                 </td>
             </tr>
             <tr>
-                <th><label for="ap_tutoria"><?php esc_html_e('Tutoría asignada', 'area-profesores'); ?></label></th>
+                <th><label for="ap_asignacion"><?php esc_html_e('Etapa y tutoría', 'area-profesores'); ?></label></th>
                 <td>
-                    <select name="ap_tutoria" id="ap_tutoria">
-                        <option value=""><?php esc_html_e('-- Sin tutoría (Especialista / No tutor) --', 'area-profesores'); ?></option>
-                        <?php foreach ($available_classes as $key => $name) : ?>
-                            <option value="<?php echo esc_attr($key); ?>" <?php selected($tutoria, $key); ?>>
-                                <?php echo esc_html($name); ?>
-                            </option>
-                        <?php endforeach; ?>
+                    <select name="ap_asignacion" id="ap_asignacion">
+                        <?php echo Area_Profesores_Cursos::render_codigo_options($codigo); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                     </select>
-                    <p class="description"><?php esc_html_e('Asigna el curso del cual este profesor es tutor. Al rellenar formularios se seleccionará automáticamente.', 'area-profesores'); ?></p>
+                    <p class="description"><?php esc_html_e('Etapa del profesor y, si es tutor/a, su curso. En "Apuntar Comedor" se preselecciona su curso.', 'area-profesores'); ?></p>
                 </td>
             </tr>
         </table>
@@ -434,11 +461,10 @@ class Area_Profesores_Admin {
             return;
         }
 
-        $is_profesor = isset($_POST['ap_is_profesor']) ? '1' : '0';
-        $tutoria = isset($_POST['ap_tutoria']) ? sanitize_text_field(wp_unslash($_POST['ap_tutoria'])) : '';
-
-        update_user_meta($user_id, '_ap_is_profesor', $is_profesor);
-        update_user_meta($user_id, '_ap_tutoria', $tutoria);
+        if (isset($_POST['ap_asignacion'])) {
+            Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['ap_asignacion'])));
+        }
+        update_user_meta($user_id, Area_Profesores_Chat::META_DIR, isset($_POST['ap_is_direccion']) ? '1' : '0');
     }
 
     /**

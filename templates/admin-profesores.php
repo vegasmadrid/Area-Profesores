@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
             <span class="ap-admin-badge"><?php esc_html_e('Área Profesores', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Gestión del Claustro de Profesores', 'area-profesores'); ?></h1>
             <p class="ap-admin-lead">
-                <?php esc_html_e('Marca qué usuarios registrados en la web tienen rol de profesor para permitirles el acceso al Área de Profesores y asígnales su curso de tutoría.', 'area-profesores'); ?>
+                <?php esc_html_e('Todos los usuarios de la web son profesores. Asígnales su etapa (Primer Ciclo, Infantil, Primaria o Secundaria), si son tutores de un curso o especialistas, y quién es de Dirección.', 'area-profesores'); ?>
             </p>
         </div>
         <?php $ap_area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0)); ?>
@@ -35,16 +35,18 @@ if (!defined('ABSPATH')) {
             <input type="hidden" name="page" value="area-profesores">
 
             <div class="ap-filter-group">
-                <select name="filter_profesor" onchange="this.form.submit()">
-                    <option value=""><?php esc_html_e('Todos los usuarios', 'area-profesores'); ?></option>
-                    <option value="yes" <?php selected($filter_profesor, 'yes'); ?>><?php esc_html_e('Solo Profesores activos', 'area-profesores'); ?></option>
-                    <option value="no" <?php selected($filter_profesor, 'no'); ?>><?php esc_html_e('Usuarios no profesores', 'area-profesores'); ?></option>
+                <select name="filter_etapa" onchange="this.form.submit()">
+                    <option value=""><?php esc_html_e('Todas las etapas', 'area-profesores'); ?></option>
+                    <?php foreach (Area_Profesores_Cursos::get_etapas() as $ek => $el) : ?>
+                        <option value="<?php echo esc_attr($ek); ?>" <?php selected($filter_etapa, $ek); ?>><?php echo esc_html($el); ?></option>
+                    <?php endforeach; ?>
+                    <option value="sin" <?php selected($filter_etapa, 'sin'); ?>><?php esc_html_e('Sin etapa asignada', 'area-profesores'); ?></option>
                 </select>
 
                 <div class="ap-search-box">
                     <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Buscar por nombre, usuario o email...', 'area-profesores'); ?>">
                     <button type="submit" class="button"><?php esc_html_e('Buscar', 'area-profesores'); ?></button>
-                    <?php if (!empty($search) || !empty($filter_profesor)) : ?>
+                    <?php if (!empty($search) || !empty($filter_etapa)) : ?>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=area-profesores')); ?>" class="button"><?php esc_html_e('Limpiar', 'area-profesores'); ?></a>
                     <?php endif; ?>
                 </div>
@@ -66,9 +68,9 @@ if (!defined('ABSPATH')) {
                         <th style="width: 60px;"><?php esc_html_e('Avatar', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Nombre y Usuario', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Correo electrónico', 'area-profesores'); ?></th>
-                        <th style="width: 170px; text-align: center;"><?php esc_html_e('¿Es Profesor?', 'area-profesores'); ?></th>
-                        <th style="width: 220px;"><?php esc_html_e('Tutoría Asignada', 'area-profesores'); ?></th>
-                        <th style="width: 120px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
+                        <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Puede publicar comunicados en los espacios de Google Chat', 'area-profesores'); ?>"><?php esc_html_e('Dirección', 'area-profesores'); ?></th>
+                        <th style="width: 250px;"><?php esc_html_e('Etapa y tutoría', 'area-profesores'); ?></th>
+                        <th style="width: 160px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,10 +82,9 @@ if (!defined('ABSPATH')) {
                         </tr>
                     <?php else : ?>
                         <?php foreach ($users as $u) : 
-                            $is_prof = Area_Profesores_Admin::is_user_profesor($u->ID);
-                            $tutoria = Area_Profesores_Admin::get_user_tutoria($u->ID);
+                            $codigo = Area_Profesores_Cursos::get_codigo_asignacion($u->ID);
                         ?>
-                            <tr class="ap-user-row <?php echo $is_prof ? 'is-teacher' : ''; ?>" data-user-id="<?php echo esc_attr($u->ID); ?>">
+                            <tr class="ap-user-row is-teacher" data-user-id="<?php echo esc_attr($u->ID); ?>">
                                 <input type="hidden" name="all_user_ids[]" value="<?php echo esc_attr($u->ID); ?>">
                                 
                                 <td>
@@ -98,32 +99,35 @@ if (!defined('ABSPATH')) {
                                 </td>
                                 <td style="text-align: center;">
                                     <label class="ap-toggle-switch">
-                                        <input type="checkbox" 
-                                               class="ap-teacher-toggle" 
-                                               name="is_profesor[<?php echo esc_attr($u->ID); ?>]" 
-                                               value="1" 
-                                               data-user-id="<?php echo esc_attr($u->ID); ?>" 
-                                               <?php checked($is_prof, true); ?>>
+                                        <input type="checkbox"
+                                               class="ap-direccion-toggle"
+                                               name="is_direccion[<?php echo esc_attr($u->ID); ?>]"
+                                               value="1"
+                                               data-user-id="<?php echo esc_attr($u->ID); ?>"
+                                               <?php checked(Area_Profesores_Chat::has_direccion_flag($u->ID), true); ?>>
                                         <span class="ap-toggle-slider"></span>
                                     </label>
-                                    <span class="ap-ajax-status" id="status-<?php echo esc_attr($u->ID); ?>"></span>
+                                    <span class="ap-ajax-status" id="status-dir-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
                                 <td>
-                                    <select name="tutoria[<?php echo esc_attr($u->ID); ?>]" 
-                                            class="ap-tutoria-select" 
+                                    <select name="asignacion[<?php echo esc_attr($u->ID); ?>]"
+                                            class="ap-tutoria-select"
                                             data-user-id="<?php echo esc_attr($u->ID); ?>">
-                                        <option value=""><?php esc_html_e('-- Sin tutoría --', 'area-profesores'); ?></option>
-                                        <?php foreach ($available_classes as $val => $lbl) : ?>
-                                            <option value="<?php echo esc_attr($val); ?>" <?php selected($tutoria, $val); ?>>
-                                                <?php echo esc_html($lbl); ?>
-                                            </option>
-                                        <?php endforeach; ?>
+                                        <?php echo Area_Profesores_Cursos::render_codigo_options($codigo); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                                     </select>
+                                    <span class="ap-ajax-status" id="status-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
                                 <td style="text-align: right;">
                                     <a href="<?php echo esc_url(get_edit_user_link($u->ID)); ?>" class="button button-small" target="_blank">
                                         <?php esc_html_e('Perfil WP', 'area-profesores'); ?>
                                     </a>
+                                    <?php if (method_exists('Area_Profesores_Admin', 'can_delete_user') && Area_Profesores_Admin::can_delete_user($u->ID)) : ?>
+                                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=ap_delete_profesor&user_id=' . $u->ID), 'ap_delete_profesor_' . $u->ID)); ?>"
+                                           class="button button-small ap-btn-delete-user"
+                                           onclick="return confirm('<?php echo esc_js(sprintf(__('¿Eliminar definitivamente a %s de la web? Perderá el acceso y no se puede deshacer. Sus comunicados pasarán a tu nombre.', 'area-profesores'), $u->display_name)); ?>');">
+                                            <?php esc_html_e('Eliminar', 'area-profesores'); ?>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

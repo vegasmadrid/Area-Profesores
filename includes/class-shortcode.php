@@ -103,15 +103,8 @@ class Area_Profesores_Shortcode {
             return $this->render_restricted_view('not_logged_in');
         }
 
-        $user_id = get_current_user_id();
-
-        // Check 2: User is marked as a teacher?
-        if (!Area_Profesores_Admin::is_user_profesor($user_id)) {
-            return $this->render_restricted_view('not_a_teacher');
-        }
-
-        // User is an authorized teacher!
-        return $this->render_teacher_portal($user_id);
+        // Every registered user is a teacher.
+        return $this->render_teacher_portal(get_current_user_id());
     }
 
     /**
@@ -143,6 +136,14 @@ class Area_Profesores_Shortcode {
         $enlaces = Area_Profesores_Enlaces::get_for_user($user_id);
         $aviso = trim((string) Area_Profesores_Admin::get_setting('aviso_profesores', ''));
         $logout_url = Area_Profesores_Access::get_logout_url();
+
+        // Comunicados a familias (Google Chat), only for Dirección
+        $is_direccion = Area_Profesores_Chat::is_user_direccion($user_id);
+        $chat_grupos = $is_direccion ? Area_Profesores_Chat::get_espacios_agrupados() : array();
+        $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
+
+        // Espacios de aula (family Chat spaces of every course)
+        $espacios_aula = Area_Profesores_Aulas::get_espacios_para_profesores($user_id);
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';

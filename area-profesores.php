@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.0.0
+ * Version:     1.7.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,17 +13,22 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.0.0');
+define('AREA_PROFESORES_VERSION', '1.7.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Require core classes
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-cursos.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-comedor.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-solicitudes.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-admin.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-shortcode.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-access.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-enlaces.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-chat.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-google.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-aulas.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-api.php';
 
 /**
  * Main Plugin Class
@@ -50,6 +55,17 @@ class Area_Profesores_Plugin {
         Area_Profesores_Shortcode::get_instance();
         Area_Profesores_Access::get_instance();
         Area_Profesores_Enlaces::get_instance();
+        Area_Profesores_Chat::get_instance();
+        Area_Profesores_Google::get_instance();
+        Area_Profesores_Aulas::get_instance();
+        Area_Profesores_API::get_instance();
+
+        // Create/upgrade the database tables after every plugin update (the activation
+        // hook does not run when the plugin files are replaced without reactivating it).
+        add_action('init', array($this, 'maybe_upgrade_db'), 1);
+
+        // One-time data migrations (old 1A…6B tutorías → new courses).
+        add_action('init', array('Area_Profesores_Cursos', 'maybe_migrate'), 5);
 
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
@@ -61,6 +77,36 @@ class Area_Profesores_Plugin {
     public function activate() {
         Area_Profesores_Comedor::create_tables();
         Area_Profesores_Solicitudes::create_tables();
+    }
+
+    /**
+     * Run the table creation when the plugin version changes.
+     */
+    public function maybe_upgrade_db() {
+        if (get_option('area_profesores_db_version') === AREA_PROFESORES_VERSION) {
+            return;
+        }
+        $this->activate();
+
+        // "¿Es profesor?" no longer exists (every user is a teacher): remove the stored flag.
+        delete_metadata('user', 0, '_ap_is_profesor', '', true);
+
+        // The public families page was removed (the families site has its own page):
+        // delete its settings and stop treating that page as public.
+        $settings = get_option('ap_settings', array());
+        if (is_array($settings)) {
+            if (!empty($settings['familias_page_id']) && !empty($settings['public_page_ids'])) {
+                $settings['public_page_ids'] = array_values(array_diff(array_map('absint', (array) $settings['public_page_ids']), array((int) $settings['familias_page_id'])));
+            }
+            foreach (array_keys($settings) as $key) {
+                if (strpos($key, 'familias_') === 0 || $key === 'logo_familias_url') {
+                    unset($settings[$key]);
+                }
+            }
+            update_option('ap_settings', $settings);
+        }
+
+        update_option('area_profesores_db_version', AREA_PROFESORES_VERSION, true);
     }
 
     /**
@@ -102,6 +148,29 @@ class Area_Profesores_Plugin {
                 'confirm_delete'    => __('¿Estás seguro de que deseas eliminar este registro?', 'area-profesores'),
                 'confirm_approve'   => __('¿Aprobar esta solicitud y dar acceso al profesor?', 'area-profesores'),
                 'confirm_reject'    => __('¿Rechazar esta solicitud de acceso?', 'area-profesores'),
+                'com_publish'       => __('Publicar en %d espacio(s)', 'area-profesores'),
+                'com_schedule_btn'  => __('Programar en %d espacio(s)', 'area-profesores'),
+                'com_save_changes'  => __('Guardar cambios (%d espacio(s))', 'area-profesores'),
+                'com_at'            => __('a las', 'area-profesores'),
+                'com_will_publish'  => __('Se publicará el %s.', 'area-profesores'),
+                'com_past'          => __('Elige un día y una hora futuros para programar el comunicado.', 'area-profesores'),
+                'com_confirm_sched' => __('Se va a programar el comunicado en %1$d espacio(s). %2$s ¿Continuar?', 'area-profesores'),
+                'com_sched_ok'      => __('Programado para el %s', 'area-profesores'),
+                'com_sched_updated' => __('Cambios guardados. Se publicará el %s', 'area-profesores'),
+                'com_sched_spaces'  => __('Se publicará en %d espacio(s):', 'area-profesores'),
+                'com_editing'       => __('Estás editando un comunicado programado. Al guardar se sustituye el anterior.', 'area-profesores'),
+                'com_confirm_cancel'=> __('¿Cancelar este comunicado programado? No se enviará.', 'area-profesores'),
+                'com_none'          => __('Ningún espacio seleccionado', 'area-profesores'),
+                'com_selected'      => __('%d espacio(s) seleccionado(s)', 'area-profesores'),
+                'com_confirm'       => __('Se va a publicar el comunicado en %d espacio(s) de Google Chat. Las familias lo recibirán al momento y no se puede deshacer desde aquí. ¿Continuar?', 'area-profesores'),
+                'com_sending'       => __('Publicando…', 'area-profesores'),
+                'com_empty'         => __('Escribe un mensaje o adjunta una imagen.', 'area-profesores'),
+                'com_bad_image'     => __('Formato no admitido. Usa una imagen JPG, PNG o GIF de menos de 8 MB.', 'area-profesores'),
+                'com_all_ok'        => __('Publicado en los %d espacios', 'area-profesores'),
+                'com_some_fail'     => __('Publicado en %1$d de %2$d espacios', 'area-profesores'),
+                'com_ok'            => __('Publicado', 'area-profesores'),
+                'com_placeholder'   => __('El texto aparecerá aquí…', 'area-profesores'),
+                'com_net_error'     => __('Error de conexión. Revisa el historial antes de volver a publicar para no duplicar el comunicado.', 'area-profesores'),
             )
         ));
     }

@@ -37,11 +37,15 @@ class Area_Profesores_Enlaces {
      * Audience options for a link.
      */
     public static function get_audiences() {
-        return array(
+        $aud = array(
             'todos'        => __('Todos los profesores', 'area-profesores'),
             'tutores'      => __('Solo tutores/as', 'area-profesores'),
             'especialistas'=> __('Solo especialistas (sin tutoría)', 'area-profesores'),
         );
+        foreach (Area_Profesores_Cursos::get_etapas() as $key => $label) {
+            $aud['etapa_' . $key] = sprintf(__('Solo profesores de %s', 'area-profesores'), $label);
+        }
+        return $aud;
     }
 
     /**
@@ -122,6 +126,7 @@ class Area_Profesores_Enlaces {
      */
     public static function get_for_user($user_id) {
         $has_tutoria = $user_id ? (Area_Profesores_Admin::get_user_tutoria($user_id) !== '') : false;
+        $etapa = $user_id ? Area_Profesores_Cursos::get_asignacion($user_id)['etapa'] : '';
         $is_admin = $user_id ? user_can($user_id, 'manage_options') : false;
 
         $destacados = array();
@@ -137,6 +142,9 @@ class Area_Profesores_Enlaces {
                     continue;
                 }
                 if ($link['audiencia'] === 'especialistas' && $has_tutoria) {
+                    continue;
+                }
+                if (strpos($link['audiencia'], 'etapa_') === 0 && $link['audiencia'] !== 'etapa_' . $etapa) {
                     continue;
                 }
             }

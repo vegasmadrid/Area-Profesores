@@ -52,6 +52,33 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Resumen agrupado de dietas especiales y desglose completo clase por clase.
    - Navegación rápida por fechas y botón **"Imprimir para Cocina"**.
 
+9. **Comunicados a familias en Google Chat** (*Área Profesores > Espacios de Chat*):
+   - Publica **el mismo comunicado (texto + imagen) en varios espacios de Google Chat a la vez**, firmado como *Colegio Casa de la Virgen*, **ahora o programado** para un día y hora.
+   - Solo pueden publicar los profesores marcados como **Dirección** (columna *Dirección* en *Área Profesores > Profesores* o en el perfil del usuario) y los administradores.
+   - Pestaña **Comunicados** en el Área de Profesores: título, mensaje con formato de Chat (`*negrita*`, `_cursiva_`, `~tachado~`), imagen JPG/PNG/GIF (máx. 8 MB), espacios agrupados por etapa (con "Todo el colegio" y casilla por etapa), vista previa y programación (atajos *Mañana 8:00*, *Lunes 8:00*, *Hoy 17:00*).
+   - **Programados**: se pueden editar, enviar ya o cancelar. Si al enviarse falla algún espacio, el autor recibe un email.
+   - **Historial** con el resultado por espacio, **reintento de los fallidos** y **Usar como plantilla**.
+   - Cada espacio de familias tiene su **promoción**, su grupo y el **curso asignado**. El curso **no cambia solo**: se cambia con **Aulas › Pasar de curso**.
+   - El plugin comprueba que cada webhook es del espacio correcto y avisa de los cursos sin espacio, de la zona horaria y de HTTPS.
+
+10. **Etapas y tutorías del profesorado**:
+   - **Todos los usuarios de la web son profesores** (ya no hay casilla "¿Es profesor?"): el acceso lo controlan las solicitudes y el login con la cuenta del colegio.
+   - Cada profesor tiene una **etapa** (Primer Ciclo, Infantil, Primaria o Secundaria —que incluye Bachillerato—) y es **tutor/a de un curso** o **especialista**. Se asigna con un único desplegable en *Profesores*, en el perfil, en las *Solicitudes de acceso* y en el formulario de solicitud del login.
+   - Cursos: 1 año A/B, 2 años A/B, 3-5 años A/B, 1º-6º EP A/B, 1º-4º ESO A/B, 1º y 2º Bachillerato.
+   - Filtro por etapa en *Profesores*; *Apuntar Comedor* muestra los cursos de la etapa del profesor (con su curso preseleccionado y la etapa rellenada sola); los *Enlaces Útiles* pueden limitarse a una etapa.
+   - Las tutorías antiguas (1A…6B) se convierten automáticamente a 1º-6º EP A/B de Primaria.
+   - En *Profesores* se puede **eliminar** a un usuario (no a administradores ni a uno mismo); sus comunicados pasan a quien lo elimina.
+
+11. **Aulas** (*Área Profesores > Aulas*):
+   - Tabla editable con cada aula, su **tutor/a** y su **espacio de familias** (estado del webhook, enlace y nombre en Google Chat).
+   - **Pasar de curso…**: muestra antes una lista con el curso actual y el curso nuevo de cada espacio (editable), avisa de cursos repetidos o sin espacio y, si hay conexión con Google, el **nuevo nombre del espacio en Google Chat**. Se puede **deshacer**.
+   - **Conexión con Google Chat (opcional)**: con la API de Google Chat y una cuenta de administrador de Workspace se pueden **leer y cambiar los nombres de los espacios** (plantilla configurable, p. ej. `{curso} (PROMOCIÓN {promocion})`).
+
+12. **Espacios de aula** (pestaña del Área de Profesores): todos los espacios de Google Chat de las familias, por etapa y curso, con el tutor/a, un buscador y la clase del propio tutor/a destacada arriba ("Tu clase"). Al final, las promociones anteriores (plegadas). La página para las familias está ahora en la web de familias (plugin **Área Familias**).
+
+13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
+   `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`
+
 ---
 
 ## 📦 Instalación

@@ -25,11 +25,14 @@ if (!defined('ABSPATH')) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="ap-icon-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <?php printf(esc_html__('Tutor/a: %s', 'area-profesores'), esc_html(isset($available_classes[$tutoria]) ? $available_classes[$tutoria] : $tutoria)); ?>
+                            <?php echo esc_html(Area_Profesores_Cursos::get_codigo_label($tutoria)); ?>
                         </span>
                     <?php else : ?>
+                        <?php $ap_codigo = Area_Profesores_Cursos::get_codigo_asignacion($user_id); ?>
                         <span class="ap-badge ap-badge-secondary">
-                            <?php esc_html_e('Profesor/a Especialista (Sin tutoría asignada)', 'area-profesores'); ?>
+                            <?php echo $ap_codigo !== ''
+                                ? esc_html(Area_Profesores_Cursos::get_codigo_label($ap_codigo))
+                                : esc_html__('Etapa sin asignar', 'area-profesores'); ?>
                         </span>
                     <?php endif; ?>
 
@@ -87,6 +90,25 @@ if (!defined('ABSPATH')) {
                 <span class="ap-tab-counter"><?php echo (int) $enlaces['total']; ?></span>
             <?php endif; ?>
         </button>
+
+        <button type="button" class="ap-tab-btn" data-target="tab-espacios">
+            <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            <span><?php esc_html_e('Espacios de aula', 'area-profesores'); ?></span>
+            <?php if (!empty($espacios_aula['total'])) : ?>
+                <span class="ap-tab-counter"><?php echo (int) $espacios_aula['total']; ?></span>
+            <?php endif; ?>
+        </button>
+
+        <?php if ($is_direccion) : ?>
+            <button type="button" class="ap-tab-btn" data-target="tab-comunicados">
+                <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                <span><?php esc_html_e('Comunicados', 'area-profesores'); ?></span>
+            </button>
+        <?php endif; ?>
     </nav>
 
     <!-- Content Sections -->
@@ -172,5 +194,17 @@ if (!defined('ABSPATH')) {
         <section id="tab-enlaces" class="ap-tab-content">
             <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/enlaces-utiles.php'; ?>
         </section>
+
+        <!-- Pestaña: Espacios de aula (espacios de Google Chat de las familias) -->
+        <section id="tab-espacios" class="ap-tab-content">
+            <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/espacios-aula.php'; ?>
+        </section>
+
+        <?php if ($is_direccion) : ?>
+            <!-- Pestaña 4: Comunicados a familias (Google Chat, solo Dirección) -->
+            <section id="tab-comunicados" class="ap-tab-content">
+                <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comunicados.php'; ?>
+            </section>
+        <?php endif; ?>
     </main>
 </div>

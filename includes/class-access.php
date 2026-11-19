@@ -122,7 +122,9 @@ class Area_Profesores_Access {
         $normalize = function ($url) {
             $parts = wp_parse_url($url);
             $path = isset($parts['path']) ? untrailingslashit($parts['path']) : '';
-            return strtolower((isset($parts['host']) ? $parts['host'] : '') . $path);
+            // The query is part of the page (plain permalinks: /?page_id=6).
+            $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+            return strtolower((isset($parts['host']) ? $parts['host'] : '') . $path . $query);
         };
         $generic = array($normalize(home_url('/')));
         $login_page_id = self::get_login_page_id();

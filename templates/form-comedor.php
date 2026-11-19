@@ -36,50 +36,51 @@ if (!defined('ABSPATH')) {
         <input type="hidden" name="fecha" id="ap-field-fecha" value="<?php echo esc_attr($today); ?>">
         <input type="hidden" name="record_id" id="ap-field-record-id" value="">
 
-        <!-- BLOQUE 1: CLASE -->
+        <!-- BLOQUE 1: CLASE (agrupada por etapa; la etapa se deduce del curso) -->
+        <?php
+        $ap_asig = Area_Profesores_Cursos::get_asignacion($user_id);
+        $ap_mi_curso = $ap_asig['curso'] !== '' ? Area_Profesores_Cursos::get_curso($ap_asig['curso']) : null;
+        $ap_mi_etapa = $ap_asig['etapa'];
+        ?>
         <div class="ap-form-group-card">
             <div class="ap-group-header">
                 <label class="ap-label ap-required">
                     <?php esc_html_e('Clase', 'area-profesores'); ?>
                     <span class="ap-asterisk">*</span>
                 </label>
-                <span class="ap-group-help"><?php esc_html_e('Selecciona el grupo correspondiente', 'area-profesores'); ?></span>
+                <span class="ap-group-help"><?php esc_html_e('Selecciona el curso. La etapa se completa sola.', 'area-profesores'); ?></span>
             </div>
 
-            <div class="ap-grid-classes">
-                <?php foreach ($available_classes as $val => $label) : 
-                    $is_checked = ($tutoria === $val);
-                ?>
-                    <label class="ap-radio-chip <?php echo $is_checked ? 'is-selected' : ''; ?>">
-                        <input type="radio" name="clase" value="<?php echo esc_attr($val); ?>" <?php checked($is_checked, true); ?> required>
-                        <span class="ap-chip-indicator"></span>
-                        <span class="ap-chip-text"><?php echo esc_html($val); ?></span>
-                        <span class="ap-chip-subtext"><?php echo esc_html($label); ?></span>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-        </div>
+            <?php foreach (Area_Profesores_Cursos::get_cursos_por_etapa() as $ap_etapa_key => $ap_cursos) :
+                if (empty($ap_cursos)) { continue; }
+                $ap_etapa_label = Area_Profesores_Cursos::get_etapa_label($ap_etapa_key);
+                $ap_es_mia = ($ap_mi_etapa === '' || $ap_mi_etapa === $ap_etapa_key);
+            ?>
+                <div class="ap-comedor-etapa <?php echo $ap_es_mia ? '' : 'is-other'; ?>" <?php echo $ap_es_mia ? '' : 'hidden'; ?>>
+                    <div class="ap-comedor-etapa-title"><?php echo esc_html($ap_etapa_label); ?></div>
+                    <div class="ap-grid-classes">
+                        <?php foreach ($ap_cursos as $ap_c) :
+                            $is_checked = ($ap_mi_curso && $ap_mi_curso['key'] === $ap_c['key']);
+                        ?>
+                            <label class="ap-radio-chip <?php echo $is_checked ? 'is-selected' : ''; ?>">
+                                <input type="radio" name="clase" value="<?php echo esc_attr($ap_c['label']); ?>" data-etapa="<?php echo esc_attr($ap_etapa_label); ?>" <?php checked($is_checked, true); ?> required>
+                                <span class="ap-chip-indicator"></span>
+                                <span class="ap-chip-text"><?php echo esc_html($ap_c['label']); ?></span>
+                                <span class="ap-chip-subtext"><?php echo esc_html($ap_etapa_label); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
 
-        <!-- BLOQUE 2: ETAPA -->
-        <div class="ap-form-group-card">
-            <div class="ap-group-header">
-                <label class="ap-label ap-required">
-                    <?php esc_html_e('Etapa', 'area-profesores'); ?>
-                    <span class="ap-asterisk">*</span>
-                </label>
-                <span class="ap-group-help"><?php esc_html_e('Indica el ciclo educativo de los alumnos', 'area-profesores'); ?></span>
-            </div>
+            <?php if ($ap_mi_etapa !== '') : ?>
+                <button type="button" class="ap-btn ap-btn-sm ap-btn-outline ap-comedor-show-all"><?php esc_html_e('Ver cursos de otras etapas', 'area-profesores'); ?></button>
+            <?php endif; ?>
 
-            <div class="ap-radio-vertical-list">
-                <?php foreach ($available_stages as $stage_key => $stage_name) : 
-                    // Default to Primaria or based on tutoría
-                    $default_stage = ($stage_key === 'Primaria');
-                ?>
-                    <label class="ap-radio-row">
-                        <input type="radio" name="etapa" value="<?php echo esc_attr($stage_key); ?>" <?php checked($default_stage, true); ?> required>
-                        <span class="ap-radio-custom"></span>
-                        <span class="ap-radio-label"><?php echo esc_html($stage_name); ?></span>
-                    </label>
+            <!-- Etapa: se marca automáticamente según el curso elegido -->
+            <div class="ap-comedor-etapa-hidden" hidden>
+                <?php foreach ($available_stages as $stage_key => $stage_name) : ?>
+                    <input type="radio" name="etapa" value="<?php echo esc_attr($stage_key); ?>" <?php checked($ap_mi_curso && Area_Profesores_Cursos::get_etapa_label($ap_mi_curso['etapa']) === $stage_key, true); ?>>
                 <?php endforeach; ?>
             </div>
         </div>
