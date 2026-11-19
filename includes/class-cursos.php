@@ -221,6 +221,26 @@ class Area_Profesores_Cursos {
         return in_array('', $grupos, true) ? $next : $next . $grupos[0];
     }
 
+    /**
+     * Course key from the "Nivel" of Alexia: EP-3ºA, INF-1A (1 año A), INF-4B,
+     * E2ºB (2º ESO B), B-1ºA / B2ºA (Bachillerato). '' if unknown.
+     */
+    public static function curso_desde_alexia($nivel) {
+        $n = strtoupper(str_replace(array(' ', 'º', 'ª', '°', '.'), '', (string) $nivel));
+        if (preg_match('/^EP-?(\d)([AB])$/', $n, $m)) {
+            $k = 'EP' . $m[1] . $m[2];
+        } elseif (preg_match('/^INF-?(\d)([AB])$/', $n, $m)) {
+            $k = ((int) $m[1] <= 2 ? 'PC' : 'I') . $m[1] . $m[2];
+        } elseif (preg_match('/^(?:E|ESO)-?(\d)([AB])$/', $n, $m)) {
+            $k = 'ESO' . $m[1] . $m[2];
+        } elseif (preg_match('/^(?:B|BACH)-?(\d)[AB]?$/', $n, $m)) {
+            $k = 'BACH' . $m[1];
+        } else {
+            return '';
+        }
+        return self::get_curso($k) ? $k : '';
+    }
+
     /* ---------------------------------------------------------------------
      * Asignación de profesores (etapa + tutor/especialista + curso)
      * ------------------------------------------------------------------- */

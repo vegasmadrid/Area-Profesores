@@ -628,3 +628,27 @@
 }
 
 
+
+/* Alumnos y familias */
+.ap-alumnos-tabs { margin: 16px 0 0; }
+.ap-alumnos-admin .ap-edit-card { margin: 18px 0; }
+.ap-alumnos-admin .ap-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0 10px; }
+.ap-alumnos-admin .ap-filtros .ap-toolbar-stats { margin-left: auto; color: #64748b; }
+.ap-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+.ap-form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ap-mini { font-size: 12px; color: #64748b; }
+.ap-list-plain { margin: 0 0 10px; }
+.ap-list-plain li { margin-bottom: 4px; }
+.ap-quitar { margin-left: 8px; font-size: 12px; color: #b91c1c; }
+.ap-row-baja td { opacity: .6; }
+.ap-contactos-table td { padding: 4px 6px; }
+.ap-import-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
+.ap-import-stats > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+.ap-import-stats > div.is-warn { background: #fffbeb; border-color: #fde68a; }
+.ap-import-stats strong { display: block; font-size: 22px; color: #1e293b; }
+.ap-import-stats span { font-size: 12px; color: #64748b; }
+.ap-import-detalle { margin: 6px 0; }
+.ap-import-detalle summary { cursor: pointer; font-weight: 600; }
+.ap-import-detalle ul { max-height: 220px; overflow: auto; margin: 6px 0 0 18px; list-style: disc; }
+.ap-bajas-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+.ap-clases-resumen { display: block; margin-top: 4px; font-size: 12px; color: #64748b; }

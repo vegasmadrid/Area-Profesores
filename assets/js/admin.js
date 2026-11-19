@@ -43,6 +43,25 @@
             saveTeacherAjax(userId, $(this).val(), $('#status-' + userId));
         });
 
+        // "Secretaría" toggle (recibe los avisos de las familias y ve a todos los alumnos)
+        $('.ap-secretaria-toggle').on('change', function() {
+            var $toggle = $(this);
+            var userId = $toggle.data('user-id');
+            var $status = $('#status-sec-' + userId);
+            $status.text('Guardando...').css('color', '#64748b').show();
+            $.post(AreaProfesoresAdminData.ajax_url, {
+                action: 'ap_admin_save_secretaria',
+                nonce: AreaProfesoresAdminData.nonce,
+                user_id: userId,
+                is_secretaria: $toggle.is(':checked') ? 1 : 0
+            }, null, 'json').done(function(r) {
+                $status.text(r && r.success ? '✓ Guardado' : 'Error').css('color', r && r.success ? '#10b981' : '#ef4444');
+                if (r && r.success) { setTimeout(function() { $status.fadeOut(400); }, 2000); }
+            }).fail(function() {
+                $status.text('Error de red').css('color', '#ef4444');
+            });
+        });
+
         // "Dirección" toggle (puede publicar comunicados en Google Chat)
         $('.ap-direccion-toggle').on('change', function() {
             var $toggle = $(this);

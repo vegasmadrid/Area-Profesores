@@ -69,6 +69,7 @@ if (!defined('ABSPATH')) {
                         <th><?php esc_html_e('Nombre y Usuario', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Correo electrónico', 'area-profesores'); ?></th>
                         <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Puede publicar comunicados en los espacios de Google Chat', 'area-profesores'); ?>"><?php esc_html_e('Dirección', 'area-profesores'); ?></th>
+                        <th style="width: 100px; text-align: center;" title="<?php esc_attr_e('Recibe los avisos de cambios de las familias y ve a todos los alumnos', 'area-profesores'); ?>"><?php esc_html_e('Secretaría', 'area-profesores'); ?></th>
                         <th style="width: 250px;"><?php esc_html_e('Etapa y tutoría', 'area-profesores'); ?></th>
                         <th style="width: 160px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
@@ -76,7 +77,7 @@ if (!defined('ABSPATH')) {
                 <tbody>
                     <?php if (empty($users)) : ?>
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 24px;">
+                            <td colspan="7" style="text-align: center; padding: 24px;">
                                 <?php esc_html_e('No se encontraron usuarios que coincidan con la búsqueda.', 'area-profesores'); ?>
                             </td>
                         </tr>
@@ -109,6 +110,17 @@ if (!defined('ABSPATH')) {
                                     </label>
                                     <span class="ap-ajax-status" id="status-dir-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
+                                <td style="text-align: center;">
+                                    <label class="ap-toggle-switch">
+                                        <input type="checkbox"
+                                               class="ap-secretaria-toggle"
+                                               value="1"
+                                               data-user-id="<?php echo esc_attr($u->ID); ?>"
+                                               <?php checked(Area_Profesores_Alumnos::es_secretaria($u->ID), true); ?>>
+                                        <span class="ap-toggle-slider"></span>
+                                    </label>
+                                    <span class="ap-ajax-status" id="status-sec-<?php echo esc_attr($u->ID); ?>"></span>
+                                </td>
                                 <td>
                                     <select name="asignacion[<?php echo esc_attr($u->ID); ?>]"
                                             class="ap-tutoria-select"
@@ -116,6 +128,12 @@ if (!defined('ABSPATH')) {
                                         <?php echo Area_Profesores_Cursos::render_codigo_options($codigo); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                                     </select>
                                     <span class="ap-ajax-status" id="status-<?php echo esc_attr($u->ID); ?>"></span>
+                                    <?php $ap_cl = Area_Profesores_Alumnos::get_clases_asignadas($u->ID); ?>
+                                    <a class="ap-clases-resumen" href="<?php echo esc_url(get_edit_user_link($u->ID) . '#ap-clases'); ?>">
+                                        <?php echo $ap_cl
+                                            ? esc_html(sprintf(__('Clases: %s', 'area-profesores'), implode(', ', array_map(function ($k) { return Area_Profesores_Cursos::get_curso($k)['label']; }, $ap_cl))))
+                                            : esc_html__('Asignar clases (especialistas)', 'area-profesores'); ?> ›
+                                    </a>
                                 </td>
                                 <td style="text-align: right;">
                                     <a href="<?php echo esc_url(get_edit_user_link($u->ID)); ?>" class="button button-small" target="_blank">

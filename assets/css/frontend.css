@@ -2871,3 +2871,146 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* ==========================================================================
+   MIS ALUMNOS (pestaña del Área de Profesores)
+   ========================================================================== */
+.ap-ma-tools {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ap-ma-tools input[type="search"] {
+    width: 220px;
+    max-width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--ap-slate-300);
+    border-radius: var(--ap-radius-md);
+    font-size: 14px;
+    background: var(--ap-slate-50);
+}
+
+.ap-ma-cursos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 18px 0 4px;
+}
+
+.ap-ma-curso {
+    border: 1.5px solid var(--ap-slate-300);
+    background: #fff;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ap-slate-700);
+    cursor: pointer;
+}
+
+.ap-ma-curso span {
+    font-size: 11px;
+    color: var(--ap-slate-500);
+    margin-left: 2px;
+}
+
+.ap-ma-curso.is-active {
+    background: var(--ap-primary);
+    border-color: var(--ap-primary);
+    color: #fff;
+}
+
+.ap-ma-curso.is-active span {
+    color: #dbeafe;
+}
+
+.ap-ma-lista[hidden],
+.ap-ma-tabla tr[hidden] {
+    display: none !important;
+}
+
+.ap-ma-titulo {
+    font-size: 15px !important;
+    margin: 18px 0 10px !important;
+    color: var(--ap-slate-800);
+}
+
+.ap-ma-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.ap-ma-tabla th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ap-slate-500);
+    border-bottom: 2px solid var(--ap-slate-200);
+    padding: 8px 10px;
+}
+
+.ap-ma-tabla td {
+    border-bottom: 1px solid var(--ap-slate-100);
+    padding: 9px 10px;
+    vertical-align: top;
+    color: var(--ap-slate-700);
+}
+
+.ap-ma-tabla .ap-ma-n {
+    width: 32px;
+    color: var(--ap-slate-400);
+}
+
+.ap-ma-alumno {
+    font-weight: 700;
+    color: var(--ap-slate-900) !important;
+}
+
+.ap-ma-tel a {
+    color: var(--ap-primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.ap-ma-vacio {
+    color: var(--ap-slate-500);
+}
+
+@media (max-width: 640px) {
+    .ap-ma-tabla thead {
+        display: none;
+    }
+    .ap-ma-tabla tr {
+        display: block;
+        border-bottom: 1px solid var(--ap-slate-200);
+        padding: 8px 0;
+    }
+    .ap-ma-tabla td {
+        display: block;
+        border: 0;
+        padding: 2px 4px;
+    }
+    .ap-ma-tabla .ap-ma-n {
+        display: none;
+    }
+}
+
+@media print {
+    body.ap-imprimiendo-alumnos * {
+        visibility: hidden;
+    }
+    body.ap-imprimiendo-alumnos .ap-ma-lista:not([hidden]),
+    body.ap-imprimiendo-alumnos .ap-ma-lista:not([hidden]) * {
+        visibility: visible;
+    }
+    body.ap-imprimiendo-alumnos .ap-ma-lista:not([hidden]) {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}

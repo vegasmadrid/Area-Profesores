@@ -145,6 +145,10 @@ class Area_Profesores_Shortcode {
         // Espacios de aula (family Chat spaces of every course)
         $espacios_aula = Area_Profesores_Aulas::get_espacios_para_profesores($user_id);
 
+        // Mis alumnos (tutoría, assigned classes, or all for Dirección/Secretaría)
+        $mis_alumnos = Area_Profesores_Alumnos::datos_mis_alumnos($user_id);
+        $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
+
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
         return ob_get_clean();
