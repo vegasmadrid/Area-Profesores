@@ -30,9 +30,11 @@ if (!defined('ABSPATH')) {
                     <?php else : ?>
                         <?php $ap_codigo = Area_Profesores_Cursos::get_codigo_asignacion($user_id); ?>
                         <span class="ap-badge ap-badge-secondary">
-                            <?php echo $ap_codigo !== ''
-                                ? esc_html(Area_Profesores_Cursos::get_codigo_label($ap_codigo))
-                                : esc_html__('Etapa sin asignar', 'area-profesores'); ?>
+                            <?php
+                            $ap_etapas = array_map(array('Area_Profesores_Cursos', 'get_etapa_label'), Area_Profesores_Cursos::get_etapas_usuario($user_id));
+                            echo $ap_codigo !== ''
+                                ? esc_html(Area_Profesores_Cursos::get_codigo_label($ap_codigo) . ($ap_etapas ? ' · ' . implode(', ', $ap_etapas) : ''))
+                                : esc_html__('Sin asignar', 'area-profesores'); ?>
                         </span>
                     <?php endif; ?>
 
@@ -98,6 +100,18 @@ if (!defined('ABSPATH')) {
                 </svg>
                 <span><?php esc_html_e('Mis alumnos', 'area-profesores'); ?></span>
                 <span class="ap-tab-counter"><?php echo (int) $mis_alumnos['total']; ?></span>
+            </button>
+        <?php endif; ?>
+
+        <?php if ($reservas !== null) : ?>
+            <button type="button" class="ap-tab-btn" data-target="tab-reservas">
+                <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span><?php esc_html_e('Reservas', 'area-profesores'); ?></span>
+                <?php if (!empty($reservas['proximos'][$reservas['hoy']])) : ?>
+                    <span class="ap-tab-counter"><?php echo (int) $reservas['proximos'][$reservas['hoy']]; ?></span>
+                <?php endif; ?>
             </button>
         <?php endif; ?>
 
@@ -209,6 +223,13 @@ if (!defined('ABSPATH')) {
             <!-- Pestaña: Mis alumnos -->
             <section id="tab-alumnos" class="ap-tab-content">
                 <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/mis-alumnos.php'; ?>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($reservas !== null) : ?>
+            <!-- Pestaña: Reservas de las familias -->
+            <section id="tab-reservas" class="ap-tab-content">
+                <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/reservas-profesor.php'; ?>
             </section>
         <?php endif; ?>
 

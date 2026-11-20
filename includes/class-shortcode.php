@@ -149,6 +149,29 @@ class Area_Profesores_Shortcode {
         $mis_alumnos = Area_Profesores_Alumnos::datos_mis_alumnos($user_id);
         $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
 
+        // Reservas de las familias (services) of the visible courses.
+        $reservas = null;
+        if (!empty($mis_alumnos['cursos'])) {
+            $visibles = Area_Profesores_Alumnos::cursos_visibles($user_id);
+            $hoy = current_time('Y-m-d');
+            $f = isset($_GET['ap_res']) ? sanitize_text_field(wp_unslash($_GET['ap_res'])) : '';
+            $f = preg_match('/^\d{4}-\d{2}-\d{2}$/', $f) ? $f : $hoy;
+            $proximos = array();
+            for ($i = 0, $t = strtotime($hoy . ' 12:00:00 UTC'); count($proximos) < 7 && $i < 14; $i++, $t += DAY_IN_SECONDS) {
+                if ((int) gmdate('N', $t) <= 5) {
+                    $d = gmdate('Y-m-d', $t);
+                    $proximos[$d] = count(Area_Profesores_Reservas::del_dia($d, $visibles));
+                }
+            }
+            $reservas = array(
+                'fecha'    => $f,
+                'hoy'      => $hoy,
+                'lista'    => Area_Profesores_Reservas::del_dia($f, $visibles),
+                'proximos' => $proximos,
+                'todos'    => $visibles === true,
+            );
+        }
+
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
         return ob_get_clean();

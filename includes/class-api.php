@@ -16,6 +16,8 @@
  *      The family updates the emergency phone and address of each parent; the
  *      change is saved right away and the tutors of its children and
  *      Secretaría are notified by e-mail (to update Alexia).
+ * GET|POST /area-profesores/v1/familia/reservas, POST …/familia/reservas/anular
+ *      Reservations of services (see Area_Profesores_Reservas).
  */
 
 if (!defined('ABSPATH')) {
@@ -117,6 +119,7 @@ class Area_Profesores_API {
                     'curso'       => $a['curso'],
                     'curso_label' => $c ? $c['label'] : '',
                     'etapa'       => $c ? Area_Profesores_Cursos::get_etapa_label($c['etapa']) : '',
+                    'etapa_key'   => $c ? $c['etapa'] : '',
                     'tutor'       => ($c && !empty($tutores[$a['curso']])) ? Area_Profesores_Aulas::get_tutor_card($tutores[$a['curso']]) : null,
                     'espacio'     => isset($espacios[$a['curso']]) ? $espacios[$a['curso']] : null,
                 );

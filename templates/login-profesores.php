@@ -150,10 +150,10 @@ if (!defined('ABSPATH')) {
                         <!-- Tutoría Asignada -->
                         <div class="ap-form-field-group">
                             <label for="ap-req-tutoria" class="ap-field-label">
-                                <?php esc_html_e('Etapa y tutoría este curso', 'area-profesores'); ?>
+                                <?php esc_html_e('Tutoría este curso', 'area-profesores'); ?>
                             </label>
                             <select id="ap-req-tutoria" name="tutoria_deseada" class="ap-field-select">
-                                <?php echo Area_Profesores_Cursos::render_codigo_options('', __('-- Selecciona tu etapa y si eres tutor/a o especialista --', 'area-profesores')); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+                                <?php echo Area_Profesores_Cursos::render_codigo_options('', __('-- ¿Eres tutor/a de un curso o especialista? --', 'area-profesores')); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                             </select>
                         </div>
 

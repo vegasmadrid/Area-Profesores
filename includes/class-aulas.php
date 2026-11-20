@@ -235,10 +235,10 @@ class Area_Profesores_Aulas {
             if (!array_key_exists($curso, $tutor_sel)) {
                 continue;
             }
-            // Previous tutors no longer chosen for any course become specialists of their etapa.
+            // Previous tutors no longer chosen for any course become specialists.
             foreach (isset($actuales[$curso]) ? $actuales[$curso] : array() as $u) {
                 if (!isset($usado[$u->ID])) {
-                    Area_Profesores_Cursos::set_asignacion($u->ID, 'esp:' . $c['etapa']);
+                    Area_Profesores_Cursos::set_asignacion($u->ID, 'esp');
                 }
             }
         }

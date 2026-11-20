@@ -115,7 +115,7 @@ $ap_etapas = Area_Profesores_Cursos::get_etapas();
         <div class="ap-admin-footer">
             <button type="submit" class="button button-primary button-large"><?php esc_html_e('Guardar aulas', 'area-profesores'); ?></button>
             <span class="description" style="margin-left: 12px;">
-                <?php esc_html_e('Si quitas a un tutor/a de su aula y no lo pones en otra, queda como especialista de esa etapa.', 'area-profesores'); ?>
+                <?php esc_html_e('Si quitas a un tutor/a de su aula y no lo pones en otra, queda como especialista.', 'area-profesores'); ?>
             </span>
         </div>
     </form>

@@ -43,7 +43,7 @@ class Area_Profesores_Correos {
                 'cuando'  => __('Cuando alguien pide acceso desde la página de login.', 'area-profesores'),
                 'para'    => __('Los correos de "Correos de notificación de solicitudes" (Ajustes).', 'area-profesores'),
                 'asunto'  => __('Nueva solicitud de acceso al Área de Profesores: {nombre} {apellidos}', 'area-profesores'),
-                'cuerpo'  => __("Hay una nueva solicitud de acceso al Área de Profesores.\n\nNombre: {nombre} {apellidos}\nCorreo: {correo}\nEtapa y tutoría: {tutoria}\nObservaciones: {observaciones}\n\nPuedes aprobarla o rechazarla aquí:\n{enlace}", 'area-profesores'),
+                'cuerpo'  => __("Hay una nueva solicitud de acceso al Área de Profesores.\n\nNombre: {nombre} {apellidos}\nCorreo: {correo}\nTutoría o especialista: {tutoria}\nObservaciones: {observaciones}\n\nPuedes aprobarla o rechazarla aquí:\n{enlace}", 'area-profesores'),
                 'boton'   => __('Revisar la solicitud', 'area-profesores'),
                 'vars'    => array('nombre' => __('nombre', 'area-profesores'), 'apellidos' => __('apellidos', 'area-profesores'), 'correo' => __('correo del profesor', 'area-profesores'), 'tutoria' => __('etapa y tutoría pedidas', 'area-profesores'), 'observaciones' => __('observaciones', 'area-profesores'), 'enlace' => __('enlace a las solicitudes', 'area-profesores')),
                 'ejemplo' => array('nombre' => 'Ana', 'apellidos' => 'García López', 'correo' => 'ana.garcia@casadelavirgen.es', 'tutoria' => 'Tutor/a de 3º EP A (Primaria)', 'observaciones' => 'Me incorporo este curso.', 'enlace' => admin_url('admin.php?page=area-profesores-solicitudes')),
@@ -69,6 +69,92 @@ class Area_Profesores_Correos {
                 'ejemplo' => array('familia' => 'García López', 'correo' => 'lucia.garcia@casadelavirgen.es', 'cambios' => "- Teléfono de emergencia de Ana López: 600 111 222 → 699 000 111", 'alumnos' => '- Lucía García López (3º EP A)'),
                 'tutores' => true,
                 'secretaria' => true,
+            ),
+            'reserva_nueva' => array(
+                'titulo'  => __('Una familia reserva un servicio', 'area-profesores'),
+                'cuando'  => __('Cuando una familia reserva un servicio desde el Área Familias (uno por cada hijo).', 'area-profesores'),
+                'para'    => __('El tutor/a del alumno y Secretaría (se elige abajo), y los correos de aviso del servicio que se pongan en el Área Familias. Si respondéis, la respuesta le llega a la familia.', 'area-profesores'),
+                'asunto'  => __('Reserva de {servicio}: {alumno} ({curso})', 'area-profesores'),
+                'cuerpo'  => __("La familia {familia} ({correo}) ha reservado un servicio desde el Área Familias:
+
+Servicio: {servicio}
+Alumno/a: {alumno} ({curso})
+Fechas: {fechas}
+
+{detalles}
+
+Puedes ver las reservas de tus alumnos en la pestaña Reservas del Área de Profesores:
+{enlace}", 'area-profesores'),
+                'boton'   => __('Ver las reservas', 'area-profesores'),
+                'vars'    => array('servicio' => __('servicio reservado', 'area-profesores'), 'alumno' => __('nombre del alumno', 'area-profesores'), 'curso' => __('curso', 'area-profesores'), 'familia' => __('nombre de la familia', 'area-profesores'), 'correo' => __('cuenta de la familia', 'area-profesores'), 'fechas' => __('día o días y hora', 'area-profesores'), 'detalles' => __('todo lo que ha indicado la familia (desayuno, dieta, motivo…)', 'area-profesores'), 'enlace' => __('enlace a la pestaña Reservas', 'area-profesores')),
+                'ejemplo' => array('servicio' => 'Salida anticipada', 'alumno' => 'Lucía García López', 'curso' => '3º EP A', 'familia' => 'García López', 'correo' => 'lucia.garcia@casadelavirgen.es', 'fechas' => 'Martes 25 de noviembre de 2026 · a las 12:30', 'detalles' => "Motivo: Cita médica\nRecoge: Su abuela, Carmen López", 'enlace' => home_url('/')),
+                'tutores' => true,
+                'secretaria' => true,
+            ),
+            'reserva_familia' => array(
+                'titulo'  => __('Confirmación de la reserva a la familia', 'area-profesores'),
+                'cuando'  => __('Cuando una familia reserva un servicio.', 'area-profesores'),
+                'para'    => __('La cuenta de la familia que ha hecho la reserva.', 'area-profesores'),
+                'asunto'  => __('Reserva confirmada: {servicio}', 'area-profesores'),
+                'cuerpo'  => __("Hola:
+
+Hemos recibido tu reserva. Estos son sus datos:
+
+Servicio: {servicio}
+Alumno/a: {alumnos}
+Fechas: {fechas}
+
+{detalles}
+
+Ya se lo hemos comunicado a su tutor/a y a secretaría. Puedes consultar o anular tus reservas en el Área Familias:
+{enlace}
+
+Un saludo,
+Colegio Casa de la Virgen", 'area-profesores'),
+                'boton'   => __('Ir al Área Familias', 'area-profesores'),
+                'vars'    => array('servicio' => __('servicio reservado', 'area-profesores'), 'alumnos' => __('hijo o hijos y su curso', 'area-profesores'), 'fechas' => __('día o días y hora', 'area-profesores'), 'detalles' => __('lo que ha indicado la familia', 'area-profesores'), 'enlace' => __('enlace al Área Familias', 'area-profesores')),
+                'ejemplo' => array('servicio' => 'Ampliación de horario', 'alumnos' => 'Lucía García López (3º EP A), Pablo García López (1º EP B)', 'fechas' => 'Del lunes 1 de diciembre de 2026 al viernes 19 de diciembre de 2026', 'detalles' => 'Desayuno: Sí', 'enlace' => home_url('/')),
+            ),
+            'reserva_anulada' => array(
+                'titulo'  => __('Se anula una reserva', 'area-profesores'),
+                'cuando'  => __('Cuando la familia anula una reserva desde el Área Familias, o se anula desde "Reservas de familias".', 'area-profesores'),
+                'para'    => __('El tutor/a del alumno y Secretaría (se elige abajo), y los correos de aviso del servicio.', 'area-profesores'),
+                'asunto'  => __('Reserva anulada: {servicio} — {alumno} ({curso})', 'area-profesores'),
+                'cuerpo'  => __("Se ha anulado esta reserva (la ha anulado {quien}):
+
+Servicio: {servicio}
+Alumno/a: {alumno} ({curso})
+Familia: {familia} ({correo})
+Fechas: {fechas}
+
+{detalles}", 'area-profesores'),
+                'boton'   => '',
+                'vars'    => array('servicio' => __('servicio', 'area-profesores'), 'alumno' => __('nombre del alumno', 'area-profesores'), 'curso' => __('curso', 'area-profesores'), 'familia' => __('nombre de la familia', 'area-profesores'), 'correo' => __('cuenta de la familia', 'area-profesores'), 'fechas' => __('día o días y hora', 'area-profesores'), 'detalles' => __('datos de la reserva', 'area-profesores'), 'quien' => __('la familia o el colegio', 'area-profesores')),
+                'ejemplo' => array('servicio' => 'Comedor', 'alumno' => 'Lucía García López', 'curso' => '3º EP A', 'familia' => 'García López', 'correo' => 'lucia.garcia@casadelavirgen.es', 'fechas' => 'Jueves 27 de noviembre de 2026', 'detalles' => 'Dieta: No', 'quien' => 'la familia'),
+                'tutores' => true,
+                'secretaria' => true,
+            ),
+            'reserva_anulada_familia' => array(
+                'titulo'  => __('Aviso a la familia de una reserva anulada', 'area-profesores'),
+                'cuando'  => __('Cuando la familia anula una reserva, o se anula desde "Reservas de familias".', 'area-profesores'),
+                'para'    => __('La cuenta de la familia que hizo la reserva.', 'area-profesores'),
+                'asunto'  => __('Reserva anulada: {servicio}', 'area-profesores'),
+                'cuerpo'  => __("Hola:
+
+Se ha anulado esta reserva (la ha anulado {quien}):
+
+Servicio: {servicio}
+Alumno/a: {alumnos}
+Fechas: {fechas}
+
+Puedes hacer una reserva nueva en el Área Familias:
+{enlace}
+
+Un saludo,
+Colegio Casa de la Virgen", 'area-profesores'),
+                'boton'   => __('Ir al Área Familias', 'area-profesores'),
+                'vars'    => array('servicio' => __('servicio', 'area-profesores'), 'alumnos' => __('alumno y curso', 'area-profesores'), 'fechas' => __('día o días y hora', 'area-profesores'), 'quien' => __('la propia familia o el colegio', 'area-profesores'), 'enlace' => __('enlace al Área Familias', 'area-profesores')),
+                'ejemplo' => array('servicio' => 'Comedor', 'alumnos' => 'Lucía García López (3º EP A)', 'fechas' => 'Jueves 27 de noviembre de 2026', 'quien' => 'la propia familia', 'enlace' => home_url('/')),
             ),
             'programado_errores' => array(
                 'titulo'  => __('Comunicado programado con errores', 'area-profesores'),
@@ -113,7 +199,7 @@ class Area_Profesores_Correos {
      * @param array        $vars values of the {variables}
      * @return bool
      */
-    public static function enviar($key, $to, $vars, $forzar = false) {
+    public static function enviar($key, $to, $vars, $forzar = false, $reply_to = '') {
         $defs = self::definiciones();
         if (!isset($defs[$key])) {
             return false;
@@ -132,7 +218,11 @@ class Area_Profesores_Correos {
         $asunto = self::reemplazar($c['asunto'], $vars);
         $html = self::html($asunto, self::reemplazar($c['cuerpo'], $vars), $defs[$key]['boton']);
 
-        return wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, array('Content-Type: text/html; charset=UTF-8'));
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        if ($reply_to !== '' && is_email($reply_to)) {
+            $headers[] = 'Reply-To: ' . $reply_to;
+        }
+        return wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, $headers);
     }
 
     private static function reemplazar($texto, $vars) {

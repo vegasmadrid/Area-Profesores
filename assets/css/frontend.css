@@ -3050,3 +3050,21 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
         text-decoration: none;
     }
 }
+
+/* Reservas de las familias (pestaña del profesor) */
+.ap-res-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 18px; }
+.ap-res-fecha { margin: 0; }
+.ap-res-fecha input[type="date"] { height: 36px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 10px; font: inherit; }
+.ap-res-proximos { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.ap-res-dia { display: inline-flex; flex-direction: column; align-items: center; min-width: 58px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #64748b; font-size: 12px; line-height: 1.2; background: #fff; }
+.ap-res-dia b { font-weight: 700; }
+.ap-res-dia span { font-size: 15px; font-weight: 800; color: #cbd5e1; }
+.ap-res-dia.has-res span { color: #dc8e2b; }
+.ap-res-dia.is-active { background: #313280; border-color: #313280; color: #fff; }
+.ap-res-dia.is-active span { color: #fff; }
+.ap-res-grupo { margin: 0 0 22px; }
+.ap-res-grupo h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 16px; color: #313280; }
+.ap-res-grupo h4 span { font-size: 12px; background: #dc8e2b; color: #fff; border-radius: 999px; padding: 1px 8px; }
+.ap-res-detalles { font-size: 13px; color: #334155; }
+.ap-res-detalles small { display: block; margin-top: 4px; color: #94a3b8; }
+@media print { .ap-res-nav { display: none !important; } }
