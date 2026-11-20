@@ -126,7 +126,7 @@ class Area_Profesores_Enlaces {
      */
     public static function get_for_user($user_id) {
         $has_tutoria = $user_id ? (Area_Profesores_Admin::get_user_tutoria($user_id) !== '') : false;
-        $etapa = $user_id ? Area_Profesores_Cursos::get_asignacion($user_id)['etapa'] : '';
+        $etapas = $user_id ? Area_Profesores_Cursos::get_etapas_usuario($user_id) : array();
         $is_admin = $user_id ? user_can($user_id, 'manage_options') : false;
 
         $destacados = array();
@@ -144,7 +144,7 @@ class Area_Profesores_Enlaces {
                 if ($link['audiencia'] === 'especialistas' && $has_tutoria) {
                     continue;
                 }
-                if (strpos($link['audiencia'], 'etapa_') === 0 && $link['audiencia'] !== 'etapa_' . $etapa) {
+                if (strpos($link['audiencia'], 'etapa_') === 0 && !in_array(substr($link['audiencia'], 6), $etapas, true)) {
                     continue;
                 }
             }

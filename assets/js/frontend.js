@@ -91,6 +91,48 @@
             $('#ap-ea-vacio').prop('hidden', total > 0);
         });
 
+        // =========================================================================
+        // Mis alumnos: course selector, search and print
+        // =========================================================================
+        var $ma = $('#tab-alumnos');
+        if ($ma.length) {
+            $ma.on('click', '.ap-ma-curso', function() {
+                var curso = $(this).data('curso');
+                $ma.find('.ap-ma-curso').removeClass('is-active');
+                $(this).addClass('is-active');
+                $ma.find('.ap-ma-lista').each(function() {
+                    this.hidden = $(this).data('curso') !== curso;
+                });
+                $('#ap-ma-buscar').val('').trigger('input');
+            });
+            $('#ap-ma-buscar').on('input', function() {
+                var norm = function(str) {
+                    return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                };
+                var q = norm($(this).val()).trim();
+                // When searching, look in every course.
+                $ma.find('.ap-ma-lista').each(function() {
+                    var $lista = $(this), visibles = 0;
+                    $lista.find('tbody tr').each(function() {
+                        var ok = q === '' || norm($(this).data('search')).indexOf(q) !== -1;
+                        this.hidden = !ok;
+                        if (ok) { visibles++; }
+                    });
+                    if (q !== '') {
+                        this.hidden = visibles === 0;
+                    } else {
+                        var activo = $ma.find('.ap-ma-curso.is-active').data('curso');
+                        this.hidden = activo !== undefined && $lista.data('curso') !== activo;
+                    }
+                });
+            });
+            $('#ap-ma-imprimir').on('click', function() {
+                $('body').addClass('ap-imprimiendo-alumnos');
+                window.print();
+                setTimeout(function() { $('body').removeClass('ap-imprimiendo-alumnos'); }, 500);
+            });
+        }
+
         // Switch to form button from empty state
         $(document).on('click', '.ap-switch-to-form', function() {
             $('.ap-tab-btn[data-target="tab-comedor"]').trigger('click');

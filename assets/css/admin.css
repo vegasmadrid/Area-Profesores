@@ -628,3 +628,83 @@
 }
 
 
+
+/* Alumnos y familias */
+.ap-alumnos-tabs { margin: 16px 0 0; }
+.ap-alumnos-admin .ap-edit-card { margin: 18px 0; }
+.ap-alumnos-admin .ap-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0 10px; }
+.ap-alumnos-admin .ap-filtros .ap-toolbar-stats { margin-left: auto; color: #64748b; }
+.ap-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+.ap-form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ap-mini { font-size: 12px; color: #64748b; }
+.ap-list-plain { margin: 0 0 10px; }
+.ap-list-plain li { margin-bottom: 4px; }
+.ap-quitar { margin-left: 8px; font-size: 12px; color: #b91c1c; }
+.ap-row-baja td { opacity: .6; }
+.ap-contactos-table td { padding: 4px 6px; }
+.ap-import-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
+.ap-import-stats > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+.ap-import-stats > div.is-warn { background: #fffbeb; border-color: #fde68a; }
+.ap-import-stats strong { display: block; font-size: 22px; color: #1e293b; }
+.ap-import-stats span { font-size: 12px; color: #64748b; }
+.ap-import-detalle { margin: 6px 0; }
+.ap-import-detalle summary { cursor: pointer; font-weight: 600; }
+.ap-import-detalle ul { max-height: 220px; overflow: auto; margin: 6px 0 0 18px; list-style: disc; }
+.ap-bajas-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+.ap-clases-resumen { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; color: #64748b; }
+.ap-clase-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #e0f2fe; color: #0c4a6e; font-weight: 600; }
+.ap-clases-falta { color: #b45309; }
+.ap-clases-dialog { width: min(640px, 92vw); border: none; border-radius: 14px; padding: 22px 26px; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); }
+.ap-clases-dialog::backdrop { background: rgba(15, 23, 42, .45); }
+.ap-clases-dialog h2 { margin-top: 0; }
+.ap-clases-etapa { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px 6px; margin: 10px 0; }
+.ap-clases-etapa legend { font-weight: 700; padding: 0 6px; }
+.ap-clases-etapa label { display: inline-block; min-width: 110px; margin: 0 8px 6px 0; }
+.ap-clases-todas { font-size: 12px; margin-left: 6px; }
+.ap-fam-bloque + .ap-fam-bloque { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e2e8f0; }
+
+/* Correos automáticos */
+.ap-correos-indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.ap-correos-indice a { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 14px; text-decoration: none; font-weight: 600; }
+.ap-correo-card { margin: 18px 0; scroll-margin-top: 40px; }
+.ap-correo-info { color: #475569; background: #f8fafc; border-radius: 8px; padding: 10px 14px; }
+.ap-correo-para label { display: inline-block; margin-right: 18px; }
+.ap-correo-vars { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: -4px; }
+.ap-correo-vars span { color: #64748b; font-size: 12px; }
+.ap-correo-cuerpo { font-family: inherit; }
+
+/* Reservas de familias */
+.ap-reservas-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0; }
+.ap-reservas-filtros input[type="date"], .ap-reservas-filtros select, .ap-reservas-filtros input[type="search"] { min-height: 32px; }
+.ap-reservas-acciones { margin-left: auto; display: inline-flex; gap: 6px; }
+.ap-reservas-dia { display: flex; align-items: center; gap: 12px; font-size: 20px; color: #313280; }
+.ap-reservas-dia span { font-size: 13px; font-weight: 600; color: #64748b; }
+.ap-reservas-grupo h3 { margin: 0 0 12px; color: #313280; }
+.ap-reservas-tabla td { vertical-align: top; }
+.ap-reservas-detalles { font-size: 12px; color: #334155; }
+.ap-reservas-creado { margin-top: 4px; font-size: 11px; color: #94a3b8; }
+.ap-reservas-tabla tr.is-anulada td { color: #94a3b8; text-decoration: line-through; }
+.ap-reservas-tabla tr.is-anulada td.no-print { text-decoration: none; }
+@media print {
+    #adminmenumain, #wpadminbar, #wpfooter, .no-print, .notice { display: none !important; }
+    #wpcontent { margin-left: 0 !important; padding: 0 !important; }
+    .ap-settings-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+}
+
+/* Profesores: on narrow screens let the columns adapt instead of squashing names and e-mails */
+@media (max-width: 1400px) {
+    #ap-admin-profesores-form .ap-table { table-layout: auto; }
+    #ap-admin-profesores-form .ap-table td { word-break: normal; overflow-wrap: anywhere; }
+}
+#ap-admin-profesores-form .ap-tutoria-select { min-width: 190px; max-width: 100%; }
+.ap-cd-admin-estados { display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-cuentas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+.ap-cuentas-grid .ap-settings-card { margin: 0; }
+.ap-cuentas-lista { margin: 12px 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ap-cuentas-lista li { display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; }
+.ap-cuentas-lista li img { border-radius: 50%; }
+.ap-cuentas-lista li span { flex: 1; line-height: 1.3; }
+.ap-cuentas-lista form { margin: 0; }
+.ap-cuentas-vacio { color: #b45309; }
+.ap-cuentas-anadir { display: flex; gap: 6px; margin-top: 10px; }
+.ap-cuentas-anadir select { flex: 1; min-width: 0; }

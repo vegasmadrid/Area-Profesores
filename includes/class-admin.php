@@ -190,13 +190,11 @@ class Area_Profesores_Admin {
         if (isset($_POST['ap_save_profesores']) && check_admin_referer('ap_save_profesores_nonce')) {
             $asignaciones = isset($_POST['asignacion']) && is_array($_POST['asignacion']) ? wp_unslash($_POST['asignacion']) : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
-            $direccion_status = isset($_POST['is_direccion']) && is_array($_POST['is_direccion']) ? $_POST['is_direccion'] : array();
 
             foreach ($all_user_ids as $uid) {
                 if (isset($asignaciones[$uid])) {
                     Area_Profesores_Cursos::set_asignacion($uid, sanitize_text_field($asignaciones[$uid]));
                 }
-                update_user_meta($uid, Area_Profesores_Chat::META_DIR, isset($direccion_status[$uid]) ? '1' : '0');
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
@@ -211,7 +209,7 @@ class Area_Profesores_Admin {
         // Search and pagination parameters
         $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
         $filter_etapa = isset($_GET['filter_etapa']) ? sanitize_key($_GET['filter_etapa']) : '';
-        if ($filter_etapa !== '' && $filter_etapa !== 'sin' && !array_key_exists($filter_etapa, Area_Profesores_Cursos::get_etapas())) {
+        if ($filter_etapa !== '' && $filter_etapa !== 'sin' && $filter_etapa !== 'especialistas' && !array_key_exists($filter_etapa, Area_Profesores_Cursos::get_etapas())) {
             $filter_etapa = '';
         }
         $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
@@ -227,16 +225,18 @@ class Area_Profesores_Admin {
         );
 
         if ($filter_etapa !== '') {
-            $etapa_query = $filter_etapa === 'sin'
-                ? array(
-                    'relation' => 'OR',
-                    array('key' => Area_Profesores_Cursos::META_ETAPA, 'value' => '', 'compare' => '='),
-                    array('key' => Area_Profesores_Cursos::META_ETAPA, 'compare' => 'NOT EXISTS'),
-                )
-                : array('key' => Area_Profesores_Cursos::META_ETAPA, 'value' => $filter_etapa, 'compare' => '=');
-            $args['meta_query'] = isset($args['meta_query'])
-                ? array('relation' => 'AND', $args['meta_query'], $etapa_query)
-                : array($etapa_query);
+            // Specialists work in several etapas (those of their classes), so the
+            // filter is resolved here: tutors of the etapa + specialists with
+            // classes in it.
+            $ids = array();
+            foreach (get_users(array('fields' => 'ID')) as $uid) {
+                $a = Area_Profesores_Cursos::get_asignacion((int) $uid);
+                if ($filter_etapa === 'sin' ? $a['rol'] === ''
+                    : ($filter_etapa === 'especialistas' ? $a['rol'] === 'especialista' : in_array($filter_etapa, $a['etapas'], true))) {
+                    $ids[] = (int) $uid;
+                }
+            }
+            $args['include'] = $ids ? $ids : array(0);
         }
 
         $user_query = new WP_User_Query($args);
@@ -432,21 +432,12 @@ class Area_Profesores_Admin {
         <h2><?php esc_html_e('Configuración Área de Profesores', 'area-profesores'); ?></h2>
         <table class="form-table">
             <tr>
-                <th><label for="ap_is_direccion"><?php esc_html_e('Dirección', 'area-profesores'); ?></label></th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="ap_is_direccion" id="ap_is_direccion" value="1" <?php checked(Area_Profesores_Chat::has_direccion_flag($user->ID)); ?>>
-                        <?php esc_html_e('Puede publicar comunicados a las familias en los espacios de Google Chat', 'area-profesores'); ?>
-                    </label>
-                </td>
-            </tr>
-            <tr>
-                <th><label for="ap_asignacion"><?php esc_html_e('Etapa y tutoría', 'area-profesores'); ?></label></th>
+                <th><label for="ap_asignacion"><?php esc_html_e('Tutoría o especialista', 'area-profesores'); ?></label></th>
                 <td>
                     <select name="ap_asignacion" id="ap_asignacion">
                         <?php echo Area_Profesores_Cursos::render_codigo_options($codigo); // phpcs:ignore WordPress.Security.EscapeOutput ?>
                     </select>
-                    <p class="description"><?php esc_html_e('Etapa del profesor y, si es tutor/a, su curso. En "Apuntar Comedor" se preselecciona su curso.', 'area-profesores'); ?></p>
+                    <p class="description"><?php esc_html_e('Si es tutor/a, su curso (en "Apuntar Comedor" se preselecciona). Los especialistas no tienen una etapa fija: sus etapas son las de las "Clases asignadas" (más abajo).', 'area-profesores'); ?></p>
                 </td>
             </tr>
         </table>
@@ -464,7 +455,6 @@ class Area_Profesores_Admin {
         if (isset($_POST['ap_asignacion'])) {
             Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['ap_asignacion'])));
         }
-        update_user_meta($user_id, Area_Profesores_Chat::META_DIR, isset($_POST['ap_is_direccion']) ? '1' : '0');
     }
 
     /**

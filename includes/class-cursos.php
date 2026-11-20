@@ -9,7 +9,9 @@
  *   Chat de las familias van unidos a la promoción, así que cada año aparecen
  *   automáticamente con el curso nuevo.
  * - Asignación del profesor (un único código): curso para tutores ("EP3A") o
- *   "esp:<etapa>" para especialistas ("esp:primaria").
+ *   "esp" para especialistas. Los especialistas no tienen una etapa fija: sus
+ *   etapas son las de las clases que se les asignan (pueden ser de varias).
+ *   El código antiguo "esp:<etapa>" se sigue aceptando y equivale a "esp".
  */
 
 if (!defined('ABSPATH')) {
@@ -127,6 +129,21 @@ class Area_Profesores_Cursos {
         return $out;
     }
 
+    /**
+     * <option>s of every course grouped by etapa.
+     */
+    public static function get_cursos_options_html($selected = '') {
+        $html = '';
+        foreach (self::get_cursos_por_etapa() as $etapa => $cursos) {
+            $html .= '<optgroup label="' . esc_attr(self::get_etapa_label($etapa)) . '">';
+            foreach ($cursos as $key => $c) {
+                $html .= '<option value="' . esc_attr($key) . '"' . selected($selected, $key, false) . '>' . esc_html($c['label']) . '</option>';
+            }
+            $html .= '</optgroup>';
+        }
+        return $html;
+    }
+
     /* ---------------------------------------------------------------------
      * Promociones
      * ------------------------------------------------------------------- */
@@ -221,6 +238,26 @@ class Area_Profesores_Cursos {
         return in_array('', $grupos, true) ? $next : $next . $grupos[0];
     }
 
+    /**
+     * Course key from the "Nivel" of Alexia: EP-3ºA, INF-1A (1 año A), INF-4B,
+     * E2ºB (2º ESO B), B-1ºA / B2ºA (Bachillerato). '' if unknown.
+     */
+    public static function curso_desde_alexia($nivel) {
+        $n = strtoupper(str_replace(array(' ', 'º', 'ª', '°', '.'), '', (string) $nivel));
+        if (preg_match('/^EP-?(\d)([AB])$/', $n, $m)) {
+            $k = 'EP' . $m[1] . $m[2];
+        } elseif (preg_match('/^INF-?(\d)([AB])$/', $n, $m)) {
+            $k = ((int) $m[1] <= 2 ? 'PC' : 'I') . $m[1] . $m[2];
+        } elseif (preg_match('/^(?:E|ESO)-?(\d)([AB])$/', $n, $m)) {
+            $k = 'ESO' . $m[1] . $m[2];
+        } elseif (preg_match('/^(?:B|BACH)-?(\d)[AB]?$/', $n, $m)) {
+            $k = 'BACH' . $m[1];
+        } else {
+            return '';
+        }
+        return self::get_curso($k) ? $k : '';
+    }
+
     /* ---------------------------------------------------------------------
      * Asignación de profesores (etapa + tutor/especialista + curso)
      * ------------------------------------------------------------------- */
@@ -228,7 +265,11 @@ class Area_Profesores_Cursos {
     /**
      * Current assignment of a teacher.
      *
-     * @return array { etapa, rol, curso }
+     * - etapa: the tutor's etapa ('' for specialists, who have no fixed etapa).
+     * - etapas: every etapa the teacher works in (tutor: one; specialist: the
+     *   etapas of the classes assigned to them).
+     *
+     * @return array { etapa, etapas, rol, curso }
      */
     public static function get_asignacion($user_id) {
         $curso = (string) get_user_meta($user_id, self::META_CURSO, true);
@@ -237,29 +278,62 @@ class Area_Profesores_Cursos {
 
         if ($curso !== '' && self::get_curso($curso)) {
             $c = self::get_curso($curso);
-            return array('etapa' => $c['etapa'], 'rol' => 'tutor', 'curso' => $curso);
+            $etapas = array($c['etapa']);
+            foreach (self::etapas_de_clases($user_id) as $e) {
+                if (!in_array($e, $etapas, true)) {
+                    $etapas[] = $e;
+                }
+            }
+            return array('etapa' => $c['etapa'], 'etapas' => $etapas, 'rol' => 'tutor', 'curso' => $curso);
         }
 
-        if (!array_key_exists($etapa, self::get_etapas())) {
-            $etapa = '';
+        // Specialist: new model (rol only) or legacy "specialist of an etapa".
+        if ($rol === 'especialista' || array_key_exists($etapa, self::get_etapas())) {
+            $etapas = self::etapas_de_clases($user_id);
+            if (!$etapas && array_key_exists($etapa, self::get_etapas())) {
+                $etapas = array($etapa); // legacy, until classes are assigned
+            }
+            return array('etapa' => '', 'etapas' => $etapas, 'rol' => 'especialista', 'curso' => '');
         }
 
-        return array(
-            'etapa' => $etapa,
-            'rol'   => $etapa !== '' ? 'especialista' : '',
-            'curso' => '',
-        );
+        return array('etapa' => '', 'etapas' => array(), 'rol' => '', 'curso' => '');
     }
 
     /**
-     * Assignment as a single code: course key or "esp:<etapa>" ('' = sin asignar).
+     * Etapas of the classes assigned to a teacher (in etapa order).
+     */
+    public static function etapas_de_clases($user_id) {
+        if (!class_exists('Area_Profesores_Alumnos')) {
+            return array();
+        }
+        $found = array();
+        foreach (Area_Profesores_Alumnos::get_clases_asignadas($user_id) as $k) {
+            $c = self::get_curso($k);
+            if ($c) {
+                $found[$c['etapa']] = true;
+            }
+        }
+        return array_values(array_filter(array_keys(self::get_etapas()), function ($e) use ($found) {
+            return isset($found[$e]);
+        }));
+    }
+
+    /**
+     * Etapas a teacher works in (see get_asignacion()).
+     */
+    public static function get_etapas_usuario($user_id) {
+        return self::get_asignacion($user_id)['etapas'];
+    }
+
+    /**
+     * Assignment as a single code: course key or "esp" ('' = sin asignar).
      */
     public static function get_codigo_asignacion($user_id) {
         $a = self::get_asignacion($user_id);
         if ($a['curso'] !== '') {
             return $a['curso'];
         }
-        return $a['etapa'] !== '' ? 'esp:' . $a['etapa'] : '';
+        return $a['rol'] === 'especialista' ? 'esp' : '';
     }
 
     /**
@@ -270,9 +344,8 @@ class Area_Profesores_Cursos {
         if ($codigo === '') {
             return '';
         }
-        if (strpos($codigo, 'esp:') === 0) {
-            $etapa = substr($codigo, 4);
-            return array_key_exists($etapa, self::get_etapas()) ? $codigo : '';
+        if ($codigo === 'esp' || strpos($codigo, 'esp:') === 0) {
+            return 'esp'; // "esp:<etapa>" is the old code
         }
         return self::get_curso($codigo) ? $codigo : '';
     }
@@ -290,8 +363,8 @@ class Area_Profesores_Cursos {
             return;
         }
 
-        if (strpos($codigo, 'esp:') === 0) {
-            update_user_meta($user_id, self::META_ETAPA, substr($codigo, 4));
+        if ($codigo === 'esp') {
+            update_user_meta($user_id, self::META_ETAPA, '');
             update_user_meta($user_id, self::META_ROL, 'especialista');
             update_user_meta($user_id, self::META_CURSO, '');
             return;
@@ -304,19 +377,15 @@ class Area_Profesores_Cursos {
     }
 
     /**
-     * Human label of a code: "Tutor/a de 3º EP A (Primaria)" / "Especialista de Primaria".
+     * Human label of a code: "Tutor/a de 3º EP A (Primaria)" / "Especialista".
      */
     public static function get_codigo_label($codigo, $short = false) {
         $codigo = (string) $codigo;
         if ($codigo === '') {
             return __('Sin asignar', 'area-profesores');
         }
-        if (strpos($codigo, 'esp:') === 0) {
-            $etapa = self::get_etapa_label(substr($codigo, 4));
-            if ($etapa === '') {
-                return $codigo;
-            }
-            return $short ? sprintf(__('Especialista · %s', 'area-profesores'), $etapa) : sprintf(__('Especialista de %s', 'area-profesores'), $etapa);
+        if ($codigo === 'esp' || strpos($codigo, 'esp:') === 0) {
+            return __('Especialista', 'area-profesores');
         }
         $c = self::get_curso($codigo);
         if (!$c) {
@@ -326,20 +395,23 @@ class Area_Profesores_Cursos {
     }
 
     /**
-     * <option>s with optgroups per etapa: "Especialista de X" + its courses.
+     * <option>s: "Especialista" (any etapa) + one optgroup per etapa with its courses.
      */
     public static function render_codigo_options($selected = '', $empty_label = null) {
         $empty_label = $empty_label === null ? __('— Sin asignar —', 'area-profesores') : $empty_label;
+        $selected = (string) $selected;
+        if (strpos($selected, 'esp:') === 0) {
+            $selected = 'esp';
+        }
         $html = '<option value="">' . esc_html($empty_label) . '</option>';
+        $html .= '<option value="esp"' . selected($selected, 'esp', false) . '>'
+            . esc_html__('Especialista (clases de una o varias etapas)', 'area-profesores') . '</option>';
 
         foreach (self::get_cursos_por_etapa() as $etapa => $cursos) {
-            $html .= '<optgroup label="' . esc_attr(self::get_etapa_label($etapa)) . '">';
-            $val = 'esp:' . $etapa;
-            $html .= '<option value="' . esc_attr($val) . '"' . selected($selected, $val, false) . '>'
-                . esc_html(sprintf(__('%s · Especialista', 'area-profesores'), self::get_etapa_label($etapa))) . '</option>';
+            $html .= '<optgroup label="' . esc_attr(sprintf(__('Tutor/a · %s', 'area-profesores'), self::get_etapa_label($etapa))) . '">';
             foreach ($cursos as $key => $c) {
                 $html .= '<option value="' . esc_attr($key) . '"' . selected($selected, $key, false) . '>'
-                    . esc_html(sprintf(__('%s · Tutor/a', 'area-profesores'), $c['label'])) . '</option>';
+                    . esc_html(sprintf(__('Tutor/a de %s', 'area-profesores'), $c['label'])) . '</option>';
             }
             $html .= '</optgroup>';
         }

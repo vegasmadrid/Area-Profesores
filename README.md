@@ -63,7 +63,7 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 
 10. **Etapas y tutorías del profesorado**:
    - **Todos los usuarios de la web son profesores** (ya no hay casilla "¿Es profesor?"): el acceso lo controlan las solicitudes y el login con la cuenta del colegio.
-   - Cada profesor tiene una **etapa** (Primer Ciclo, Infantil, Primaria o Secundaria —que incluye Bachillerato—) y es **tutor/a de un curso** o **especialista**. Se asigna con un único desplegable en *Profesores*, en el perfil, en las *Solicitudes de acceso* y en el formulario de solicitud del login.
+   - Cada profesor es **tutor/a de un curso** (su etapa es la del curso) o **especialista**. Los especialistas **no tienen una etapa fija**: con el botón *Clases* de *Profesores* se les asignan clases de una o varias etapas (Primer Ciclo, Infantil, Primaria, Secundaria), y esas son sus etapas (para "Mis alumnos", los enlaces por etapa y el filtro de etapa). Se asigna con un único desplegable en *Profesores*, en el perfil, en las *Solicitudes de acceso* y en el formulario de solicitud del login.
    - Cursos: 1 año A/B, 2 años A/B, 3-5 años A/B, 1º-6º EP A/B, 1º-4º ESO A/B, 1º y 2º Bachillerato.
    - Filtro por etapa en *Profesores*; *Apuntar Comedor* muestra los cursos de la etapa del profesor (con su curso preseleccionado y la etapa rellenada sola); los *Enlaces Útiles* pueden limitarse a una etapa.
    - Las tutorías antiguas (1A…6B) se convierten automáticamente a 1º-6º EP A/B de Primaria.
@@ -75,6 +75,29 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - **Conexión con Google Chat (opcional)**: con la API de Google Chat y una cuenta de administrador de Workspace se pueden **leer y cambiar los nombres de los espacios** (plantilla configurable, p. ej. `{curso} (PROMOCIÓN {promocion})`).
 
 12. **Espacios de aula** (pestaña del Área de Profesores): todos los espacios de Google Chat de las familias, por etapa y curso, con el tutor/a, un buscador y la clase del propio tutor/a destacada arriba ("Tu clase"). Al final, las promociones anteriores (plegadas). La página para las familias está ahora en la web de familias (plugin **Área Familias**).
+
+15. **Alumnos y familias** (*Área Profesores > Alumnos y familias*):
+   - Base de datos de **alumnos** (curso, alta/baja), **familias** (correos familiares, normalmente una cuenta compartida por los padres) con sus **padres/tutores**, cada uno con **su teléfono de emergencia** y su dirección. Un alumno puede estar en dos familias (padres separados, con una segunda cuenta).
+   - **Importación del "Listado de familias" de Alexia** tal cual (.xls, también .xlsx/.csv), una etapa cada vez (Infantil, Primaria, ESO, Bachillerato), con **vista previa** de altas, cambios y posibles bajas antes de aplicar. Reimportar el mismo fichero no duplica nada. Lector de Excel propio, sin librerías externas.
+   - Edición en cualquier momento (alumnos, familias, vincular a otra familia, bajas) e **historial** de cambios (backend, importación o la propia familia).
+   - Si la familia cambia un teléfono o una dirección desde el Área Familias, **se actualiza al momento** aquí y en "Mis alumnos", y se avisa por correo al tutor/a y a Secretaría (para cambiarlo en Alexia). Mientras Alexia tenga los datos antiguos, la importación no los deshace; cuando coinciden, todo vuelve a la normalidad solo.
+16. **Mis alumnos** (pestaña del Área de Profesores): el tutor/a ve su clase; los especialistas, las clases que se les asignan (botón *Clases* en *Profesores*), de cualquier etapa; Dirección y **Secretaría** (nueva columna en *Profesores*), todos los cursos. Cada padre/madre en su línea con su propio teléfono de emergencia (sin direcciones), buscador e impresión.
+17. **API para el Área Familias**: hijos y datos de la familia que ha iniciado sesión, y actualización del teléfono de emergencia y la dirección de cada padre/madre, con aviso por correo al tutor/a y a Secretaría.
+18. **Correos automáticos** (*Área Profesores > Correos automáticos*): todos los correos que se envían solos (nueva solicitud de acceso, solicitud aprobada, cambio de datos de una familia y errores de un comunicado programado, reservas de servicios y su anulación) se pueden activar o desactivar, cambiar su asunto y su texto con variables como `{nombre}` o `{cambios}`, añadir destinatarios y enviarse una prueba. En los avisos de cambio de datos y de reservas se elige si van a los tutores, a Secretaría o a ambos.
+19. **Reservas de las familias** (servicios que las familias reservan en el Área Familias: ampliación de horario con o sin desayuno, comedor con o sin dieta, ludoteca, dieta, salida anticipada y retraso justificado):
+   - Se guardan aquí (una por alumno) y se avisa por correo al tutor/a, a Secretaría, a los correos de aviso del servicio y a la familia (confirmación). Si el tutor/a responde al correo, le llega a la familia.
+   - *Área Profesores > Reservas de familias*: vista por día (agrupada por servicio, para imprimir) y listado completo con filtros, descarga en CSV y botón para anular (avisa a la familia).
+   - Pestaña **Reservas** del Área Docente: las reservas de los alumnos de cada profesor (todos los cursos para Dirección y Secretaría), por día, con los próximos días de un vistazo.
+   - El listado de cocina (`[comedorhoy]`) muestra el comedor, las dietas y los desayunos reservados por las familias para ese día.
+   - Los servicios, horarios, plazos y preguntas se configuran en el Área Familias (*Área Familias > Reservas de servicios*).
+20. **Cuentas especiales** (*Área Profesores > Cuentas especiales*): se eligen las cuentas de **Dirección** (comunicados y todos los alumnos), **Secretaría** (avisos de las familias, todos los alumnos y pestaña *Comensales*), **Cocina** (resumen diario del comedor y cambios) y **Portería** (pestaña *Reservas* de todos los cursos; más adelante, sus propios avisos). Ya no se marcan en la lista de *Profesores*.
+21. **Comedor diario por alumnos** (solo Primer Ciclo, Infantil y Primaria; Secundaria y Bachillerato no lo ven):
+   - Pestaña **Comedor**: el tutor/a ve la lista de su clase con los **comensales fijos** ya marcados (cada alumno con los días de la semana que se queda), marca las excepciones (un alumno que se queda un día = **extra**; un fijo que hoy no se queda) y **valida**. Si no hay cambios, basta con validar.
+   - Los alumnos cuya familia ha reservado comedor en el Área Familias aparecen marcados con "Reserva de la familia" (y su dieta, si la piden) y se suman; si la reserva llega después de validar, se suma sola.
+   - **Poner el comedor de un compañero**: cualquier profesor de estas etapas puede poner o validar el comedor de otra clase (queda registrado quién lo valida).
+   - A las **10:30** se avisa por correo a los tutores que no han validado; a las **12:00** se envía a **Cocina** el resumen (total, por clases, clases sin validar, dietas y observaciones), y después cada cambio. Horas, avisos y **días sin clase** en *Comedor Diario* (los días sin clase también los usa el Área Familias).
+   - La página de cocina (`[comedorhoy]`) se actualiza sola en cuanto un profesor valida o una familia reserva, y muestra las clases pendientes.
+   - Pestaña **Comensales** (Secretaría y Dirección): por meses, comidas de cada día y **comidas extra de cada alumno** (las marcadas por el profesor y las reservadas por la familia) con sus días, para hacer los cobros; descarga para Excel.
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

@@ -206,96 +206,14 @@ class Area_Profesores_Solicitudes {
      */
     private function send_admin_notification_email($solicitud_id, $nombre, $apellidos, $email, $tutoria, $observaciones) {
         $admin_emails = Area_Profesores_Admin::get_setting('notification_emails', get_option('admin_email'));
-        $emails = array_map('trim', explode(',', $admin_emails));
-
-        $admin_approval_url = admin_url('admin.php?page=area-profesores-solicitudes');
-        $site_name = get_bloginfo('name');
-
-        $subject = sprintf('[%s] Nueva solicitud de acceso de profesor: %s %s', $site_name, $nombre, $apellidos);
-
-        $tutoria_label = !empty($tutoria) ? Area_Profesores_Cursos::get_codigo_label($tutoria) : __('Sin indicar', 'area-profesores');
-        $obs_text = !empty($observaciones) ? esc_html($observaciones) : __('Ninguna observación aportada.', 'area-profesores');
-
-        $logo_url = Area_Profesores_Admin::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png');
-        $tribanda_url = Area_Profesores_Admin::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png');
-
-        $message = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }
-                .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-                .email-tribanda { width: 100%; height: 6px; display: block; }
-                .email-header { padding: 24px 28px; text-align: center; border-bottom: 1px solid #f1f5f9; background: #ffffff; }
-                .email-logo { max-height: 56px; margin-bottom: 10px; }
-                .email-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
-                .email-body { padding: 28px; font-size: 15px; line-height: 1.6; }
-                .data-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0; }
-                .data-row { margin-bottom: 10px; }
-                .data-row:last-child { margin-bottom: 0; }
-                .data-label { font-weight: 700; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px; }
-                .data-value { font-size: 15px; color: #0f172a; font-weight: 600; }
-                .btn-approve { display: inline-block; background: #1e40af; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; text-align: center; margin-top: 10px; }
-                .email-footer { background: #f1f5f9; padding: 16px 28px; font-size: 12px; color: #64748b; text-align: center; }
-            </style>
-        </head>
-        <body>
-            <div class="email-container">
-                <img src="' . esc_url($tribanda_url) . '" alt="" class="email-tribanda" style="width: 100%; height: auto; max-height: 8px; object-fit: cover;">
-                <div class="email-header">
-                    <img src="' . esc_url($logo_url) . '" alt="Casa de la Virgen" class="email-logo">
-                    <h2 class="email-title">Nueva Solicitud de Acceso</h2>
-                </div>
-                <div class="email-body">
-                    <p>Hola,</p>
-                    <p>Un nuevo docente ha solicitado acceso al <strong>Área de Profesores</strong> desde la web escolar:</p>
-                    
-                    <div class="data-box">
-                        <div class="data-row">
-                            <span class="data-label">Profesor / Solicitante:</span>
-                            <span class="data-value">' . esc_html($nombre . ' ' . $apellidos) . '</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Cuenta de Correo (@casadelavirgen.es):</span>
-                            <span class="data-value"><a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a></span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Etapa y tutoría:</span>
-                            <span class="data-value">' . esc_html($tutoria_label) . '</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Observaciones / Departamento:</span>
-                            <span class="data-value">' . nl2br(esc_html($obs_text)) . '</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Fecha de Solicitud:</span>
-                            <span class="data-value">' . esc_html(current_time('d/m/Y H:i')) . '</span>
-                        </div>
-                    </div>
-
-                    <p style="text-align: center; margin-top: 24px;">
-                        <a href="' . esc_url($admin_approval_url) . '" class="btn-approve">
-                            Revisar y Aprobar en el Panel de Profesores
-                        </a>
-                    </p>
-                </div>
-                <div class="email-footer">
-                    Este es un aviso automático generado por el Área de Profesores del Colegio Casa de la Virgen.
-                </div>
-            </div>
-        </body>
-        </html>
-        ';
-
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-
-        foreach ($emails as $recipient) {
-            if (is_email($recipient)) {
-                wp_mail($recipient, $subject, $message, $headers);
-            }
-        }
+        Area_Profesores_Correos::enviar('solicitud_nueva', array_map('trim', explode(',', $admin_emails)), array(
+            'nombre'        => $nombre,
+            'apellidos'     => $apellidos,
+            'correo'        => $email,
+            'tutoria'       => !empty($tutoria) ? Area_Profesores_Cursos::get_codigo_label($tutoria) : __('Sin indicar', 'area-profesores'),
+            'observaciones' => !empty($observaciones) ? $observaciones : __('Ninguna', 'area-profesores'),
+            'enlace'        => admin_url('admin.php?page=area-profesores-solicitudes'),
+        ));
     }
 
     /**
@@ -413,49 +331,10 @@ class Area_Profesores_Solicitudes {
      */
     private function send_teacher_approved_email($nombre, $email) {
         $login_page_id = Area_Profesores_Admin::get_setting('login_page_id', 0);
-        $login_url = $login_page_id ? get_permalink($login_page_id) : home_url('/');
-
-        $logo_url = Area_Profesores_Admin::get_setting('logo_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2019/06/cropped-Logo_Color_MARGENES-2.png');
-        $tribanda_url = Area_Profesores_Admin::get_setting('tribanda_url', 'https://profesores.casadelavirgen.es/wp-content/uploads/2021/04/Tribanda-corporativa-SUP-e1611846970284-1536x130-1-1024x87.png');
-
-        $subject = 'Tu acceso al Área de Profesores ha sido activado - Colegio Casa de la Virgen';
-        $message = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }
-                .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-                .email-tribanda { width: 100%; height: auto; max-height: 8px; display: block; }
-                .email-header { padding: 24px 28px; text-align: center; border-bottom: 1px solid #f1f5f9; }
-                .email-logo { max-height: 56px; margin-bottom: 10px; }
-                .email-body { padding: 28px; font-size: 15px; line-height: 1.6; }
-                .btn-login { display: inline-block; background: #1e40af; color: #ffffff !important; padding: 13px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; margin-top: 14px; }
-            </style>
-        </head>
-        <body>
-            <div class="email-container">
-                <img src="' . esc_url($tribanda_url) . '" alt="" class="email-tribanda">
-                <div class="email-header">
-                    <img src="' . esc_url($logo_url) . '" alt="Casa de la Virgen" class="email-logo">
-                    <h2 style="margin: 0; color: #0f172a; font-size: 20px;">¡Acceso Aprobado!</h2>
-                </div>
-                <div class="email-body">
-                    <p>Hola <strong>' . esc_html($nombre) . '</strong>,</p>
-                    <p>Tu solicitud de acceso al <strong>Área de Profesores</strong> del Colegio Casa de la Virgen ha sido revisada y aprobada por la dirección.</p>
-                    <p>Ya puedes acceder directamente con tu cuenta de profesor pulsando en el botón a continuación:</p>
-                    <p style="text-align: center; margin: 24px 0;">
-                        <a href="' . esc_url($login_url) . '" class="btn-login">Acceder al Área de Profesores</a>
-                    </p>
-                    <p style="font-size: 13px; color: #64748b;">Recuerda identificarte con tu cuenta corporativa <strong>' . esc_html($email) . '</strong>.</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        wp_mail($email, $subject, $message, $headers);
+        Area_Profesores_Correos::enviar('solicitud_aprobada', $email, array(
+            'nombre' => $nombre,
+            'enlace' => $login_page_id ? get_permalink($login_page_id) : home_url('/'),
+        ));
     }
 
     /**

@@ -31,6 +31,58 @@ if (!defined('ABSPATH')) {
         </div>
     </div>
 
+    <?php
+    $ap_aj = Area_Profesores_Comensales::ajustes();
+    $ap_est = Area_Profesores_Comensales::estados($fecha);
+    $ap_cocina = Area_Profesores_Cuentas::emails('cocina');
+    ?>
+    <?php if (isset($_GET['ap_msg'])) : ?>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html(sanitize_text_field(wp_unslash($_GET['ap_msg']))); ?></p></div>
+    <?php endif; ?>
+
+    <div class="ap-settings-card">
+        <h2 class="ap-settings-section-title"><span class="dashicons dashicons-clock"></span> <?php esc_html_e('Comedor diario de Primer Ciclo, Infantil y Primaria', 'area-profesores'); ?></h2>
+        <p class="description"><?php esc_html_e('Cada tutor/a ve la lista de su clase con los comensales fijos ya marcados, marca las excepciones y valida. Secundaria y Bachillerato no usan este sistema.', 'area-profesores'); ?></p>
+        <?php if (!$ap_cocina) : ?>
+            <div class="notice notice-warning inline"><p><?php esc_html_e('No hay ninguna cuenta de Cocina: el resumen diario no se enviará a nadie.', 'area-profesores'); ?> <a href="<?php echo esc_url(admin_url('admin.php?page=area-profesores-cuentas#rol-cocina')); ?>"><?php esc_html_e('Elegir en Cuentas especiales', 'area-profesores'); ?></a></p></div>
+        <?php endif; ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="ap_comedor_ajustes">
+            <?php wp_nonce_field('ap_comedor_ajustes'); ?>
+            <table class="form-table" role="presentation">
+                <tr><th><?php esc_html_e('Recordatorio a los tutores', 'area-profesores'); ?></th>
+                    <td><label><input type="checkbox" name="recordatorio" value="1" <?php checked($ap_aj['recordatorio'], 'yes'); ?>> <?php esc_html_e('A las', 'area-profesores'); ?></label>
+                        <input type="time" name="hora_recordatorio" value="<?php echo esc_attr($ap_aj['hora_recordatorio']); ?>">
+                        <?php esc_html_e('se avisa por correo a los tutores que no han validado su clase.', 'area-profesores'); ?></td></tr>
+                <tr><th><?php esc_html_e('Resumen para cocina', 'area-profesores'); ?></th>
+                    <td><label><input type="checkbox" name="resumen" value="1" <?php checked($ap_aj['resumen'], 'yes'); ?>> <?php esc_html_e('A las', 'area-profesores'); ?></label>
+                        <input type="time" name="hora_cocina" value="<?php echo esc_attr($ap_aj['hora_cocina']); ?>">
+                        <?php esc_html_e('se envía el total de comensales a Cocina', 'area-profesores'); ?>
+                        (<?php echo $ap_cocina ? esc_html(implode(', ', $ap_cocina)) : esc_html__('nadie', 'area-profesores'); ?>).
+                        <p class="description"><?php esc_html_e('Los cambios posteriores también se envían a Cocina. Los textos se cambian en "Correos automáticos".', 'area-profesores'); ?></p></td></tr>
+                <tr><th><?php esc_html_e('Días sin clase', 'area-profesores'); ?></th>
+                    <td><textarea name="dias_sin_clase" class="large-text code" rows="6" placeholder="08/12/2026 | Inmaculada&#10;23/12/2026 - 07/01/2027 | Navidad"><?php echo esc_textarea($ap_aj['dias_sin_clase']); ?></textarea>
+                        <p class="description"><?php esc_html_e('Uno por línea: un día o un periodo; después de "|", un comentario. Esos días (y los fines de semana) no se pide el comedor ni se envían avisos. El Área Familias también los usa para no dejar reservar.', 'area-profesores'); ?></p></td></tr>
+            </table>
+            <p>
+                <button type="submit" class="button button-primary"><?php esc_html_e('Guardar', 'area-profesores'); ?></button>
+                <button type="submit" name="probar" value="cocina" class="button"><?php esc_html_e('Guardar y enviar ahora el resumen de hoy a Cocina', 'area-profesores'); ?></button>
+                <button type="submit" name="probar" value="recordatorio" class="button" onclick="return confirm('<?php echo esc_js(__('¿Enviar ahora el recordatorio a los tutores que no han validado hoy?', 'area-profesores')); ?>');"><?php esc_html_e('Enviar ahora los recordatorios', 'area-profesores'); ?></button>
+            </p>
+        </form>
+
+        <?php if ($ap_est) : ?>
+            <h3><?php printf(esc_html__('Clases el %s', 'area-profesores'), esc_html(date_i18n('j/n/Y', strtotime($fecha . ' 12:00:00')))); ?></h3>
+            <div class="ap-cd-admin-estados">
+                <?php foreach ($ap_est as $ap_e) : ?>
+                    <span class="ap-status-pill <?php echo $ap_e['registro'] ? 'ap-status-success' : 'ap-status-danger'; ?>" title="<?php echo esc_attr($ap_e['registro'] ? sprintf(__('Validado por %s', 'area-profesores'), $ap_e['registro']['validado_nombre']) : __('Sin validar', 'area-profesores')); ?>">
+                        <?php echo esc_html($ap_e['label'] . ': ' . ($ap_e['registro'] ? $ap_e['registro']['total'] : '—')); ?>
+                    </span>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
     <!-- Date selector bar -->
     <div class="ap-date-selector-bar">
         <form method="get" class="ap-date-form">

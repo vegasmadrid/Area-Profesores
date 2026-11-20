@@ -2,12 +2,22 @@
 /**
  * API para el Área Familias (otra instalación de WordPress).
  *
- * GET {web}/?rest_route=/area-profesores/v1/espacios-aula
- * Header "X-Area-Key: <clave>" (or &key=<clave>).
+ * All routes need the header "X-Area-Key: <clave>" (generated in
+ * "Área Profesores > Espacios de Chat › Conexión con el Área Familias").
  *
- * Returns the family Chat spaces (by etapa and course, previous promotions and
- * other spaces) with the tutor of each course. It never returns webhooks or any
- * private data. The key is generated in "Área Profesores > Espacios de Chat".
+ * GET  /area-profesores/v1/espacios-aula
+ *      Family Chat spaces (by etapa and course, previous promotions, other
+ *      spaces) with the tutor of each course. Never the webhooks.
+ * GET  /area-profesores/v1/familia?email=<correo>
+ *      Only for the family that is logged in on the Área Familias: its
+ *      children (course, tutor, class space) and its own details (parents,
+ *      address, emergency phone).
+ * POST /area-profesores/v1/familia/datos
+ *      The family updates the emergency phone and address of each parent; the
+ *      change is saved right away and the tutors of its children and
+ *      Secretaría are notified by e-mail (to update Alexia).
+ * GET|POST /area-profesores/v1/familia/reservas, POST …/familia/reservas/anular
+ *      Reservations of services (see Area_Profesores_Reservas).
  */
 
 if (!defined('ABSPATH')) {
@@ -57,6 +67,195 @@ class Area_Profesores_API {
             'methods'             => 'GET',
             'callback'            => array($this, 'get_espacios'),
             'permission_callback' => array($this, 'check_key'),
+        ));
+        register_rest_route(self::NS, '/familia', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'get_familia'),
+            'permission_callback' => array($this, 'check_key'),
+        ));
+        register_rest_route(self::NS, '/familia/datos', array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'post_familia_datos'),
+            'permission_callback' => array($this, 'check_key'),
+        ));
+    }
+
+    /* ---------------------------------------------------------------------
+     * Familias
+     * ------------------------------------------------------------------- */
+
+    /**
+     * Data of the families of an e-mail: children and own details.
+     */
+    public static function datos_familia($email) {
+        $A = 'Area_Profesores_Alumnos';
+        $familias = $A::familias_por_email($email);
+        if (!$familias) {
+            return array('encontrada' => false, 'familias' => array(), 'hijos' => array());
+        }
+
+        $ids = wp_list_pluck($familias, 'id');
+        $hijos_por_familia = $A::alumnos_de_familias($ids, true);
+        $tutores = Area_Profesores_Aulas::get_tutores_por_curso();
+
+        // Class space of each course.
+        $espacios = array();
+        foreach (Area_Profesores_Chat::get_espacios() as $e) {
+            if ($e['curso'] !== '' && $e['activo'] && $e['publico'] && $e['chat_url'] !== '' && !isset($espacios[$e['curso']])) {
+                $espacios[$e['curso']] = array('titulo' => $e['titulo'], 'chat_url' => $e['chat_url']);
+            }
+        }
+
+        $hijos = array();
+        foreach ($hijos_por_familia as $lista) {
+            foreach ($lista as $a) {
+                if (isset($hijos[$a['id']])) {
+                    continue;
+                }
+                $c = Area_Profesores_Cursos::get_curso($a['curso']);
+                $hijos[$a['id']] = array(
+                    'id'          => (int) $a['id'],
+                    'nombre'      => $a['nombre'],
+                    'curso'       => $a['curso'],
+                    'curso_label' => $c ? $c['label'] : '',
+                    'etapa'       => $c ? Area_Profesores_Cursos::get_etapa_label($c['etapa']) : '',
+                    'etapa_key'   => $c ? $c['etapa'] : '',
+                    'tutor'       => ($c && !empty($tutores[$a['curso']])) ? Area_Profesores_Aulas::get_tutor_card($tutores[$a['curso']]) : null,
+                    'espacio'     => isset($espacios[$a['curso']]) ? $espacios[$a['curso']] : null,
+                );
+            }
+        }
+
+        $out = array();
+        foreach ($familias as $f) {
+            $out[] = array(
+                'id'        => (int) $f['id'],
+                'nombre'    => $f['nombre'],
+                'telefono'  => $f['telefono'],
+                'contactos' => array_map(function ($c) {
+                    return array('id' => (int) $c['id'], 'nombre' => $c['nombre'], 'telefono' => (string) $c['telefono'], 'direccion' => $c['direccion']);
+                }, $A::get_contactos($f['id'])),
+                'hijos'     => array_map('intval', wp_list_pluck(isset($hijos_por_familia[$f['id']]) ? $hijos_por_familia[$f['id']] : array(), 'id')),
+            );
+        }
+
+        return array('encontrada' => true, 'familias' => $out, 'hijos' => array_values($hijos));
+    }
+
+    public function get_familia(WP_REST_Request $request) {
+        $email = Area_Profesores_Alumnos::norm_email($request->get_param('email'));
+        if ($email === '') {
+            return new WP_Error('area_email', __('Falta el correo de la familia.', 'area-profesores'), array('status' => 400));
+        }
+        $r = rest_ensure_response(self::datos_familia($email));
+        $r->header('Cache-Control', 'no-store');
+        return $r;
+    }
+
+    /**
+     * The family updates its emergency phone and/or addresses.
+     * Body (JSON): email, familia_id, telefono, direcciones { contacto_id: dirección }.
+     */
+    public function post_familia_datos(WP_REST_Request $request) {
+        $A = 'Area_Profesores_Alumnos';
+        $email = $A::norm_email($request->get_param('email'));
+        $fid = absint($request->get_param('familia_id'));
+
+        // The e-mail must belong to that family.
+        $propias = wp_list_pluck($A::familias_por_email($email), 'id');
+        if (!$email || !$fid || !in_array((string) $fid, array_map('strval', $propias), true)) {
+            return new WP_Error('area_familia', __('Esa familia no corresponde a esta cuenta.', 'area-profesores'), array('status' => 403));
+        }
+
+        // Max. 10 updates per hour and family.
+        $limite = 'ap_familia_upd_' . $fid;
+        $n = (int) get_transient($limite);
+        if ($n >= 10) {
+            return new WP_Error('area_limite', __('Demasiados cambios seguidos. Inténtalo más tarde.', 'area-profesores'), array('status' => 429));
+        }
+        set_transient($limite, $n + 1, HOUR_IN_SECONDS);
+
+        $f = $A::get_familia($fid);
+        $tels = (array) $request->get_param('telefonos');
+        $dirs = (array) $request->get_param('direcciones');
+        $valido = function ($t) {
+            return $t === '' || (mb_strlen($t) <= 100 && preg_match('/\d{6,}/', str_replace(array(' ', '-', '.'), '', $t)));
+        };
+
+        $cambios = array();
+        $contactos = array();
+        $alguno = false;
+        foreach ($f['contactos'] as $c) {
+            $id = (string) $c['id'];
+            $tel = array_key_exists($id, $tels) ? mb_substr(sanitize_text_field((string) $tels[$id]), 0, 100) : (string) $c['telefono'];
+            $dir = array_key_exists($id, $dirs) ? mb_substr(sanitize_text_field((string) $dirs[$id]), 0, 250) : $c['direccion'];
+            if (!$valido($tel)) {
+                return new WP_Error('area_telefono', sprintf(__('El teléfono de %s no es válido.', 'area-profesores'), $c['nombre']), array('status' => 400));
+            }
+            if ($tel !== '') {
+                $alguno = true;
+            }
+            if ($tel !== (string) $c['telefono']) {
+                $cambios[] = array(sprintf(__('Teléfono de emergencia de %s', 'area-profesores'), $c['nombre']), (string) $c['telefono'], $tel);
+            }
+            if ($dir !== $c['direccion']) {
+                $cambios[] = array(sprintf(__('Dirección de %s', 'area-profesores'), $c['nombre']), $c['direccion'], $dir);
+            }
+            $contactos[] = array('nombre' => $c['nombre'], 'telefono' => $tel, 'direccion' => $dir);
+        }
+        if ($f['contactos'] && !$alguno) {
+            return new WP_Error('area_telefono', __('Indica al menos un teléfono de emergencia.', 'area-profesores'), array('status' => 400));
+        }
+
+        // The old family phone (from an earlier import) is replaced by the parents' phones.
+        $telefono_familia = $f['telefono'];
+        if ($cambios && $telefono_familia !== '' && $alguno) {
+            $telefono_familia = '';
+        }
+
+        if ($cambios) {
+            $A::guardar_familia(array('nombre' => $f['nombre'], 'emails' => $f['emails'], 'telefono' => $telefono_familia, 'notas' => $f['notas'], 'contactos' => $contactos), $fid, 'familia');
+            global $wpdb;
+            $wpdb->update($A::t('familias'), array('editado_por_familia' => $A::now()), array('id' => $fid));
+            self::avisar_cambios($fid, $email, $cambios);
+        }
+
+        return rest_ensure_response(array('ok' => true, 'cambios' => count($cambios), 'datos' => self::datos_familia($email)));
+    }
+
+    /**
+     * E-mail to the tutors of the family's children and to Secretaría.
+     */
+    private static function avisar_cambios($fid, $email, $cambios) {
+        $A = 'Area_Profesores_Alumnos';
+        $f = $A::get_familia($fid);
+        $hijos = $A::alumnos_de_familias(array($fid), true);
+        $hijos = isset($hijos[$fid]) ? $hijos[$fid] : array();
+
+        $conf = Area_Profesores_Correos::get('familia_datos');
+        $para = $conf['secretaria'] ? $A::get_secretaria_emails() : array();
+        $lineas_hijos = array();
+        foreach ($hijos as $h) {
+            $c = Area_Profesores_Cursos::get_curso($h['curso']);
+            $lineas_hijos[] = '- ' . $h['nombre'] . ($c ? ' (' . $c['label'] . ')' : '');
+            if ($conf['tutores']) {
+                $para = array_merge($para, $A::emails_tutores($h['curso']));
+            }
+        }
+        if (!$para && !$conf['extra']) {
+            $para = array(get_option('admin_email'));
+        }
+
+        $lineas = array();
+        foreach ($cambios as $c) {
+            $lineas[] = '- ' . $c[0] . ': ' . ($c[1] !== '' ? $c[1] : '—') . '  →  ' . ($c[2] !== '' ? $c[2] : '—');
+        }
+
+        Area_Profesores_Correos::enviar('familia_datos', $para, array(
+            'familia' => $f['nombre'],
+            'correo'  => $email,
+            'cambios' => implode("\n", $lineas),
+            'alumnos' => implode("\n", $lineas_hijos),
         ));
     }
 

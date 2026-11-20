@@ -145,6 +145,46 @@ class Area_Profesores_Shortcode {
         // Espacios de aula (family Chat spaces of every course)
         $espacios_aula = Area_Profesores_Aulas::get_espacios_para_profesores($user_id);
 
+        // Mis alumnos (tutoría, assigned classes, or all for Dirección/Secretaría)
+        $mis_alumnos = Area_Profesores_Alumnos::datos_mis_alumnos($user_id);
+        $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
+
+        // Comedor diario (Primer Ciclo, Infantil y Primaria) and, for Secretaría, the monthly count.
+        $comedor = Area_Profesores_Comensales::datos_portal($user_id);
+        $comensales_mes = null;
+        if (Area_Profesores_Comensales::puede_ver_mes($user_id)) {
+            $mes = isset($_GET['ap_mes']) ? sanitize_text_field(wp_unslash($_GET['ap_mes'])) : '';
+            $mes = preg_match('/^\d{4}-\d{2}$/', $mes) ? $mes : current_time('Y-m');
+            $comensales_mes = array('mes' => $mes, 'datos' => Area_Profesores_Comensales::mes($mes));
+        }
+        if ($comedor !== null) {
+            wp_enqueue_script('area-profesores-comedor');
+        }
+
+        // Reservas de las familias (services) of the visible courses; Portería sees every course.
+        $reservas = null;
+        $es_porteria = Area_Profesores_Cuentas::tiene($user_id, 'porteria');
+        if (!empty($mis_alumnos['cursos']) || $es_porteria) {
+            $visibles = $es_porteria ? true : Area_Profesores_Alumnos::cursos_visibles($user_id);
+            $hoy = current_time('Y-m-d');
+            $f = isset($_GET['ap_res']) ? sanitize_text_field(wp_unslash($_GET['ap_res'])) : '';
+            $f = preg_match('/^\d{4}-\d{2}-\d{2}$/', $f) ? $f : $hoy;
+            $proximos = array();
+            for ($i = 0, $t = strtotime($hoy . ' 12:00:00 UTC'); count($proximos) < 7 && $i < 14; $i++, $t += DAY_IN_SECONDS) {
+                if ((int) gmdate('N', $t) <= 5) {
+                    $d = gmdate('Y-m-d', $t);
+                    $proximos[$d] = count(Area_Profesores_Reservas::del_dia($d, $visibles));
+                }
+            }
+            $reservas = array(
+                'fecha'    => $f,
+                'hoy'      => $hoy,
+                'lista'    => Area_Profesores_Reservas::del_dia($f, $visibles),
+                'proximos' => $proximos,
+                'todos'    => $visibles === true,
+            );
+        }
+
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
         return ob_get_clean();
@@ -178,6 +218,26 @@ class Area_Profesores_Shortcode {
         // Retrieve data
         $records = Area_Profesores_Comedor::get_records_by_date($fecha);
         $summary = Area_Profesores_Comedor::get_summary_by_date($fecha);
+
+        // Course keys (EP3A) → labels (3º EP A).
+        foreach ((array) $records as $r) {
+            $c = Area_Profesores_Cursos::get_curso($r->clase);
+            if ($c) {
+                $r->clase = $c['label'];
+            }
+        }
+
+        // Classes of the daily dining-room system not validated yet.
+        $pendientes = array();
+        if ($fecha === $today && Area_Profesores_Comensales::es_lectivo($fecha)) {
+            foreach (Area_Profesores_Comensales::estados($fecha) as $e) {
+                if (!$e['registro'] && $e['alumnos']) {
+                    $pendientes[] = $e['label'];
+                }
+            }
+        }
+        wp_enqueue_script('area-profesores-comedor');
+        $vivo_url = add_query_arg(array('action' => 'ap_comedor_estado', 'fecha' => $fecha), admin_url('admin-ajax.php'));
 
         // Extract diet and allergy notice lists for instant kitchen overview
         $dietas_list = array();
