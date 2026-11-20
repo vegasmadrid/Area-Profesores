@@ -708,3 +708,7 @@
 .ap-cuentas-vacio { color: #b45309; }
 .ap-cuentas-anadir { display: flex; gap: 6px; margin-top: 10px; }
 .ap-cuentas-anadir select { flex: 1; min-width: 0; }
+
+/* Alergias en Alumnos y familias */
+.ap-alergia-pill { display: inline-block; margin-top: 3px; font-size: 12px; border-radius: 999px; padding: 1px 8px; background: #f1f5f9; color: #475569; }
+.ap-alergia-pill.is-alimentaria { background: #fee2e2; color: #991b1b; font-weight: 600; }

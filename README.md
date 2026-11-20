@@ -98,6 +98,10 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - A las **10:30** se avisa por correo a los tutores que no han validado; a las **12:00** se envía a **Cocina** el resumen (total, por clases, clases sin validar, dietas y observaciones), y después cada cambio. Horas, avisos y **días sin clase** en *Comedor Diario* (los días sin clase también los usa el Área Familias).
    - La página de cocina (`[comedorhoy]`) se actualiza sola en cuanto un profesor valida o una familia reserva, y muestra las clases pendientes.
    - Pestaña **Comensales** (Secretaría y Dirección): por meses, comidas de cada día y **comidas extra de cada alumno** (las marcadas por el profesor y las reservadas por la familia) con sus días, para hacer los cobros; descarga para Excel.
+   - En *Comensales fijos* hay botones para **marcar o desmarcar a todos** (toda la semana), además de marcar por alumno o por día.
+22. **Alergias** (ficha de cada alumno en *Alumnos y familias*): **alergias alimentarias** y **no alimentarias** por separado.
+   - Las alimentarias aparecen en la lista del comedor de la clase (⚠️) y en cocina: en la página `[comedorhoy]` y en el correo de las 12:00 salen los comensales con alergia alimentaria y, destacado en rojo, los **comensales habituales con alergia alimentaria que hoy NO comen** (para no preparar su menú especial). Si cambia después del resumen, Cocina recibe el aviso.
+   - En **Mis alumnos** los profesores ven las dos alergias y pueden **editar** las alergias y el nombre y el teléfono de emergencia de los padres (o añadir otro). Es obligatorio escribir el **motivo**, que se envía a **Secretaría** en el correo "Un profesor cambia datos de un alumno o su familia" (en *Correos automáticos* se puede enviar también a los tutores). Todo queda en el *Historial*.
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

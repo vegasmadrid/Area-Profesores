@@ -85,20 +85,32 @@ class Area_Profesores_Correos {
                 'cuando'  => __('Cada día lectivo a la hora del resumen (12:00 por defecto). Se configura en "Comedor Diario".', 'area-profesores'),
                 'para'    => __('Las cuentas de Cocina (Cuentas especiales).', 'area-profesores'),
                 'asunto'  => __('Comedor del {fecha}: {total} comensales', 'area-profesores'),
-                'cuerpo'  => __("Comedor del {fecha}\n\nTotal de comensales: {total}\n\nPor clases:\n{clases}\n\nClases sin validar todavía:\n{pendientes}\n\nDietas y observaciones:\n{dietas}\n\nLa página del comedor se actualiza sola con los cambios:\n{enlace}", 'area-profesores'),
+                'cuerpo'  => __("Comedor del {fecha}\n\nTotal de comensales: {total}\n\n⚠️ ALERGIAS ALIMENTARIAS\n{alergias}\n\nPor clases:\n{clases}\n\nClases sin validar todavía:\n{pendientes}\n\nDietas y observaciones:\n{dietas}\n\nLa página del comedor se actualiza sola con los cambios:\n{enlace}", 'area-profesores'),
                 'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
-                'vars'    => array('fecha' => __('día', 'area-profesores'), 'total' => __('total de comensales', 'area-profesores'), 'clases' => __('comensales de cada clase', 'area-profesores'), 'pendientes' => __('clases sin validar', 'area-profesores'), 'dietas' => __('dietas y observaciones', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
-                'ejemplo' => array('fecha' => 'martes 24 de noviembre', 'total' => '212', 'clases' => "- 3 años A: 18 (1 extra)\n- 3º EP A: 21 (1 reservado por la familia)", 'pendientes' => '- 5º EP B', 'dietas' => '- 3º EP A · Lucía García: Dieta blanda (reserva de la familia)', 'enlace' => home_url('/')),
+                'vars'    => array('fecha' => __('día', 'area-profesores'), 'total' => __('total de comensales', 'area-profesores'), 'clases' => __('comensales de cada clase', 'area-profesores'), 'pendientes' => __('clases sin validar', 'area-profesores'), 'dietas' => __('dietas y observaciones', 'area-profesores'), 'alergias' => __('alérgicos que no comen hoy (no preparar su menú) y alérgicos que comen', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('fecha' => 'martes 24 de noviembre', 'total' => '212', 'alergias' => "HOY NO COMEN (no preparar su menú especial):\n- 3º EP A · Pablo Ruiz: frutos secos\n\nComen hoy con alergia alimentaria:\n- 1º EP B · Marta Gil: huevo", 'clases' => "- 3 años A: 18 (1 extra)\n- 3º EP A: 21 (1 reservado por la familia)", 'pendientes' => '- 5º EP B', 'dietas' => '- 3º EP A · Lucía García: Dieta blanda (reserva de la familia)', 'enlace' => home_url('/')),
             ),
             'comedor_cambio' => array(
                 'titulo'  => __('Cambio en el comedor después del resumen', 'area-profesores'),
                 'cuando'  => __('Cuando, después de enviar el resumen a cocina, se valida o cambia el comedor de una clase (o una familia reserva comedor para hoy).', 'area-profesores'),
                 'para'    => __('Las cuentas de Cocina (Cuentas especiales).', 'area-profesores'),
                 'asunto'  => __('Cambio en el comedor de {clase}: {ahora} comensales', 'area-profesores'),
-                'cuerpo'  => __("Ha cambiado el comedor de hoy de {clase}: antes {antes}, ahora {ahora}.\n\nTotal de hoy: {total} comensales.\nCambio hecho por: {quien}\n\n{enlace}", 'area-profesores'),
+                'cuerpo'  => __("Ha cambiado el comedor de hoy de {clase}: antes {antes}, ahora {ahora}.\n\nTotal de hoy: {total} comensales.\nCambio hecho por: {quien}\n\nAlergias alimentarias:\n{alergias}\n\n{enlace}", 'area-profesores'),
                 'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
-                'vars'    => array('clase' => __('clase', 'area-profesores'), 'antes' => __('comensales antes', 'area-profesores'), 'ahora' => __('comensales ahora', 'area-profesores'), 'total' => __('total del día', 'area-profesores'), 'quien' => __('quién lo ha cambiado', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
-                'ejemplo' => array('clase' => '3º EP A', 'antes' => '20', 'ahora' => '21', 'total' => '213', 'quien' => 'Ana García', 'enlace' => home_url('/')),
+                'vars'    => array('clase' => __('clase', 'area-profesores'), 'antes' => __('comensales antes', 'area-profesores'), 'ahora' => __('comensales ahora', 'area-profesores'), 'total' => __('total del día', 'area-profesores'), 'quien' => __('quién lo ha cambiado', 'area-profesores'), 'alergias' => __('alérgicos que ahora comen o dejan de comer', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('clase' => '3º EP A', 'antes' => '20', 'ahora' => '19', 'total' => '212', 'quien' => 'Ana García', 'alergias' => '- Pablo Ruiz (alergia: frutos secos) NO come hoy: no preparar su menú especial.', 'enlace' => home_url('/')),
+            ),
+            'profesor_datos' => array(
+                'titulo'  => __('Un profesor cambia datos de un alumno o su familia', 'area-profesores'),
+                'cuando'  => __('Cuando un profesor cambia, desde "Mis alumnos", las alergias de un alumno o el nombre o el teléfono de sus padres. Tiene que indicar el motivo.', 'area-profesores'),
+                'para'    => __('Secretaría (se puede añadir a los tutores abajo).', 'area-profesores'),
+                'asunto'  => __('Cambio de datos de {alumno} ({curso})', 'area-profesores'),
+                'cuerpo'  => __("{profesor} ha cambiado datos de {alumno} ({curso}) desde \"Mis alumnos\":\n\n{cambios}\n\nMotivo: {motivo}\n\nLos datos nuevos ya se ven en el Área de Profesores. Secretaría: revísalos y actualízalos también en Alexia si hace falta.\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver la ficha del alumno', 'area-profesores'),
+                'vars'    => array('profesor' => __('profesor/a que hace el cambio', 'area-profesores'), 'alumno' => __('nombre del alumno', 'area-profesores'), 'curso' => __('curso', 'area-profesores'), 'cambios' => __('lista de cambios (antes → ahora)', 'area-profesores'), 'motivo' => __('motivo indicado por el profesor', 'area-profesores'), 'enlace' => __('enlace a la ficha del alumno', 'area-profesores')),
+                'ejemplo' => array('profesor' => 'Ana García', 'alumno' => 'Lucía García López', 'curso' => '3º EP A', 'cambios' => "- Alergias alimentarias: (vacío) → Frutos secos\n- Teléfono de emergencia de Ana López: 600 111 222 → 699 000 111 (familia García López; también afecta a sus hermanos)", 'motivo' => 'La madre nos lo comunicó en la tutoría de hoy.', 'enlace' => admin_url('admin.php?page=area-profesores-alumnos')),
+                'tutores' => false,
+                'secretaria' => true,
             ),
             'reserva_nueva' => array(
                 'titulo'  => __('Una familia reserva un servicio', 'area-profesores'),
@@ -249,7 +261,12 @@ Colegio Casa de la Virgen", 'area-profesores'),
         }
 
         $asunto = self::reemplazar($c['asunto'], $vars);
-        $html = self::html($asunto, self::reemplazar($c['cuerpo'], $vars), $defs[$key]['boton']);
+        $cuerpo = self::reemplazar($c['cuerpo'], $vars);
+        if (!empty($vars['_anexo'])) {
+            // Information added after the text was customised (e.g. food allergies).
+            $cuerpo .= "\n\n" . $vars['_anexo'];
+        }
+        $html = self::html($asunto, $cuerpo, $defs[$key]['boton']);
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
         if ($reply_to !== '' && is_email($reply_to)) {

@@ -331,6 +331,7 @@ class Area_Profesores_Comensales {
                 'fijo'    => $fijo,
                 'familia' => $fam,
                 'dieta'   => isset($dietas[$id]) ? $dietas[$id] : '',
+                'alergia' => trim((string) (isset($a['alergias_alimentarias']) ? $a['alergias_alimentarias'] : '')),
                 'come'    => $come,
                 'tipo'    => self::tipo($come, $fijo, (bool) $fam),
             );
@@ -358,9 +359,9 @@ class Area_Profesores_Comensales {
         foreach ($lista as $a) {
             $come = in_array($a['id'], $ids, true);
             if ($come) {
-                $comen[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'tipo' => self::tipo(true, $a['fijo'], (bool) $a['familia']), 'dieta' => $a['dieta']);
+                $comen[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'tipo' => self::tipo(true, $a['fijo'], (bool) $a['familia']), 'dieta' => $a['dieta'], 'alergia' => $a['alergia']);
             } elseif ($a['fijo']) {
-                $ausentes[] = array('id' => $a['id'], 'nombre' => $a['nombre']);
+                $ausentes[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'alergia' => $a['alergia']);
             }
         }
         $data = array(
@@ -381,21 +382,116 @@ class Area_Profesores_Comensales {
         }
         self::sincronizar_registro_antiguo($fecha, $curso, $data, $comen);
 
-        // After the kitchen summary, the kitchen is told about the change.
+        // After the kitchen summary, the kitchen is told about the change
+        // (number of diners, or a pupil with a food allergy who now eats / does not eat).
         $env = get_option(self::ENVIADOS, array());
-        if (is_array($env) && isset($env['fecha'], $env['cocina']) && $env['fecha'] === $fecha && $env['cocina'] && (!$antes || $antes['total'] !== count($comen))) {
+        $cambio_alergias = self::cambios_alergias($antes, $comen, $ausentes);
+        if (is_array($env) && isset($env['fecha'], $env['cocina']) && $env['fecha'] === $fecha && $env['cocina'] && (!$antes || $antes['total'] !== count($comen) || $cambio_alergias)) {
             $c = Area_Profesores_Cursos::get_curso($curso);
             $u = get_userdata($user_id);
-            Area_Profesores_Correos::enviar('comedor_cambio', Area_Profesores_Cuentas::emails('cocina'), array(
-                'clase'  => $c ? $c['label'] : $curso,
-                'antes'  => $antes ? $antes['total'] : __('sin validar', 'area-profesores'),
-                'ahora'  => count($comen),
-                'total'  => self::total_dia($fecha),
-                'quien'  => $u ? $u->display_name : '',
-                'enlace' => self::url_cocina(),
-            ));
+            $alergias_txt = $cambio_alergias ? implode("\n", $cambio_alergias) : __('Sin cambios.', 'area-profesores');
+            Area_Profesores_Correos::enviar('comedor_cambio', Area_Profesores_Cuentas::emails('cocina'), self::con_alergias('comedor_cambio', array(
+                'clase'    => $c ? $c['label'] : $curso,
+                'antes'    => $antes ? $antes['total'] : __('sin validar', 'area-profesores'),
+                'ahora'    => count($comen),
+                'total'    => self::total_dia($fecha),
+                'quien'    => $u ? $u->display_name : '',
+                'enlace'   => self::url_cocina(),
+                'alergias' => $alergias_txt,
+            ), $cambio_alergias ? __('Alergias alimentarias:', 'area-profesores') . "\n" . $alergias_txt : ''));
         }
         return count($comen);
+    }
+
+    /**
+     * Pupils with a food allergy whose situation changed between two validations.
+     *
+     * @return string[] lines for the kitchen
+     */
+    private static function cambios_alergias($antes, $comen, $ausentes) {
+        $ahora_come = array();
+        $ahora_falta = array();
+        foreach ($comen as $a) {
+            if (!empty($a['alergia'])) {
+                $ahora_come[$a['id']] = $a;
+            }
+        }
+        foreach ($ausentes as $a) {
+            if (!empty($a['alergia'])) {
+                $ahora_falta[$a['id']] = $a;
+            }
+        }
+        $antes_come = array();
+        if ($antes) {
+            foreach ($antes['alumnos'] as $a) {
+                $antes_come[(int) $a['id']] = true;
+            }
+        }
+        $out = array();
+        foreach ($ahora_falta as $id => $a) {
+            if (!$antes || isset($antes_come[$id])) {
+                $out[] = '- ' . sprintf(__('%1$s (alergia: %2$s) NO come hoy: no preparar su menú especial.', 'area-profesores'), $a['nombre'], $a['alergia']);
+            }
+        }
+        if ($antes) {
+            foreach ($ahora_come as $id => $a) {
+                if (!isset($antes_come[$id])) {
+                    $out[] = '- ' . sprintf(__('%1$s (alergia: %2$s) SÍ come hoy: preparar su menú especial.', 'area-profesores'), $a['nombre'], $a['alergia']);
+                }
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * E-mails whose text was customised before {alergias} existed still get the allergies.
+     */
+    private static function con_alergias($key, $vars, $bloque) {
+        $c = Area_Profesores_Correos::get($key);
+        if ($bloque !== '' && strpos($c['cuerpo'], '{alergias}') === false) {
+            $vars['_anexo'] = $bloque;
+        }
+        return $vars;
+    }
+
+    /**
+     * Food allergies of a date: regular diners with an allergy who do not eat
+     * (the special menu must not be cooked) and diners with an allergy who eat.
+     *
+     * @return array { no_comen: [ {clase, nombre, alergia} ], comen: [ ... ] }
+     */
+    public static function alergias_dia($fecha) {
+        $out = array('no_comen' => array(), 'comen' => array());
+        $cursos = self::cursos();
+        $ids = array();
+        $regs = self::registros($fecha);
+        foreach ($regs as $r) {
+            foreach (array_merge($r['alumnos'], $r['ausentes']) as $a) {
+                $ids[] = (int) $a['id'];
+            }
+        }
+        // Current allergies (the record keeps the ones written on the day as a fallback).
+        $actual = array();
+        if ($ids) {
+            global $wpdb;
+            foreach ((array) $wpdb->get_results('SELECT id, alergias_alimentarias FROM ' . Area_Profesores_Alumnos::t('alumnos') . ' WHERE id IN (' . implode(',', array_unique($ids)) . ')', ARRAY_A) as $row) {
+                $actual[(int) $row['id']] = trim((string) $row['alergias_alimentarias']);
+            }
+        }
+        foreach ($regs as $k => $r) {
+            if (!isset($cursos[$k])) {
+                continue;
+            }
+            foreach (array('comen' => $r['alumnos'], 'no_comen' => $r['ausentes']) as $grupo => $lista) {
+                foreach ($lista as $a) {
+                    $al = isset($actual[(int) $a['id']]) ? $actual[(int) $a['id']] : (isset($a['alergia']) ? (string) $a['alergia'] : '');
+                    if ($al !== '') {
+                        $out[$grupo][] = array('clase' => $cursos[$k]['label'], 'nombre' => $a['nombre'], 'alergia' => $al);
+                    }
+                }
+            }
+        }
+        return $out;
     }
 
     /**
@@ -682,19 +778,45 @@ class Area_Profesores_Comensales {
                 $dietas[] = '- ' . $e['label'] . ' (' . __('observaciones', 'area-profesores') . '): ' . str_replace("\n", ' · ', trim($r['observaciones']));
             }
         }
-        return array('total' => $total, 'clases' => $clases, 'pendientes' => $pendientes, 'dietas' => $dietas);
+        return array('total' => $total, 'clases' => $clases, 'pendientes' => $pendientes, 'dietas' => $dietas, 'alergias' => self::alergias_texto($fecha));
+    }
+
+    /**
+     * Food allergies of a date as text (kitchen e-mail). '' when there are none.
+     */
+    public static function alergias_texto($fecha) {
+        $al = self::alergias_dia($fecha);
+        $l = array();
+        if ($al['no_comen']) {
+            $l[] = __('HOY NO COMEN (no preparar su menú especial):', 'area-profesores');
+            foreach ($al['no_comen'] as $a) {
+                $l[] = '- ' . $a['clase'] . ' · ' . $a['nombre'] . ': ' . $a['alergia'];
+            }
+        }
+        if ($al['comen']) {
+            if ($l) {
+                $l[] = '';
+            }
+            $l[] = __('Comen hoy con alergia alimentaria:', 'area-profesores');
+            foreach ($al['comen'] as $a) {
+                $l[] = '- ' . $a['clase'] . ' · ' . $a['nombre'] . ': ' . $a['alergia'];
+            }
+        }
+        return implode("\n", $l);
     }
 
     public static function enviar_resumen_cocina($fecha) {
         $r = self::resumen($fecha);
-        return Area_Profesores_Correos::enviar('comedor_cocina', Area_Profesores_Cuentas::emails('cocina'), array(
+        $alergias = $r['alergias'] !== '' ? $r['alergias'] : __('Ningún comensal validado tiene alergias alimentarias.', 'area-profesores');
+        return Area_Profesores_Correos::enviar('comedor_cocina', Area_Profesores_Cuentas::emails('cocina'), self::con_alergias('comedor_cocina', array(
+            'alergias'   => $alergias,
             'fecha'      => date_i18n('l j \d\e F', strtotime($fecha . ' 12:00:00')),
             'total'      => $r['total'],
             'clases'     => $r['clases'] ? implode("\n", $r['clases']) : __('Ninguna clase validada.', 'area-profesores'),
             'pendientes' => $r['pendientes'] ? implode("\n", $r['pendientes']) : __('Ninguna: todas las clases están validadas.', 'area-profesores'),
             'dietas'     => $r['dietas'] ? implode("\n", $r['dietas']) : __('Ninguna.', 'area-profesores'),
             'enlace'     => self::url_cocina(),
-        ));
+        ), $r['alergias'] !== '' ? '⚠️ ' . __('ALERGIAS ALIMENTARIAS', 'area-profesores') . "\n" . $r['alergias'] : ''));
     }
 
     /**

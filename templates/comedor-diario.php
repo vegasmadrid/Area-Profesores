@@ -92,7 +92,7 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
 
                     <ul class="ap-cd-lista">
                         <?php foreach ($cd['lista'] as $a) : ?>
-                            <li class="ap-cd-alumno" data-fijo="<?php echo $a['fijo'] ? '1' : '0'; ?>" data-familia="<?php echo $a['familia'] ? '1' : '0'; ?>">
+                            <li class="ap-cd-alumno<?php echo $a['alergia'] !== '' ? ' has-alergia' : ''; ?>" data-fijo="<?php echo $a['fijo'] ? '1' : '0'; ?>" data-familia="<?php echo $a['familia'] ? '1' : '0'; ?>">
                                 <label>
                                     <input type="checkbox" name="come[]" value="<?php echo esc_attr($a['id']); ?>" <?php checked($a['come']); ?>>
                                     <span class="ap-cd-check" aria-hidden="true"></span>
@@ -101,9 +101,10 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                                 <span class="ap-cd-tags">
                                     <?php if ($a['dias']) : ?><span class="ap-cd-tag is-dias" title="<?php esc_attr_e('Días que se queda siempre', 'area-profesores'); ?>"><?php echo esc_html(implode(' ', array_map(function ($d) use ($cd_dias) { return $cd_dias[$d]; }, $a['dias']))); ?></span><?php endif; ?>
                                     <?php if ($a['familia']) : ?><span class="ap-cd-tag is-familia" title="<?php echo esc_attr($a['familia']['fechas_texto']); ?>">👪 <?php esc_html_e('Reserva de la familia', 'area-profesores'); ?></span><?php endif; ?>
+                                    <?php if ($a['alergia'] !== '') : ?><span class="ap-cd-tag is-alergia" title="<?php esc_attr_e('Alergia alimentaria (ficha del alumno)', 'area-profesores'); ?>">⚠️ <?php echo esc_html($a['alergia']); ?></span><?php endif; ?>
                                     <?php if ($a['dieta'] !== '') : ?><span class="ap-cd-tag is-dieta">🥗 <?php echo esc_html($a['dieta']); ?></span><?php endif; ?>
                                     <span class="ap-cd-tag is-extra"><?php esc_html_e('Extra hoy', 'area-profesores'); ?></span>
-                                    <span class="ap-cd-tag is-no"><?php esc_html_e('Hoy no se queda', 'area-profesores'); ?></span>
+                                    <span class="ap-cd-tag is-no"><?php echo $a['alergia'] !== '' ? esc_html__('Hoy no se queda · se avisa a cocina para que no prepare su menú', 'area-profesores') : esc_html__('Hoy no se queda', 'area-profesores'); ?></span>
                                 </span>
                             </li>
                         <?php endforeach; ?>
@@ -115,7 +116,7 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                         <label><strong><?php esc_html_e('Dietas', 'area-profesores'); ?></strong> <small><?php esc_html_e('(opcional; las que piden las familias ya aparecen solas)', 'area-profesores'); ?></small>
                             <textarea name="dietas" rows="2" placeholder="<?php esc_attr_e('Ej.: Pablo — dieta blanda', 'area-profesores'); ?>"><?php echo esc_textarea($cd_reg ? $cd_reg['dietas'] : $cd['dietas_prev']); ?></textarea></label>
                         <?php if (!$cd_reg && $cd['dietas_prev'] !== '') : ?><small class="ap-cd-nota"><?php esc_html_e('Hemos copiado las dietas del último día: bórralas si ya no hacen falta.', 'area-profesores'); ?></small><?php endif; ?>
-                        <label><strong><?php esc_html_e('Alérgicos que faltan u otras observaciones para cocina', 'area-profesores'); ?></strong>
+                        <label><strong><?php esc_html_e('Otras observaciones para cocina', 'area-profesores'); ?></strong> <small><?php esc_html_e('(los alérgicos que faltan se avisan solos)', 'area-profesores'); ?></small>
                             <textarea name="observaciones" rows="2"><?php echo esc_textarea($cd_reg ? $cd_reg['observaciones'] : ''); ?></textarea></label>
                     </div>
 
@@ -124,11 +125,15 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
 
                 <details class="ap-cd-fijos"<?php echo array_filter(wp_list_pluck($cd['lista'], 'dias')) ? '' : ' open'; ?>>
                     <summary><?php esc_html_e('Comensales fijos de la clase (los que se quedan siempre)', 'area-profesores'); ?></summary>
-                    <p class="ap-records-subtitle"><?php esc_html_e('Marca los días que se queda cada alumno. Esos días aparecerá marcado solo; tú solo tendrás que marcar las excepciones y validar.', 'area-profesores'); ?></p>
+                    <p class="ap-records-subtitle"><?php esc_html_e('Marca los días que se queda cada alumno. Esos días aparecerá marcado solo; tú solo tendrás que marcar las excepciones y validar. Pulsa el nombre para marcar toda su semana o la letra del día para marcar toda la columna.', 'area-profesores'); ?></p>
                     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                         <input type="hidden" name="action" value="ap_comedor_fijos">
                         <input type="hidden" name="curso" value="<?php echo esc_attr($cd['curso']); ?>">
                         <?php wp_nonce_field('ap_comedor_fijos_' . $cd['curso']); ?>
+                        <div class="ap-cd-fijos-tools">
+                            <button type="button" class="ap-btn ap-btn-sm ap-btn-outline" data-cd-fijos="todos"><?php esc_html_e('Marcar todos (toda la semana)', 'area-profesores'); ?></button>
+                            <button type="button" class="ap-btn ap-btn-sm ap-btn-outline" data-cd-fijos="ninguno"><?php esc_html_e('Desmarcar todos', 'area-profesores'); ?></button>
+                        </div>
                         <table class="ap-ma-tabla ap-cd-fijos-tabla">
                             <thead><tr>
                                 <th><?php esc_html_e('Alumno', 'area-profesores'); ?></th>
@@ -137,7 +142,7 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                             <tbody>
                                 <?php foreach ($cd['lista'] as $a) : ?>
                                     <tr>
-                                        <td><button type="button" class="ap-cd-fila" title="<?php esc_attr_e('Toda la semana', 'area-profesores'); ?>"><?php echo esc_html($a['nombre']); ?></button></td>
+                                        <td><button type="button" class="ap-cd-fila" title="<?php esc_attr_e('Toda la semana', 'area-profesores'); ?>"><?php echo esc_html($a['nombre']); ?></button><?php if ($a['alergia'] !== '') : ?> <span class="ap-cd-tag is-alergia" title="<?php esc_attr_e('Alergia alimentaria', 'area-profesores'); ?>">⚠️</span><?php endif; ?></td>
                                         <?php foreach ($cd_dias as $n => $d) : ?>
                                             <td><input type="checkbox" name="fijos[<?php echo esc_attr($a['id']); ?>][]" value="<?php echo (int) $n; ?>" data-dia="<?php echo (int) $n; ?>" <?php checked(in_array($n, $a['dias'], true)); ?> aria-label="<?php echo esc_attr($a['nombre'] . ' ' . $d); ?>"></td>
                                         <?php endforeach; ?>

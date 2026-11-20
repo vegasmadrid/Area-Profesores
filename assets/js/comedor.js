@@ -70,6 +70,13 @@
                 toggle(Array.prototype.slice.call(tabla.querySelectorAll('input[data-dia="' + b.getAttribute('data-dia') + '"]')));
             });
         });
+        // "Marcar todos" / "Desmarcar todos".
+        Array.prototype.forEach.call(document.querySelectorAll('[data-cd-fijos]'), function (b) {
+            b.addEventListener('click', function () {
+                var marcar = b.getAttribute('data-cd-fijos') === 'todos';
+                Array.prototype.forEach.call(tabla.querySelectorAll('input[type="checkbox"]'), function (c) { c.checked = marcar; });
+            });
+        });
         Array.prototype.forEach.call(tabla.querySelectorAll('.ap-cd-fila'), function (b) {
             b.addEventListener('click', function () {
                 toggle(Array.prototype.slice.call(b.closest('tr').querySelectorAll('input[type="checkbox"]')));
