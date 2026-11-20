@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
             <span class="ap-admin-badge"><?php esc_html_e('Área Profesores', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Gestión del Claustro de Profesores', 'area-profesores'); ?></h1>
             <p class="ap-admin-lead">
-                <?php esc_html_e('Todos los usuarios de la web son profesores. Indica si son tutores de un curso o especialistas, y quién es de Dirección o Secretaría. A los especialistas se les asignan las clases en las que dan clase, de una o varias etapas (botón "Clases").', 'area-profesores'); ?>
+                <?php esc_html_e('Todos los usuarios de la web son profesores. Indica si son tutores de un curso o especialistas. Las cuentas de Dirección, Secretaría, Cocina y Portería se eligen en "Cuentas especiales". A los especialistas se les asignan las clases en las que dan clase, de una o varias etapas (botón "Clases").', 'area-profesores'); ?>
             </p>
         </div>
         <?php $ap_area_page_id = absint(Area_Profesores_Admin::get_setting('area_page_id', 0)); ?>
@@ -69,8 +69,6 @@ if (!defined('ABSPATH')) {
                         <th style="width: 60px;"><?php esc_html_e('Avatar', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Nombre y Usuario', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Correo electrónico', 'area-profesores'); ?></th>
-                        <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Puede publicar comunicados en los espacios de Google Chat', 'area-profesores'); ?>"><?php esc_html_e('Dirección', 'area-profesores'); ?></th>
-                        <th style="width: 100px; text-align: center;" title="<?php esc_attr_e('Recibe los avisos de cambios de las familias y ve a todos los alumnos', 'area-profesores'); ?>"><?php esc_html_e('Secretaría', 'area-profesores'); ?></th>
                         <th style="width: 250px;"><?php esc_html_e('Tutoría o especialista', 'area-profesores'); ?></th>
                         <th style="width: 160px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
@@ -78,7 +76,7 @@ if (!defined('ABSPATH')) {
                 <tbody>
                     <?php if (empty($users)) : ?>
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 24px;">
+                            <td colspan="5" style="text-align: center; padding: 24px;">
                                 <?php esc_html_e('No se encontraron usuarios que coincidan con la búsqueda.', 'area-profesores'); ?>
                             </td>
                         </tr>
@@ -98,29 +96,6 @@ if (!defined('ABSPATH')) {
                                 </td>
                                 <td>
                                     <a href="mailto:<?php echo esc_attr($u->user_email); ?>"><?php echo esc_html($u->user_email); ?></a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <label class="ap-toggle-switch">
-                                        <input type="checkbox"
-                                               class="ap-direccion-toggle"
-                                               name="is_direccion[<?php echo esc_attr($u->ID); ?>]"
-                                               value="1"
-                                               data-user-id="<?php echo esc_attr($u->ID); ?>"
-                                               <?php checked(Area_Profesores_Chat::has_direccion_flag($u->ID), true); ?>>
-                                        <span class="ap-toggle-slider"></span>
-                                    </label>
-                                    <span class="ap-ajax-status" id="status-dir-<?php echo esc_attr($u->ID); ?>"></span>
-                                </td>
-                                <td style="text-align: center;">
-                                    <label class="ap-toggle-switch">
-                                        <input type="checkbox"
-                                               class="ap-secretaria-toggle"
-                                               value="1"
-                                               data-user-id="<?php echo esc_attr($u->ID); ?>"
-                                               <?php checked(Area_Profesores_Alumnos::es_secretaria($u->ID), true); ?>>
-                                        <span class="ap-toggle-slider"></span>
-                                    </label>
-                                    <span class="ap-ajax-status" id="status-sec-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
                                 <td>
                                     <select name="asignacion[<?php echo esc_attr($u->ID); ?>]"

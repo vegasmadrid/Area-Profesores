@@ -190,13 +190,11 @@ class Area_Profesores_Admin {
         if (isset($_POST['ap_save_profesores']) && check_admin_referer('ap_save_profesores_nonce')) {
             $asignaciones = isset($_POST['asignacion']) && is_array($_POST['asignacion']) ? wp_unslash($_POST['asignacion']) : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
-            $direccion_status = isset($_POST['is_direccion']) && is_array($_POST['is_direccion']) ? $_POST['is_direccion'] : array();
 
             foreach ($all_user_ids as $uid) {
                 if (isset($asignaciones[$uid])) {
                     Area_Profesores_Cursos::set_asignacion($uid, sanitize_text_field($asignaciones[$uid]));
                 }
-                update_user_meta($uid, Area_Profesores_Chat::META_DIR, isset($direccion_status[$uid]) ? '1' : '0');
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
@@ -434,15 +432,6 @@ class Area_Profesores_Admin {
         <h2><?php esc_html_e('Configuración Área de Profesores', 'area-profesores'); ?></h2>
         <table class="form-table">
             <tr>
-                <th><label for="ap_is_direccion"><?php esc_html_e('Dirección', 'area-profesores'); ?></label></th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="ap_is_direccion" id="ap_is_direccion" value="1" <?php checked(Area_Profesores_Chat::has_direccion_flag($user->ID)); ?>>
-                        <?php esc_html_e('Puede publicar comunicados a las familias en los espacios de Google Chat', 'area-profesores'); ?>
-                    </label>
-                </td>
-            </tr>
-            <tr>
                 <th><label for="ap_asignacion"><?php esc_html_e('Tutoría o especialista', 'area-profesores'); ?></label></th>
                 <td>
                     <select name="ap_asignacion" id="ap_asignacion">
@@ -466,7 +455,6 @@ class Area_Profesores_Admin {
         if (isset($_POST['ap_asignacion'])) {
             Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['ap_asignacion'])));
         }
-        update_user_meta($user_id, Area_Profesores_Chat::META_DIR, isset($_POST['ap_is_direccion']) ? '1' : '0');
     }
 
     /**

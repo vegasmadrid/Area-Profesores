@@ -70,6 +70,36 @@ class Area_Profesores_Correos {
                 'tutores' => true,
                 'secretaria' => true,
             ),
+            'comedor_recordatorio' => array(
+                'titulo'  => __('Recordatorio: falta poner el comedor', 'area-profesores'),
+                'cuando'  => __('Cada día lectivo a la hora del recordatorio (10:30 por defecto), si una clase de Primer Ciclo, Infantil o Primaria no tiene el comedor validado. Se configura en "Comedor Diario".', 'area-profesores'),
+                'para'    => __('El tutor/a de la clase.', 'area-profesores'),
+                'asunto'  => __('Falta poner el comedor de {clase}', 'area-profesores'),
+                'cuerpo'  => __("Hola, {nombre}:\n\nParece que se te ha olvidado poner el comedor de hoy de {clase}. Por favor, complétalo cuanto antes: a las {hora} se envía el resumen a cocina.\n\nSi los que se quedan son los de siempre, solo tienes que pulsar \"Validar\".\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Poner el comedor', 'area-profesores'),
+                'vars'    => array('nombre' => __('nombre del tutor/a', 'area-profesores'), 'clase' => __('clase', 'area-profesores'), 'hora' => __('hora del resumen a cocina', 'area-profesores'), 'enlace' => __('enlace al comedor de la clase', 'area-profesores')),
+                'ejemplo' => array('nombre' => 'Ana García', 'clase' => '3º EP A', 'hora' => '12:00', 'enlace' => home_url('/')),
+            ),
+            'comedor_cocina' => array(
+                'titulo'  => __('Resumen del comedor para cocina', 'area-profesores'),
+                'cuando'  => __('Cada día lectivo a la hora del resumen (12:00 por defecto). Se configura en "Comedor Diario".', 'area-profesores'),
+                'para'    => __('Las cuentas de Cocina (Cuentas especiales).', 'area-profesores'),
+                'asunto'  => __('Comedor del {fecha}: {total} comensales', 'area-profesores'),
+                'cuerpo'  => __("Comedor del {fecha}\n\nTotal de comensales: {total}\n\nPor clases:\n{clases}\n\nClases sin validar todavía:\n{pendientes}\n\nDietas y observaciones:\n{dietas}\n\nLa página del comedor se actualiza sola con los cambios:\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
+                'vars'    => array('fecha' => __('día', 'area-profesores'), 'total' => __('total de comensales', 'area-profesores'), 'clases' => __('comensales de cada clase', 'area-profesores'), 'pendientes' => __('clases sin validar', 'area-profesores'), 'dietas' => __('dietas y observaciones', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('fecha' => 'martes 24 de noviembre', 'total' => '212', 'clases' => "- 3 años A: 18 (1 extra)\n- 3º EP A: 21 (1 reservado por la familia)", 'pendientes' => '- 5º EP B', 'dietas' => '- 3º EP A · Lucía García: Dieta blanda (reserva de la familia)', 'enlace' => home_url('/')),
+            ),
+            'comedor_cambio' => array(
+                'titulo'  => __('Cambio en el comedor después del resumen', 'area-profesores'),
+                'cuando'  => __('Cuando, después de enviar el resumen a cocina, se valida o cambia el comedor de una clase (o una familia reserva comedor para hoy).', 'area-profesores'),
+                'para'    => __('Las cuentas de Cocina (Cuentas especiales).', 'area-profesores'),
+                'asunto'  => __('Cambio en el comedor de {clase}: {ahora} comensales', 'area-profesores'),
+                'cuerpo'  => __("Ha cambiado el comedor de hoy de {clase}: antes {antes}, ahora {ahora}.\n\nTotal de hoy: {total} comensales.\nCambio hecho por: {quien}\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
+                'vars'    => array('clase' => __('clase', 'area-profesores'), 'antes' => __('comensales antes', 'area-profesores'), 'ahora' => __('comensales ahora', 'area-profesores'), 'total' => __('total del día', 'area-profesores'), 'quien' => __('quién lo ha cambiado', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('clase' => '3º EP A', 'antes' => '20', 'ahora' => '21', 'total' => '213', 'quien' => 'Ana García', 'enlace' => home_url('/')),
+            ),
             'reserva_nueva' => array(
                 'titulo'  => __('Una familia reserva un servicio', 'area-profesores'),
                 'cuando'  => __('Cuando una familia reserva un servicio desde el Área Familias (uno por cada hijo).', 'area-profesores'),
@@ -90,6 +120,7 @@ Puedes ver las reservas de tus alumnos en la pestaña Reservas del Área de Prof
                 'ejemplo' => array('servicio' => 'Salida anticipada', 'alumno' => 'Lucía García López', 'curso' => '3º EP A', 'familia' => 'García López', 'correo' => 'lucia.garcia@casadelavirgen.es', 'fechas' => 'Martes 25 de noviembre de 2026 · a las 12:30', 'detalles' => "Motivo: Cita médica\nRecoge: Su abuela, Carmen López", 'enlace' => home_url('/')),
                 'tutores' => true,
                 'secretaria' => true,
+                'cocina' => true,
             ),
             'reserva_familia' => array(
                 'titulo'  => __('Confirmación de la reserva a la familia', 'area-profesores'),
@@ -133,6 +164,7 @@ Fechas: {fechas}
                 'ejemplo' => array('servicio' => 'Comedor', 'alumno' => 'Lucía García López', 'curso' => '3º EP A', 'familia' => 'García López', 'correo' => 'lucia.garcia@casadelavirgen.es', 'fechas' => 'Jueves 27 de noviembre de 2026', 'detalles' => 'Dieta: No', 'quien' => 'la familia'),
                 'tutores' => true,
                 'secretaria' => true,
+                'cocina' => true,
             ),
             'reserva_anulada_familia' => array(
                 'titulo'  => __('Aviso a la familia de una reserva anulada', 'area-profesores'),
@@ -184,6 +216,7 @@ Colegio Casa de la Virgen", 'area-profesores'),
             'extra'      => isset($s['extra']) ? $s['extra'] : '',
             'tutores'    => isset($s['tutores']) ? (bool) $s['tutores'] : !empty($d['tutores']),
             'secretaria' => isset($s['secretaria']) ? (bool) $s['secretaria'] : !empty($d['secretaria']),
+            'cocina'     => isset($s['cocina']) ? (bool) $s['cocina'] : !empty($d['cocina']),
         );
     }
 
@@ -329,6 +362,7 @@ Colegio Casa de la Virgen", 'area-profesores'),
             'extra'      => isset($_POST['extra']) ? implode(', ', Area_Profesores_Alumnos::emails_array(wp_unslash($_POST['extra']))) : '',
             'tutores'    => !empty($_POST['tutores']),
             'secretaria' => !empty($_POST['secretaria']),
+            'cocina'     => !empty($_POST['cocina']),
         );
         update_option(self::OPTION, $all, false);
         self::back($key, __('Correo guardado.', 'area-profesores'));

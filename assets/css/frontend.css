@@ -3068,3 +3068,69 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-res-detalles { font-size: 13px; color: #334155; }
 .ap-res-detalles small { display: block; margin-top: 4px; color: #94a3b8; }
 @media print { .ap-res-nav { display: none !important; } }
+
+/* Comedor diario (pestaña del profesor) */
+.ap-cd-msg { padding: 12px 16px; border-radius: 12px; margin: 0 0 16px; font-weight: 600; font-size: 14px; }
+.ap-cd-msg.is-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.ap-cd-msg.is-error { background: #fdf0ee; color: #9a2c1c; border: 1px solid #f5c2b8; }
+.ap-cd-aviso { background: #eef3fe; color: #313280; border-radius: 12px; padding: 14px 16px; font-weight: 600; }
+.ap-cd-clases { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 0 0 16px; }
+.ap-cd-clase { display: inline-flex; flex-direction: column; padding: 10px 16px; border: 2px solid #e2e8f0; border-radius: 14px; text-decoration: none; color: #1f2240; background: #fff; line-height: 1.25; }
+.ap-cd-clase small { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; font-weight: 700; }
+.ap-cd-clase b { font-size: 17px; }
+.ap-cd-clase span { font-size: 12px; font-weight: 700; color: #b45309; }
+.ap-cd-clase.is-ok span { color: #059669; }
+.ap-cd-clase.is-active { border-color: #313280; box-shadow: 0 0 0 3px rgba(49, 50, 128, .12); }
+.ap-cd-otra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
+.ap-cd-otra label { font-size: 13px; font-weight: 700; color: #475569; }
+.ap-cd-otra select { height: 40px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 10px; font-family: inherit; font-size: 14px; max-width: 100%; }
+.ap-cd-estado { border-radius: 12px; padding: 12px 16px; font-size: 14px; margin: 0 0 16px; }
+.ap-cd-estado.is-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.ap-cd-estado.is-pendiente { background: #fff8ec; color: #7a4a10; border: 1px solid #f3cf98; }
+.ap-cd-tools { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.ap-cd-tools span { display: inline-flex; gap: 6px; }
+.ap-cd-lista { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+.ap-cd-alumno { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; border: 2px solid #e2e8f0; border-radius: 12px; padding: 8px 12px; background: #fff; }
+.ap-cd-alumno label { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1 1 auto; margin: 0; }
+.ap-cd-alumno input { position: absolute; opacity: 0; pointer-events: none; }
+.ap-cd-check { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 8px; border: 2px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+.ap-cd-alumno input:focus-visible + .ap-cd-check { outline: 2px solid #72a7f7; outline-offset: 2px; }
+.ap-cd-alumno.is-come { border-color: #10b981; background: #f0fdf7; }
+.ap-cd-alumno.is-come .ap-cd-check { background: #10b981; border-color: #10b981; }
+.ap-cd-alumno.is-come .ap-cd-check::after { content: '✓'; color: #fff; font-weight: 800; font-size: 15px; }
+.ap-cd-alumno.is-extra { border-color: #dc8e2b; background: #fff8ec; }
+.ap-cd-alumno.is-extra .ap-cd-check { background: #dc8e2b; border-color: #dc8e2b; }
+.ap-cd-alumno.is-no { border-style: dashed; background: #f8fafc; }
+.ap-cd-alumno.is-no .ap-cd-nombre { color: #94a3b8; text-decoration: line-through; }
+.ap-cd-nombre { font-weight: 600; font-size: 14px; color: #1f2240; }
+.ap-cd-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ap-cd-tag { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: #eef2f7; color: #475569; }
+.ap-cd-tag.is-dias { background: #eef3fe; color: #313280; letter-spacing: .04em; }
+.ap-cd-tag.is-familia { background: #e0f2fe; color: #0c4a6e; }
+.ap-cd-tag.is-dieta { background: #ecfccb; color: #3f6212; }
+.ap-cd-tag.is-extra, .ap-cd-tag.is-no { display: none; }
+.ap-cd-alumno.is-extra .ap-cd-tag.is-extra { display: inline-block; background: #dc8e2b; color: #fff; }
+.ap-cd-alumno.is-no .ap-cd-tag.is-no { display: inline-block; background: #fee2e2; color: #991b1b; }
+.ap-cd-resumen { font-weight: 700; color: #313280; margin: 0 0 14px; }
+.ap-cd-campos { display: grid; gap: 10px; margin: 0 0 16px; max-width: 640px; }
+.ap-cd-campos label { display: grid; gap: 4px; font-size: 13px; }
+.ap-cd-campos textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; font: inherit; }
+.ap-cd-nota { color: #b45309; }
+.ap-cd-fijos { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+.ap-cd-fijos summary { cursor: pointer; font-weight: 700; color: #313280; }
+.ap-cd-fijos-tabla td, .ap-cd-fijos-tabla th { text-align: center; }
+.ap-cd-fijos-tabla td:first-child, .ap-cd-fijos-tabla th:first-child { text-align: left; }
+.ap-cd-fijos-tabla input { width: 18px; height: 18px; }
+.ap-cd-col, .ap-cd-fila { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; text-align: left; }
+.ap-cd-fila { font-weight: 600; }
+/* Comensales (Secretaría) */
+.ap-cm-mes { font-size: 17px; color: #313280; min-width: 150px; text-align: center; }
+.ap-cm-cifras { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 20px; }
+.ap-cm-cifras div { flex: 1 1 160px; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 16px; background: #fff; }
+.ap-cm-cifras b { display: block; font-size: 26px; color: #313280; }
+.ap-cm-cifras span { font-size: 13px; color: #64748b; }
+.ap-cm-dias { display: flex; flex-wrap: wrap; gap: 4px; }
+.ap-cm-dia { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: #fff3e2; color: #9a5a12; }
+.ap-cm-dia.is-familia { background: #e0f2fe; color: #0c4a6e; }
+@media (max-width: 600px) { .ap-cd-lista { grid-template-columns: 1fr; } }
+.ap-cocina-pendientes { background: #fff8ec; border: 1px solid #f3cf98; border-left: 5px solid #dc8e2b; color: #7a4a10; border-radius: 12px; padding: 12px 16px; margin: 0 0 18px; font-size: 15px; }

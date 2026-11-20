@@ -43,7 +43,10 @@ if (!defined('ABSPATH')) {
                     <p class="ap-correo-para">
                         <label><input type="checkbox" name="tutores" value="1" <?php checked($c['tutores']); ?>> <?php esc_html_e('A los tutores de sus hijos', 'area-profesores'); ?></label>
                         <label><input type="checkbox" name="secretaria" value="1" <?php checked($c['secretaria']); ?>> <?php esc_html_e('A Secretaría', 'area-profesores'); ?>
-                            <span class="description">(<?php echo $secretaria ? esc_html(implode(', ', $secretaria)) : esc_html__('nadie marcado como Secretaría en Profesores', 'area-profesores'); ?>)</span></label>
+                            <span class="description">(<?php echo $secretaria ? esc_html(implode(', ', $secretaria)) : esc_html__('nadie en Secretaría (Cuentas especiales)', 'area-profesores'); ?>)</span></label>
+                        <?php if (isset($d['cocina'])) : ?>
+                            <label><input type="checkbox" name="cocina" value="1" <?php checked($c['cocina']); ?>> <?php esc_html_e('A Cocina, si es una reserva de comedor o dieta', 'area-profesores'); ?></label>
+                        <?php endif; ?>
                     </p>
                 <?php endif; ?>
 

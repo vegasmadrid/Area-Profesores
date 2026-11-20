@@ -435,6 +435,9 @@ class Area_Profesores_Reservas {
             if ($r) {
                 $creadas[] = $r;
                 self::avisar_colegio('reserva_nueva', $r);
+                if (class_exists('Area_Profesores_Comensales')) {
+                    Area_Profesores_Comensales::on_reserva($r);
+                }
             }
         }
 
@@ -487,6 +490,9 @@ class Area_Profesores_Reservas {
         $r['estado'] = 'anulada';
         $r['anulado_por'] = $por;
         self::avisar_colegio('reserva_anulada', $r);
+        if (class_exists('Area_Profesores_Comensales')) {
+            Area_Profesores_Comensales::on_reserva($r);
+        }
         Area_Profesores_Correos::enviar('reserva_anulada_familia', $r['email'], array(
             'servicio' => $r['servicio_nombre'],
             'alumnos'  => $r['alumno'] . ($r['curso_label'] !== '' ? ' (' . $r['curso_label'] . ')' : ''),
@@ -508,6 +514,9 @@ class Area_Profesores_Reservas {
         }
         if ($conf['secretaria']) {
             $para = array_merge($para, $A::get_secretaria_emails());
+        }
+        if (!empty($conf['cocina']) && in_array($r['servicio'], array('comedor', 'dieta'), true) && class_exists('Area_Profesores_Cuentas')) {
+            $para = array_merge($para, Area_Profesores_Cuentas::emails('cocina'));
         }
         if (!$para && !$conf['extra']) {
             $para = array(get_option('admin_email'));

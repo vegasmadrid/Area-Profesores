@@ -90,6 +90,14 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
    - Pestaña **Reservas** del Área Docente: las reservas de los alumnos de cada profesor (todos los cursos para Dirección y Secretaría), por día, con los próximos días de un vistazo.
    - El listado de cocina (`[comedorhoy]`) muestra el comedor, las dietas y los desayunos reservados por las familias para ese día.
    - Los servicios, horarios, plazos y preguntas se configuran en el Área Familias (*Área Familias > Reservas de servicios*).
+20. **Cuentas especiales** (*Área Profesores > Cuentas especiales*): se eligen las cuentas de **Dirección** (comunicados y todos los alumnos), **Secretaría** (avisos de las familias, todos los alumnos y pestaña *Comensales*), **Cocina** (resumen diario del comedor y cambios) y **Portería** (pestaña *Reservas* de todos los cursos; más adelante, sus propios avisos). Ya no se marcan en la lista de *Profesores*.
+21. **Comedor diario por alumnos** (solo Primer Ciclo, Infantil y Primaria; Secundaria y Bachillerato no lo ven):
+   - Pestaña **Comedor**: el tutor/a ve la lista de su clase con los **comensales fijos** ya marcados (cada alumno con los días de la semana que se queda), marca las excepciones (un alumno que se queda un día = **extra**; un fijo que hoy no se queda) y **valida**. Si no hay cambios, basta con validar.
+   - Los alumnos cuya familia ha reservado comedor en el Área Familias aparecen marcados con "Reserva de la familia" (y su dieta, si la piden) y se suman; si la reserva llega después de validar, se suma sola.
+   - **Poner el comedor de un compañero**: cualquier profesor de estas etapas puede poner o validar el comedor de otra clase (queda registrado quién lo valida).
+   - A las **10:30** se avisa por correo a los tutores que no han validado; a las **12:00** se envía a **Cocina** el resumen (total, por clases, clases sin validar, dietas y observaciones), y después cada cambio. Horas, avisos y **días sin clase** en *Comedor Diario* (los días sin clase también los usa el Área Familias).
+   - La página de cocina (`[comedorhoy]`) se actualiza sola en cuanto un profesor valida o una familia reserva, y muestra las clases pendientes.
+   - Pestaña **Comensales** (Secretaría y Dirección): por meses, comidas de cada día y **comidas extra de cada alumno** (las marcadas por el profesor y las reservadas por la familia) con sus días, para hacer los cobros; descarga para Excel.
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

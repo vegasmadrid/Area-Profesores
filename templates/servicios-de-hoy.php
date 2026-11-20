@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
-<div class="ap-portal-container ap-cocina-container">
+<div class="ap-portal-container ap-cocina-container" data-ap-cocina-vivo="<?php echo esc_url($vivo_url); ?>">
     <!-- Header para Cocina -->
     <header class="ap-cocina-header">
         <div class="ap-cocina-header-top">
@@ -103,6 +103,13 @@ if (!defined('ABSPATH')) {
         </div>
     </header>
 
+    <?php if (!empty($pendientes)) : ?>
+        <div class="ap-cocina-pendientes">
+            <strong>⏳ <?php printf(esc_html(_n('%d clase sin validar todavía:', '%d clases sin validar todavía:', count($pendientes), 'area-profesores')), count($pendientes)); ?></strong>
+            <?php echo esc_html(implode(', ', $pendientes)); ?>
+        </div>
+    <?php endif; ?>
+
     <!-- Tarjetas de Resumen Numérico (Grandes y Cómodas de leer en cocina) -->
     <div class="ap-cocina-metrics-grid">
         <!-- 1. Total Comensales Estándar -->
@@ -112,8 +119,8 @@ if (!defined('ABSPATH')) {
             </div>
             <div class="ap-metric-data">
                 <span class="ap-metric-big-number"><?php echo intval($summary->total_comensales); ?></span>
-                <span class="ap-metric-title"><?php esc_html_e('Comensales Estándar', 'area-profesores'); ?></span>
-                <span class="ap-metric-subtext"><?php esc_html_e('Sin incluir dietas especiales', 'area-profesores'); ?></span>
+                <span class="ap-metric-title"><?php esc_html_e('Comensales', 'area-profesores'); ?></span>
+                <span class="ap-metric-subtext"><?php esc_html_e('Validados por los tutores (se actualiza solo)', 'area-profesores'); ?></span>
             </div>
         </div>
 
@@ -251,7 +258,7 @@ if (!defined('ABSPATH')) {
 
                             <div class="ap-class-comensales-box">
                                 <span class="ap-comensales-number"><?php echo esc_html($r->num_alumnos); ?></span>
-                                <span class="ap-comensales-lbl"><?php esc_html_e('alumnos estándar', 'area-profesores'); ?></span>
+                                <span class="ap-comensales-lbl"><?php esc_html_e('comensales', 'area-profesores'); ?></span>
                             </div>
                         </div>
 
@@ -306,7 +313,7 @@ if (!defined('ABSPATH')) {
             <!-- Resumen Total Final al pie de página -->
             <div class="ap-cocina-grand-total">
                 <div class="ap-grand-total-content">
-                    <span class="ap-grand-total-label"><?php esc_html_e('TOTAL GENERAL DE COMENSALES ESTÁNDAR:', 'area-profesores'); ?></span>
+                    <span class="ap-grand-total-label"><?php esc_html_e('TOTAL DE COMENSALES:', 'area-profesores'); ?></span>
                     <span class="ap-grand-total-number"><?php echo intval($summary->total_comensales); ?> <?php esc_html_e('alumnos', 'area-profesores'); ?></span>
                 </div>
             </div>
@@ -342,7 +349,7 @@ if (!defined('ABSPATH')) {
                 <span class="ap-section-icon">👪</span>
                 <div>
                     <h2 class="ap-section-title"><?php esc_html_e('Reservas de las familias', 'area-profesores'); ?></h2>
-                    <p class="ap-section-subtitle"><?php esc_html_e('Servicios reservados por las familias desde el Área Familias para este día.', 'area-profesores'); ?></p>
+                    <p class="ap-section-subtitle"><?php esc_html_e('Servicios reservados por las familias desde el Área Familias para este día. En Primer Ciclo, Infantil y Primaria, el comedor reservado ya está sumado en su clase.', 'area-profesores'); ?></p>
                 </div>
             </div>
             <?php foreach ($ap_fam as $ap_tipo => $ap_lista) : if (!$ap_lista) { continue; } ?>
