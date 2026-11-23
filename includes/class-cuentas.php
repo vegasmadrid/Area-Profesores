@@ -63,7 +63,7 @@ class Area_Profesores_Cuentas {
                 'meta'   => '_ap_is_porteria',
                 'nombre' => __('Portería', 'area-profesores'),
                 'icono'  => 'dashicons-admin-network',
-                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
+                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…), pueden reservar cualquier servicio para cualquier familia (cuando lo piden en persona o por teléfono) y anular reservas. Reciben los avisos que elijas en "Avisos".', 'area-profesores'),
             ),
             'administracion' => array(
                 'meta'   => '_ap_is_administracion',

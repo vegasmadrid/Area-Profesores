@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.14.0
+ * Version:     1.15.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.14.0');
+define('AREA_PROFESORES_VERSION', '1.15.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -150,6 +150,14 @@ class Area_Profesores_Plugin {
             'area-profesores-frontend',
             AREA_PROFESORES_PLUGIN_URL . 'assets/js/frontend.js',
             array('jquery'),
+            AREA_PROFESORES_VERSION,
+            true
+        );
+
+        wp_register_script(
+            'area-profesores-reservas-porteria',
+            AREA_PROFESORES_PLUGIN_URL . 'assets/js/reservas-porteria.js',
+            array(),
             AREA_PROFESORES_VERSION,
             true
         );

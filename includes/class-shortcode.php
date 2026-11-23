@@ -191,6 +191,7 @@ class Area_Profesores_Shortcode {
                 'lista'    => Area_Profesores_Reservas::del_dia($f, $visibles),
                 'proximos' => $proximos,
                 'todos'    => $visibles === true,
+                'porteria' => Area_Profesores_Reservas::datos_porteria($user_id),
             );
         }
 

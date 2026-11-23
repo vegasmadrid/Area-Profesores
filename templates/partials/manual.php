@@ -128,6 +128,18 @@ $m_secciones = array(
         <li><?php esc_html_e('Las reservas de comedor y de dieta ya salen marcadas en la pestaña "Comedor"; no hace falta apuntarlas.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Portería ve las reservas de todos los cursos.', 'area-profesores'); ?></li>
     </ul>
+    <h4><?php esc_html_e('Portería: reservar para una familia', 'area-profesores'); ?></h4>
+    <p><?php esc_html_e('Cuando un padre o una madre pide un servicio en persona o por teléfono, Portería lo reserva desde esta misma pestaña:', 'area-profesores'); ?></p>
+    <ol>
+        <li><?php esc_html_e('Pulsa "+ Nueva reserva para una familia" y escribe el nombre del alumno (o de la familia). Elige al alumno en la lista; si quieres, marca también a sus hermanos.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Elige el servicio, el día (o varios días con los días de la semana) y rellena lo que pida: hora, desayuno, dieta, quién le recoge, motivo…', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Escribe quién lo ha pedido (por ejemplo, "la madre, por teléfono") y pulsa "Hacer la reserva".', 'area-profesores'); ?></li>
+    </ol>
+    <ul>
+        <li><?php esc_html_e('No hay plazos: se puede reservar para hoy a cualquier hora. No se puede reservar dos veces el mismo servicio para el mismo alumno y día.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Se avisa al tutor/a (y a quien corresponda según "Avisos") y, si está marcado, la familia recibe la confirmación por correo. La reserva aparece en su Área de Familias con "Reservada por: Portería".', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Portería puede anular cualquier reserva con el botón "Anular" de la lista; se avisa a la familia y al tutor/a.', 'area-profesores'); ?></li>
+    </ul>
 </section>
 <?php endif; ?>
 
