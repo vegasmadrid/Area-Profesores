@@ -428,6 +428,9 @@ class Area_Profesores_Reservas {
             'detalles'        => $detalles,
             'avisar'          => $avisar,
         ), $alumnos, array($email), esc_url_raw((string) $request->get_param('panel_url')));
+        if (!is_wp_error($creadas) && !$creadas) {
+            $creadas = new WP_Error('area_bd', __('No se ha podido guardar la reserva. Inténtalo de nuevo en unos minutos.', 'area-profesores'), array('status' => 500));
+        }
         if (is_wp_error($creadas)) {
             return $creadas;
         }
@@ -469,7 +472,7 @@ class Area_Profesores_Reservas {
         $creadas = array();
         foreach ($alumnos as $id => $x) {
             $a = $x['alumno'];
-            $wpdb->insert(self::t(), array(
+            $fila = array(
                 'grupo'           => $grupo,
                 'alumno_id'       => $id,
                 'familia_id'      => isset($x['familia_id']) ? (int) $x['familia_id'] : 0,
@@ -488,7 +491,15 @@ class Area_Profesores_Reservas {
                 'estado'          => 'activa',
                 'creado'          => Area_Profesores_Alumnos::now(),
                 'creado_por'      => (int) $por,
-            ));
+            );
+            if (!$wpdb->insert(self::t(), $fila)) {
+                // The table may be out of date (files updated in several steps): repair it and retry.
+                self::create_tables();
+                if (!$wpdb->insert(self::t(), $fila)) {
+                    error_log('[Área Profesores] No se ha podido guardar la reserva: ' . $wpdb->last_error);
+                    return $creadas ? $creadas : new WP_Error('area_bd', sprintf(__('No se ha podido guardar la reserva (error de la base de datos: %s). Avisa al administrador de la web.', 'area-profesores'), $wpdb->last_error !== '' ? $wpdb->last_error : '?'), array('status' => 500));
+                }
+            }
             $r = self::get((int) $wpdb->insert_id);
             if ($r) {
                 $creadas[] = $r;
@@ -902,6 +913,9 @@ class Area_Profesores_Reservas {
             self::volver_portal('error', $v->get_error_message(), '', $post);
         }
         $creadas = self::crear($v['datos'], $v['alumnos'], !empty($post['confirmar']) ? $v['emails'] : array(), '', $uid);
+        if (!is_wp_error($creadas) && !$creadas) {
+            $creadas = new WP_Error('area_bd', __('No se ha guardado la reserva. Inténtalo de nuevo y, si vuelve a pasar, avisa al administrador de la web.', 'area-profesores'));
+        }
         if (is_wp_error($creadas)) {
             self::volver_portal('error', $creadas->get_error_message(), '', $post);
         }

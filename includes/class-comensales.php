@@ -354,7 +354,13 @@ class Area_Profesores_Comensales {
         foreach ($vistos as $f) {
             $quiere = in_array($f, $no, true);
             if ($quiere && !isset($antes[$f])) {
-                $wpdb->insert(self::t('profes'), array('user_id' => $uid, 'fecha' => $f, 'creado' => current_time('mysql')));
+                $fila = array('user_id' => $uid, 'fecha' => $f, 'creado' => current_time('mysql'));
+                if (!$wpdb->insert(self::t('profes'), $fila)) {
+                    self::create_tables(); // table missing (files updated in several steps)
+                    if (!$wpdb->insert(self::t('profes'), $fila)) {
+                        self::volver_profe('error', __('No se ha podido guardar. Avisa al administrador de la web.', 'area-profesores'));
+                    }
+                }
             } elseif (!$quiere && isset($antes[$f])) {
                 $wpdb->delete(self::t('profes'), array('user_id' => $uid, 'fecha' => $f));
             }
