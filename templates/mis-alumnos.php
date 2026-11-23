@@ -12,7 +12,12 @@ if (!defined('ABSPATH')) {
 }
 
 $ap_ma = $mis_alumnos;
-$ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key_first($ap_ma['cursos']);
+$ap_pedido = isset($_GET['ap_ma']) ? sanitize_text_field(wp_unslash($_GET['ap_ma'])) : '';
+$ap_activo = isset($ap_ma['cursos'][$ap_pedido]) ? $ap_pedido : (isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key_first($ap_ma['cursos']));
+$ap_ma_flash = get_transient('ap_ma_flash_' . get_current_user_id());
+if ($ap_ma_flash) {
+    delete_transient('ap_ma_flash_' . get_current_user_id());
+}
 ?>
 <div class="ap-records-card ap-ma">
     <div class="ap-enlaces-header">
@@ -21,7 +26,8 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
             <p class="ap-records-subtitle">
                 <?php echo $ap_ma['todos']
                     ? esc_html__('Puedes consultar los alumnos de todos los cursos.', 'area-profesores')
-                    : esc_html__('Alumnos de tu tutoría y de las clases que tienes asignadas, con sus padres y el teléfono de emergencia.', 'area-profesores'); ?>
+                    : esc_html__('Alumnos de tu tutoría y de las clases que tienes asignadas, con sus padres, el teléfono de emergencia y sus alergias.', 'area-profesores'); ?>
+                <?php esc_html_e('Si algún dato no es correcto, pulsa "Editar": se avisa a Secretaría con el motivo.', 'area-profesores'); ?>
             </p>
         </div>
         <div class="ap-ma-tools">
@@ -29,6 +35,10 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
             <button type="button" class="ap-btn ap-btn-sm ap-btn-outline" id="ap-ma-imprimir"><?php esc_html_e('Imprimir', 'area-profesores'); ?></button>
         </div>
     </div>
+
+    <?php if ($ap_ma_flash) : ?>
+        <div class="ap-cd-msg is-<?php echo esc_attr($ap_ma_flash['type']); ?>" role="status"><?php echo esc_html($ap_ma_flash['text']); ?></div>
+    <?php endif; ?>
 
     <?php if (count($ap_ma['cursos']) > 1) : ?>
         <div class="ap-ma-cursos" role="tablist">
@@ -52,10 +62,12 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
                         <th><?php esc_html_e('Alumno', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Padres / tutores', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Teléfono de emergencia', 'area-profesores'); ?></th>
+                        <th><?php esc_html_e('Alergias', 'area-profesores'); ?></th>
+                        <th class="ap-ma-acc no-print"><span class="screen-reader-text"><?php esc_html_e('Editar', 'area-profesores'); ?></span></th>
                     </tr></thead>
                     <tbody>
                         <?php foreach ($c['alumnos'] as $i => $a) : ?>
-                            <tr data-search="<?php echo esc_attr($a['nombre']); ?>">
+                            <tr data-search="<?php echo esc_attr($a['nombre']); ?>"<?php echo !empty($a['alergias_alimentarias']) ? ' class="has-alergia"' : ''; ?>>
                                 <td class="ap-ma-n"><?php echo (int) $i + 1; ?></td>
                                 <td class="ap-ma-alumno"><?php echo esc_html($a['nombre']); ?></td>
                                 <?php
@@ -85,6 +97,14 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
                                         </div>
                                     <?php endforeach; ?>
                                 </td>
+                                <td class="ap-ma-alergias">
+                                    <?php if (!empty($a['alergias_alimentarias'])) : ?><div class="ap-ma-alergia is-alimentaria"><b>⚠️ <?php esc_html_e('Alimentaria:', 'area-profesores'); ?></b> <?php echo esc_html($a['alergias_alimentarias']); ?></div><?php endif; ?>
+                                    <?php if (!empty($a['alergias_otras'])) : ?><div class="ap-ma-alergia"><b><?php esc_html_e('No alimentaria:', 'area-profesores'); ?></b> <?php echo esc_html($a['alergias_otras']); ?></div><?php endif; ?>
+                                    <?php if (empty($a['alergias_alimentarias']) && empty($a['alergias_otras'])) : ?><span class="ap-ma-sin">—</span><?php endif; ?>
+                                </td>
+                                <td class="ap-ma-acc no-print">
+                                    <button type="button" class="ap-btn ap-btn-sm ap-btn-outline ap-ma-editar" data-alumno="<?php echo esc_attr(wp_json_encode(Area_Profesores_Alumnos_Portal::datos_edicion($a))); ?>"><?php esc_html_e('Editar', 'area-profesores'); ?></button>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -93,3 +113,31 @@ $ap_activo = isset($ap_ma['cursos'][$mi_curso]) ? $mi_curso : (string) array_key
         </div>
     <?php endforeach; ?>
 </div>
+
+<dialog id="ap-ma-dialog" class="ap-ma-dialog" aria-labelledby="ap-ma-dialog-titulo">
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-ma-dialog-form">
+        <input type="hidden" name="action" value="ap_ma_editar">
+        <input type="hidden" name="alumno_id" value="">
+        <?php wp_nonce_field('ap_ma_editar'); ?>
+        <div class="ap-ma-dialog-head">
+            <h3 id="ap-ma-dialog-titulo"></h3>
+            <button type="button" class="ap-ma-dialog-x" data-cerrar aria-label="<?php esc_attr_e('Cerrar', 'area-profesores'); ?>">×</button>
+        </div>
+        <div class="ap-ma-dialog-body">
+            <fieldset>
+                <legend><?php esc_html_e('Alergias', 'area-profesores'); ?></legend>
+                <label><strong>⚠️ <?php esc_html_e('Alergias alimentarias', 'area-profesores'); ?></strong> <small><?php esc_html_e('(salen en el comedor y en cocina)', 'area-profesores'); ?></small>
+                    <textarea name="alergias_alimentarias" rows="2" placeholder="<?php esc_attr_e('Ej.: Frutos secos y huevo', 'area-profesores'); ?>"></textarea></label>
+                <label><strong><?php esc_html_e('Alergias no alimentarias', 'area-profesores'); ?></strong>
+                    <textarea name="alergias_otras" rows="2" placeholder="<?php esc_attr_e('Ej.: Polen, látex', 'area-profesores'); ?>"></textarea></label>
+            </fieldset>
+            <div class="ap-ma-dialog-familias"></div>
+            <label class="ap-ma-motivo"><strong><?php esc_html_e('Motivo del cambio', 'area-profesores'); ?> *</strong> <small><?php esc_html_e('(se envía a Secretaría con los datos nuevos)', 'area-profesores'); ?></small>
+                <textarea name="motivo" rows="2" required placeholder="<?php esc_attr_e('Ej.: La madre me lo ha comunicado hoy en la entrada.', 'area-profesores'); ?>"></textarea></label>
+        </div>
+        <div class="ap-ma-dialog-foot">
+            <button type="button" class="ap-btn ap-btn-outline" data-cerrar><?php esc_html_e('Cancelar', 'area-profesores'); ?></button>
+            <button type="submit" class="ap-btn ap-btn-primary"><?php esc_html_e('Guardar y avisar a Secretaría', 'area-profesores'); ?></button>
+        </div>
+    </form>
+</dialog>

@@ -45,6 +45,8 @@ class Area_Profesores_Alumnos {
             estado VARCHAR(10) NOT NULL DEFAULT 'alta',
             fecha_baja DATE DEFAULT NULL,
             notas TEXT DEFAULT NULL,
+            alergias_alimentarias TEXT DEFAULT NULL,
+            alergias_otras TEXT DEFAULT NULL,
             creado DATETIME DEFAULT NULL,
             actualizado DATETIME DEFAULT NULL,
             PRIMARY KEY  (id),
@@ -304,6 +306,12 @@ class Area_Profesores_Alumnos {
         if (array_key_exists('notas', $data)) {
             $row['notas'] = sanitize_textarea_field($data['notas']);
         }
+        // Allergies: only when given (the Alexia import does not touch them).
+        foreach (array('alergias_alimentarias', 'alergias_otras') as $k) {
+            if (array_key_exists($k, $data)) {
+                $row[$k] = trim(sanitize_textarea_field($data[$k]));
+            }
+        }
 
         if ($id) {
             $old = self::get_alumno($id);
@@ -313,7 +321,7 @@ class Area_Profesores_Alumnos {
                 $row['fecha_baja'] = null;
             }
             $wpdb->update(self::t('alumnos'), $row, array('id' => $id));
-            $cambios = self::diferencias($old, $row, array('nombre', 'email', 'curso', 'estado'));
+            $cambios = self::diferencias($old, $row, array_intersect(array('nombre', 'email', 'curso', 'estado', 'alergias_alimentarias', 'alergias_otras'), array_keys($row)));
             if ($cambios) {
                 self::log($origen, 'alumno', $id, 'editar', $cambios);
             }

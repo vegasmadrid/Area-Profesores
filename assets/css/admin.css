@@ -708,3 +708,17 @@
 .ap-cuentas-vacio { color: #b45309; }
 .ap-cuentas-anadir { display: flex; gap: 6px; margin-top: 10px; }
 .ap-cuentas-anadir select { flex: 1; min-width: 0; }
+
+/* Alergias en Alumnos y familias */
+.ap-alergia-pill { display: inline-block; margin-top: 3px; font-size: 12px; border-radius: 999px; padding: 1px 8px; background: #f1f5f9; color: #475569; }
+.ap-alergia-pill.is-alimentaria { background: #fee2e2; color: #991b1b; font-weight: 600; }
+
+/* Avisos */
+.ap-avisos-resumen { margin: 0 0 24px; }
+.ap-avisos-resumen tr.ap-avisos-grupo th { background: #eef3fe; color: #313280; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .05em; }
+.ap-aviso-chip { display: inline-block; margin: 2px 0; padding: 2px 9px; border-radius: 999px; background: #eef3fe; color: #313280; font-size: 12px; font-weight: 600; }
+.ap-aviso-cuentas { border: 1px solid #e3e6f2; border-radius: 10px; padding: 10px 14px 12px; margin: 0 0 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 16px; }
+.ap-aviso-cuentas legend { padding: 0 6px; }
+.ap-aviso-cuentas label { display: flex; align-items: center; gap: 6px; }
+.ap-aviso-cuentas .dashicons { color: #313280; font-size: 18px; width: 18px; height: 18px; }
+.ap-aviso-sep { grid-column: 1 / -1; margin-top: 6px; font-weight: 600; color: #475569; }

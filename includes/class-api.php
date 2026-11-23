@@ -233,7 +233,7 @@ class Area_Profesores_API {
         $hijos = isset($hijos[$fid]) ? $hijos[$fid] : array();
 
         $conf = Area_Profesores_Correos::get('familia_datos');
-        $para = $conf['secretaria'] ? $A::get_secretaria_emails() : array();
+        $para = array(); // + the special accounts chosen in "Avisos"
         $lineas_hijos = array();
         foreach ($hijos as $h) {
             $c = Area_Profesores_Cursos::get_curso($h['curso']);
@@ -242,10 +242,6 @@ class Area_Profesores_API {
                 $para = array_merge($para, $A::emails_tutores($h['curso']));
             }
         }
-        if (!$para && !$conf['extra']) {
-            $para = array(get_option('admin_email'));
-        }
-
         $lineas = array();
         foreach ($cambios as $c) {
             $lineas[] = '- ' . $c[0] . ': ' . ($c[1] !== '' ? $c[1] : '—') . '  →  ' . ($c[2] !== '' ? $c[2] : '—');

@@ -110,6 +110,33 @@ if (!defined('ABSPATH')) {
         </div>
     <?php endif; ?>
 
+    <?php if (!empty($alergias['no_comen']) || !empty($alergias['comen'])) : ?>
+        <!-- Alergias alimentarias (de la ficha de cada alumno) -->
+        <section class="ap-cocina-alergias">
+            <?php if (!empty($alergias['no_comen'])) : ?>
+                <div class="ap-cocina-alergias-no">
+                    <h2>⚠️ <?php esc_html_e('HOY NO COMEN — no preparar su menú especial', 'area-profesores'); ?></h2>
+                    <p><?php esc_html_e('Comensales habituales con alergia alimentaria que hoy no se quedan:', 'area-profesores'); ?></p>
+                    <ul>
+                        <?php foreach ($alergias['no_comen'] as $a) : ?>
+                            <li><span class="ap-alert-class-badge"><?php echo esc_html($a['clase']); ?></span> <strong><?php echo esc_html($a['nombre']); ?></strong> · <?php echo esc_html($a['alergia']); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($alergias['comen'])) : ?>
+                <div class="ap-cocina-alergias-si">
+                    <h2>🍽️ <?php printf(esc_html(_n('%d comensal con alergia alimentaria hoy', '%d comensales con alergia alimentaria hoy', count($alergias['comen']), 'area-profesores')), count($alergias['comen'])); ?></h2>
+                    <ul>
+                        <?php foreach ($alergias['comen'] as $a) : ?>
+                            <li><span class="ap-dieta-class-badge"><?php echo esc_html($a['clase']); ?></span> <strong><?php echo esc_html($a['nombre']); ?></strong> · <?php echo esc_html($a['alergia']); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
+
     <!-- Tarjetas de Resumen Numérico (Grandes y Cómodas de leer en cocina) -->
     <div class="ap-cocina-metrics-grid">
         <!-- 1. Total Comensales Estándar -->
@@ -142,9 +169,9 @@ if (!defined('ABSPATH')) {
                 ⚠️
             </div>
             <div class="ap-metric-data">
-                <span class="ap-metric-big-number ap-text-red"><?php echo intval($summary->clases_con_incidencias); ?></span>
+                <span class="ap-metric-big-number ap-text-red"><?php echo intval(count($alergias['no_comen']) + $summary->clases_con_incidencias); ?></span>
                 <span class="ap-metric-title"><?php esc_html_e('Alérgicos que Faltan', 'area-profesores'); ?></span>
-                <span class="ap-metric-subtext"><?php esc_html_e('No preparar menú especial', 'area-profesores'); ?></span>
+                <span class="ap-metric-subtext"><?php esc_html_e('No preparar menú especial (y avisos de los tutores)', 'area-profesores'); ?></span>
             </div>
         </div>
 
@@ -188,10 +215,10 @@ if (!defined('ABSPATH')) {
                     <div class="ap-alert-badge-icon">⚠️</div>
                     <div>
                         <h2 class="ap-alert-section-title">
-                            <?php esc_html_e('ATENCIÓN COCINA: Alérgicos Ausentes / No preparar menús especiales', 'area-profesores'); ?>
+                            <?php esc_html_e('Avisos de los tutores para cocina', 'area-profesores'); ?>
                         </h2>
                         <p class="ap-alert-section-desc">
-                            <?php esc_html_e('Los siguientes alumnos con alergia o dieta especial NO han asistido hoy:', 'area-profesores'); ?>
+                            <?php esc_html_e('Observaciones que han escrito los tutores al poner el comedor:', 'area-profesores'); ?>
                         </p>
                     </div>
                 </div>
@@ -283,7 +310,7 @@ if (!defined('ABSPATH')) {
                             <?php if (!empty($r->alergicos_faltan)) : ?>
                                 <div class="ap-class-card-row ap-row-warning">
                                     <span class="ap-row-label">
-                                        <strong>⚠️ <?php esc_html_e('Alérgicos ausentes / Obs:', 'area-profesores'); ?></strong>
+                                        <strong>⚠️ <?php esc_html_e('Observaciones:', 'area-profesores'); ?></strong>
                                     </span>
                                     <div class="ap-row-value ap-text-alergico-highlight">
                                         <?php echo nl2br(esc_html($r->alergicos_faltan)); ?>

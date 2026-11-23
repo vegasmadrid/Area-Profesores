@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.12.0
+ * Version:     1.13.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.12.0');
+define('AREA_PROFESORES_VERSION', '1.13.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -33,6 +33,7 @@ require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-hoja-calculo.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-alumnos.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-importador.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-alumnos-admin.php';
+require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-alumnos-portal.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-correos.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-reservas.php';
 require_once AREA_PROFESORES_PLUGIN_DIR . 'includes/class-cuentas.php';
@@ -68,6 +69,7 @@ class Area_Profesores_Plugin {
         Area_Profesores_Aulas::get_instance();
         Area_Profesores_API::get_instance();
         Area_Profesores_Alumnos_Admin::get_instance();
+        Area_Profesores_Alumnos_Portal::get_instance();
         Area_Profesores_Correos::get_instance();
         Area_Profesores_Reservas::get_instance();
         Area_Profesores_Cuentas::get_instance();

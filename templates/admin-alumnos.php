@@ -75,6 +75,14 @@ $tabs = array(
                             <?php if (!empty($al['fecha_baja'])) : ?><span class="description"><?php printf(esc_html__('Baja desde %s', 'area-profesores'), esc_html(date_i18n(get_option('date_format'), strtotime($al['fecha_baja'])))); ?></span><?php endif; ?>
                         </p>
                     </div>
+                    <div class="ap-form-grid ap-alergias-grid">
+                        <p><label><strong>⚠️ <?php esc_html_e('Alergias alimentarias', 'area-profesores'); ?></strong><br>
+                            <textarea name="alergias_alimentarias" class="widefat" rows="2" placeholder="<?php esc_attr_e('Ej.: Frutos secos y huevo', 'area-profesores'); ?>"><?php echo esc_textarea(isset($al['alergias_alimentarias']) ? (string) $al['alergias_alimentarias'] : ''); ?></textarea></label>
+                            <span class="description"><?php esc_html_e('Salen en la lista del comedor y en cocina. Si un comensal habitual con alergia alimentaria no come, cocina recibe un aviso para no preparar su menú especial.', 'area-profesores'); ?></span></p>
+                        <p><label><strong><?php esc_html_e('Alergias no alimentarias', 'area-profesores'); ?></strong><br>
+                            <textarea name="alergias_otras" class="widefat" rows="2" placeholder="<?php esc_attr_e('Ej.: Polen, picaduras de abeja, látex', 'area-profesores'); ?>"><?php echo esc_textarea(isset($al['alergias_otras']) ? (string) $al['alergias_otras'] : ''); ?></textarea></label>
+                            <span class="description"><?php esc_html_e('Las ven los profesores en "Mis alumnos".', 'area-profesores'); ?></span></p>
+                    </div>
                     <p><label><strong><?php esc_html_e('Notas internas', 'area-profesores'); ?></strong><br><textarea name="notas" class="widefat" rows="2"><?php echo esc_textarea((string) $al['notas']); ?></textarea></label></p>
 
                     <h3><?php esc_html_e('Familias', 'area-profesores'); ?></h3>
@@ -139,7 +147,9 @@ $tabs = array(
                     <?php endif; ?>
                     <?php foreach ($data['alumnos'] as $a) : $fams = $data['familias_de'][$a['id']] ?? array(); ?>
                         <tr<?php echo $a['estado'] === 'baja' ? ' class="ap-row-baja"' : ''; ?>>
-                            <td><strong><?php echo esc_html($a['nombre']); ?></strong><?php if ($a['estado'] === 'baja') : ?> <span class="ap-status-pill ap-status-danger"><?php esc_html_e('Baja', 'area-profesores'); ?></span><?php endif; ?><br><span class="ap-mini"><?php echo esc_html((string) $a['email']); ?></span></td>
+                            <td><strong><?php echo esc_html($a['nombre']); ?></strong><?php if ($a['estado'] === 'baja') : ?> <span class="ap-status-pill ap-status-danger"><?php esc_html_e('Baja', 'area-profesores'); ?></span><?php endif; ?><br><span class="ap-mini"><?php echo esc_html((string) $a['email']); ?></span>
+                                <?php if (!empty($a['alergias_alimentarias'])) : ?><br><span class="ap-alergia-pill is-alimentaria" title="<?php esc_attr_e('Alergia alimentaria', 'area-profesores'); ?>">⚠️ <?php echo esc_html($a['alergias_alimentarias']); ?></span><?php endif; ?>
+                                <?php if (!empty($a['alergias_otras'])) : ?><br><span class="ap-alergia-pill" title="<?php esc_attr_e('Alergia no alimentaria', 'area-profesores'); ?>"><?php echo esc_html($a['alergias_otras']); ?></span><?php endif; ?></td>
                             <td><?php echo esc_html($ap_curso_label($a['curso'])); ?></td>
                             <td>
                                 <?php foreach ($fams as $fm) : ?>
@@ -350,7 +360,7 @@ $tabs = array(
                         <tr><td colspan="4" style="text-align:center; padding:28px;"><?php esc_html_e('Todavía no hay cambios.', 'area-profesores'); ?></td></tr>
                     <?php endif; ?>
                     <?php
-                    $origenes = array('backend' => __('backend', 'area-profesores'), 'importacion' => __('importación', 'area-profesores'), 'familia' => __('la familia', 'area-profesores'));
+                    $origenes = array('backend' => __('backend', 'area-profesores'), 'importacion' => __('importación', 'area-profesores'), 'familia' => __('la familia', 'area-profesores'), 'profesor' => __('profesor/a', 'area-profesores'));
                     foreach ($data['historial'] as $h) :
                         $u = $h['user_id'] ? get_userdata($h['user_id']) : null;
                         $det = json_decode((string) $h['detalle'], true);

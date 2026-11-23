@@ -27,13 +27,17 @@
         });
 
         // Open a tab from the URL hash (e.g. /area-profesores/#enlaces)
-        var tabFromHash = (window.location.hash || '').replace('#', '');
-        if (tabFromHash) {
-            var $hashTab = $('.ap-tab-btn[data-target="tab-' + tabFromHash + '"]');
-            if ($hashTab.length) {
-                $hashTab.trigger('click');
+        var abrirTabHash = function() {
+            var tabFromHash = (window.location.hash || '').replace('#', '');
+            if (tabFromHash && /^[\w-]+$/.test(tabFromHash)) {
+                var $hashTab = $('.ap-tab-btn[data-target="tab-' + tabFromHash + '"]');
+                if ($hashTab.length) {
+                    $hashTab.trigger('click');
+                }
             }
-        }
+        };
+        abrirTabHash();
+        $(window).on('hashchange', abrirTabHash);
 
         // =========================================================================
         // Enlaces Útiles: live search
@@ -126,6 +130,51 @@
                     }
                 });
             });
+            // Edit a pupil's data (allergies, parents' names and phones).
+            var dlg = document.getElementById('ap-ma-dialog');
+            if (dlg && typeof dlg.showModal === 'function') {
+                var $f = $(dlg).find('form');
+                var campo = function(label, name, valor, tipo) {
+                    return $('<label/>').append($('<span/>').text(label))
+                        .append($('<input/>', { type: tipo || 'text', name: name }).val(valor || ''));
+                };
+                $ma.on('click', '.ap-ma-editar', function() {
+                    var d = $(this).data('alumno');
+                    $f[0].reset();
+                    $f.find('[name="alumno_id"]').val(d.id);
+                    $('#ap-ma-dialog-titulo').text('Editar datos de ' + d.nombre);
+                    $f.find('[name="alergias_alimentarias"]').val(d.alim);
+                    $f.find('[name="alergias_otras"]').val(d.otras);
+                    var $fams = $f.find('.ap-ma-dialog-familias').empty();
+                    $.each(d.familias || [], function(i, fam) {
+                        var $fs = $('<fieldset/>').append($('<legend/>').text('Familia ' + fam.nombre));
+                        $.each(fam.contactos, function(j, c) {
+                            $fs.append($('<div class="ap-ma-dialog-fila"/>')
+                                .append(campo('Nombre', 'ct[' + c.id + '][nombre]', c.nombre))
+                                .append(campo('Teléfono de emergencia', 'ct[' + c.id + '][telefono]', c.telefono, 'tel')));
+                        });
+                        var $nuevo = $('<details class="ap-ma-dialog-nuevo"/>').append($('<summary/>').text('Añadir otro padre, madre o tutor'))
+                            .append($('<div class="ap-ma-dialog-fila"/>')
+                                .append(campo('Nombre', 'nuevo[' + fam.id + '][nombre]', ''))
+                                .append(campo('Teléfono de emergencia', 'nuevo[' + fam.id + '][telefono]', '', 'tel')));
+                        if (!fam.contactos.length) { $nuevo.attr('open', true); }
+                        $fs.append($nuevo);
+                        $fams.append($fs);
+                    });
+                    if (!(d.familias || []).length) {
+                        $fams.append($('<p class="ap-ma-vacio"/>').text('Este alumno no tiene familia asignada: Secretaría la añade desde el backend.'));
+                    }
+                    dlg.showModal();
+                });
+                $(dlg).on('click', '[data-cerrar]', function() { dlg.close(); });
+                $f.on('submit', function() {
+                    var $b = $f.find('[type="submit"]');
+                    setTimeout(function() { $b.prop('disabled', true).text('Guardando…'); }, 0);
+                });
+            } else {
+                $ma.find('.ap-ma-editar').remove();
+            }
+
             $('#ap-ma-imprimir').on('click', function() {
                 $('body').addClass('ap-imprimiendo-alumnos');
                 window.print();
