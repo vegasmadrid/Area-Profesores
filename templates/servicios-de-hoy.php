@@ -137,6 +137,18 @@ if (!defined('ABSPATH')) {
         </section>
     <?php endif; ?>
 
+    <!-- Profesores que no comen hoy en el colegio (lo marcan ellos en su pestaña Comedor) -->
+    <section class="ap-cocina-profes<?php echo empty($profes_no) ? ' is-todos' : ''; ?>">
+        <?php if (empty($profes_no)) : ?>
+            <h2>👩‍🏫 <?php esc_html_e('Todos los profesores comen hoy en el colegio', 'area-profesores'); ?></h2>
+        <?php else : ?>
+            <h2>👩‍🏫 <?php printf(esc_html(_n('%d profesor NO come hoy en el colegio', '%d profesores NO comen hoy en el colegio', count($profes_no), 'area-profesores')), count($profes_no)); ?></h2>
+            <ul>
+                <?php foreach ($profes_no as $p) : ?><li><?php echo esc_html($p['nombre']); ?></li><?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
+
     <!-- Tarjetas de Resumen Numérico (Grandes y Cómodas de leer en cocina) -->
     <div class="ap-cocina-metrics-grid">
         <!-- 1. Total Comensales Estándar -->

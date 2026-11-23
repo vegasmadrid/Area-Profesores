@@ -69,7 +69,14 @@ class Area_Profesores_Chat {
      * ------------------------------------------------------------------- */
 
     /**
-     * Is the user allowed to publish announcements? (Dirección or administrator)
+     * Is the user allowed to publish announcements? (Dirección, Comunicación or administrator)
+     */
+    public static function puede_comunicados($user_id) {
+        return self::is_user_direccion($user_id) || ($user_id && Area_Profesores_Cuentas::tiene($user_id, 'comunicacion'));
+    }
+
+    /**
+     * Dirección or administrator.
      */
     public static function is_user_direccion($user_id) {
         if (!$user_id) {
@@ -943,8 +950,8 @@ class Area_Profesores_Chat {
 
     private static function check_ajax_direccion() {
         check_ajax_referer('area_profesores_nonce', 'nonce');
-        if (!self::is_user_direccion(get_current_user_id())) {
-            wp_send_json_error(array('message' => __('Solo Dirección puede publicar comunicados.', 'area-profesores')), 403);
+        if (!self::puede_comunicados(get_current_user_id())) {
+            wp_send_json_error(array('message' => __('Solo Dirección y Comunicación pueden publicar comunicados.', 'area-profesores')), 403);
         }
     }
 

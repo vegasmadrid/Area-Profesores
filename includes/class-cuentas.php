@@ -69,13 +69,13 @@ class Area_Profesores_Cuentas {
                 'meta'   => '_ap_is_administracion',
                 'nombre' => __('Administración', 'area-profesores'),
                 'icono'  => 'dashicons-calculator',
-                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, las reservas de servicios de las familias).', 'area-profesores'),
+                'desc'   => __('Ven la pestaña "Comensales" (comidas del mes, comidas extra de los alumnos y días que los profesores no comen en el colegio) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
             ),
             'comunicacion' => array(
                 'meta'   => '_ap_is_comunicacion',
                 'nombre' => __('Comunicación', 'area-profesores'),
                 'icono'  => 'dashicons-share',
-                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, los errores de los comunicados programados).', 'area-profesores'),
+                'desc'   => __('Publican comunicados a las familias en los espacios de Google Chat (pestaña "Comunicados", igual que Dirección) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
             ),
         );
     }

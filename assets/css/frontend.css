@@ -3178,3 +3178,61 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 @media print {
     .ap-ma-acc { display: none !important; }
 }
+
+/* Mi comida en el colegio (profesores) */
+.ap-cp { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin: 0 0 18px; background: #f8fafc; }
+.ap-cp-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.ap-cp-head .ap-ma-titulo { margin: 0 0 2px; }
+.ap-cp-head .ap-records-subtitle { margin: 0; }
+.ap-cp-hoy { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0; padding: 6px 6px 6px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+.ap-cp-hoy.is-si { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.ap-cp-hoy.is-no { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.ap-cp-dias { margin-top: 12px; }
+.ap-cp-dias > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: #334155; }
+.ap-cp-count { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: 12px; }
+.ap-cp-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; max-width: 520px; margin: 10px 0 12px; }
+.ap-cp-dow { text-align: center; font-size: 12px; font-weight: 700; color: #64748b; }
+.ap-cp-dia { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; cursor: pointer; user-select: none; min-height: 52px; }
+.ap-cp-dia input { position: absolute; opacity: 0; pointer-events: none; }
+.ap-cp-num { font-weight: 700; font-size: 16px; line-height: 1.1; text-align: center; }
+.ap-cp-num small { display: block; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+.ap-cp-txt { font-size: 11px; color: #047857; }
+.ap-cp-dia.is-hoy { border-width: 2px; border-color: #2563eb; }
+.ap-cp-dia:has(input:checked) { background: #fee2e2; border-color: #dc2626; }
+.ap-cp-dia:has(input:checked) .ap-cp-txt { color: #991b1b; font-weight: 700; }
+.ap-cp-dia:has(input:focus-visible) { outline: 2px solid #2563eb; outline-offset: 2px; }
+.ap-cp-dia.is-off { cursor: default; background: #f1f5f9; color: #94a3b8; }
+.ap-cp-dia.is-off .ap-cp-txt { color: #94a3b8; }
+.ap-cp-dia.is-festivo { border-style: dashed; }
+.ap-cocina-profes { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 14px; padding: 14px 18px; margin: 0 0 22px; color: #1e3a8a; }
+.ap-cocina-profes.is-todos { border-width: 1px; border-color: #bfdbfe; }
+.ap-cocina-profes h2 { margin: 0; font-family: inherit; font-size: 20px; font-weight: 800; line-height: 1.3; color: inherit; letter-spacing: 0; text-transform: none; }
+.ap-cocina-profes.is-todos h2 { font-size: 16px; font-weight: 700; }
+.ap-cocina-profes ul { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-cocina-profes li { font-size: 16px; background: #fff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 3px 12px; }
+.ap-cm-dia.is-profe { background: #fee2e2; color: #991b1b; }
+
+/* Ayuda / manual */
+.ap-manual-indice { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.ap-manual-indice a { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 6px; border: 1px solid #e2e8f0; border-radius: 999px; background: #f8fafc; color: #1e293b; font-size: 13px; font-weight: 600; text-decoration: none; }
+.ap-manual-indice a:hover { border-color: #94a3b8; }
+.ap-manual-indice a span, .ap-manual-sec h3 > span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #1e293b; color: #fff; font-size: 12px; font-weight: 700; flex: none; }
+.ap-manual-sec { border-top: 1px solid #e2e8f0; padding: 16px 0 6px; scroll-margin-top: 16px; }
+.ap-manual-sec h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; font-family: inherit; font-size: 19px; font-weight: 800; letter-spacing: 0; text-transform: none; color: #0f172a; }
+.ap-manual-sec h4 { margin: 14px 0 6px; font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; color: #1e293b; }
+.ap-manual-sec p, .ap-manual-sec li, .ap-manual-sec dd { font-size: 15px; line-height: 1.55; color: #334155; }
+.ap-manual-sec ul, .ap-manual-sec ol { margin: 0 0 8px; padding-left: 22px; }
+.ap-manual-sec li { margin: 0 0 4px; }
+.ap-manual-sec dt { font-weight: 700; margin-top: 10px; color: #0f172a; }
+.ap-manual-sec dd { margin: 2px 0 0; }
+.ap-manual-solo { font-style: normal; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: #ede9fe; color: #5b21b6; }
+.ap-manual-nota { margin: 8px 0 10px; padding: 10px 14px; border-left: 4px solid #f59e0b; background: #fffbeb; border-radius: 8px; font-size: 14px; color: #78350f; }
+@media print {
+    .ap-manual-sec h3, .ap-manual-sec h4 { break-after: avoid; }
+    .ap-manual-sec li, .ap-manual-nota, .ap-manual-sec dd { break-inside: avoid; }
+}
+.ap-cp-hoy { border-radius: 12px; }
+.ap-cp-txt { white-space: nowrap; }
+@media (max-width: 480px) { .ap-cp-txt { font-size: 10px; } .ap-cp-grid { gap: 4px; } }
+.ap-cp-dias .ap-cd-nota { display: block; font-size: 13px; line-height: 1.45; margin: 0 0 10px; }
+.ap-manual-sec dt { font-family: inherit; font-size: 15px; line-height: 1.4; letter-spacing: 0; text-transform: none; }

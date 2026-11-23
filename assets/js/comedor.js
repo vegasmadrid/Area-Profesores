@@ -84,6 +84,14 @@
         });
     }
 
+    // ---- Mi comida: el texto del día cambia al marcarlo ----
+    document.querySelectorAll('.ap-cp-dia input[type="checkbox"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var t = cb.closest('.ap-cp-dia').querySelector('.ap-cp-txt');
+            if (t) { t.textContent = cb.checked ? 'No como' : 'Como'; }
+        });
+    });
+
     // ---- Página de cocina: se recarga sola cuando cambian los datos ----
     var cocina = document.querySelector('[data-ap-cocina-vivo]');
     if (cocina && window.fetch) {

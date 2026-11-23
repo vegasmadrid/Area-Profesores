@@ -38,6 +38,7 @@ class Area_Profesores_Comensales {
     private function __construct() {
         add_action('admin_post_ap_comedor_validar', array($this, 'handle_validar'));
         add_action('admin_post_ap_comedor_fijos', array($this, 'handle_fijos'));
+        add_action('admin_post_ap_comedor_profe', array($this, 'handle_profe'));
         add_action('admin_post_ap_comedor_ajustes', array($this, 'handle_ajustes'));
         add_action('admin_post_ap_comedor_csv_mes', array($this, 'handle_csv_mes'));
         add_action('wp_ajax_ap_comedor_estado', array($this, 'ajax_estado'));
@@ -66,7 +67,8 @@ class Area_Profesores_Comensales {
 
     public static function t($name = 'dia') {
         global $wpdb;
-        return $wpdb->prefix . ($name === 'fijos' ? 'ap_comedor_fijos' : 'ap_comedor_dia');
+        $t = array('fijos' => 'ap_comedor_fijos', 'profes' => 'ap_comedor_profes');
+        return $wpdb->prefix . (isset($t[$name]) ? $t[$name] : 'ap_comedor_dia');
     }
 
     public static function create_tables() {
@@ -92,6 +94,16 @@ class Area_Profesores_Comensales {
             dias VARCHAR(20) NOT NULL DEFAULT '',
             actualizado DATETIME DEFAULT NULL,
             PRIMARY KEY  (alumno_id)
+        ) $c;");
+        // Days a teacher does NOT eat at school (by default every teacher eats).
+        dbDelta("CREATE TABLE " . self::t('profes') . " (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            fecha DATE NOT NULL,
+            creado DATETIME DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY user_fecha (user_id, fecha),
+            KEY fecha (fecha)
         ) $c;");
     }
 
@@ -136,8 +148,9 @@ class Area_Profesores_Comensales {
         return (bool) array_intersect(Area_Profesores_Cursos::get_etapas_usuario($user_id), self::etapas());
     }
 
+    /** "Comensales" tab: Dirección, Secretaría, Administración and administrators. */
     public static function puede_ver_mes($user_id) {
-        return $user_id && (user_can($user_id, 'manage_options') || Area_Profesores_Chat::has_direccion_flag($user_id) || Area_Profesores_Alumnos::es_secretaria($user_id));
+        return $user_id && (user_can($user_id, 'manage_options') || Area_Profesores_Chat::has_direccion_flag($user_id) || Area_Profesores_Alumnos::es_secretaria($user_id) || Area_Profesores_Cuentas::tiene($user_id, 'administracion'));
     }
 
     /* ---------------------------------------------------------------------
@@ -218,6 +231,188 @@ class Area_Profesores_Comensales {
         })));
         sort($dias);
         $wpdb->replace(self::t('fijos'), array('alumno_id' => (int) $alumno_id, 'dias' => implode(',', $dias), 'actualizado' => current_time('mysql')));
+    }
+
+    /* ---------------------------------------------------------------------
+     * Comidas del profesorado (días que un profesor NO come en el colegio)
+     * ------------------------------------------------------------------- */
+
+    /** Weeks shown to the teacher (from the current one). */
+    const SEMANAS_PROFE = 5;
+
+    /**
+     * Teachers who do not eat at school on a date.
+     *
+     * @return array[] { user_id, nombre, creado } sorted by name
+     */
+    public static function profes_no_comen($fecha) {
+        global $wpdb;
+        $out = array();
+        foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT user_id, creado FROM ' . self::t('profes') . ' WHERE fecha = %s', $fecha), ARRAY_A) as $r) {
+            $u = get_userdata((int) $r['user_id']);
+            if ($u) {
+                $out[] = array('user_id' => (int) $u->ID, 'nombre' => $u->display_name, 'creado' => $r['creado']);
+            }
+        }
+        usort($out, function ($a, $b) {
+            return strcasecmp(remove_accents($a['nombre']), remove_accents($b['nombre']));
+        });
+        return $out;
+    }
+
+    /** Names as text, one per line (kitchen e-mail). */
+    public static function profes_texto($fecha) {
+        $l = array();
+        foreach (self::profes_no_comen($fecha) as $p) {
+            $l[] = '- ' . $p['nombre'];
+        }
+        return implode("\n", $l);
+    }
+
+    /**
+     * Days a teacher does not eat between two dates.
+     *
+     * @return string[] Y-m-d => creado
+     */
+    public static function dias_no_come($user_id, $desde, $hasta) {
+        global $wpdb;
+        $out = array();
+        foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT fecha, creado FROM ' . self::t('profes') . ' WHERE user_id = %d AND fecha >= %s AND fecha <= %s', $user_id, $desde, $hasta), ARRAY_A) as $r) {
+            $out[$r['fecha']] = $r['creado'];
+        }
+        return $out;
+    }
+
+    /** Has the kitchen summary of a date already been sent? */
+    public static function resumen_enviado($fecha) {
+        $env = get_option(self::ENVIADOS, array());
+        return is_array($env) && isset($env['fecha'], $env['cocina']) && $env['fecha'] === $fecha && $env['cocina'];
+    }
+
+    /**
+     * Data for the "Mi comida" card: the school days of the next weeks.
+     *
+     * @return array { semanas: [ [ {fecha, lectivo, motivo, pasado, hoy, no_come} x5 ] ], hoy_no_come, enviado }
+     */
+    public static function datos_profe($user_id) {
+        $hoy = current_time('Y-m-d');
+        $lunes = strtotime($hoy . ' 12:00:00 UTC') - (self::dow($hoy) - 1) * DAY_IN_SECONDS;
+        $fin = gmdate('Y-m-d', $lunes + (self::SEMANAS_PROFE * 7 - 3) * DAY_IN_SECONDS);
+        $marcados = self::dias_no_come($user_id, gmdate('Y-m-d', $lunes), $fin);
+        $sin_clase = self::dias_sin_clase();
+        $semanas = array();
+        for ($w = 0; $w < self::SEMANAS_PROFE; $w++) {
+            $dias = array();
+            for ($d = 0; $d < 5; $d++) {
+                $f = gmdate('Y-m-d', $lunes + ($w * 7 + $d) * DAY_IN_SECONDS);
+                $dias[] = array(
+                    'fecha'   => $f,
+                    'lectivo' => self::es_lectivo($f),
+                    'motivo'  => isset($sin_clase[$f]) ? $sin_clase[$f] : '',
+                    'pasado'  => $f < $hoy,
+                    'hoy'     => $f === $hoy,
+                    'no_come' => isset($marcados[$f]),
+                );
+            }
+            $semanas[] = $dias;
+        }
+        return array(
+            'semanas'     => $semanas,
+            'hoy'         => $hoy,
+            'hoy_lectivo' => self::es_lectivo($hoy),
+            'hoy_no_come' => isset($marcados[$hoy]),
+            'enviado'     => self::resumen_enviado($hoy),
+        );
+    }
+
+    /**
+     * Save the days a teacher does not eat (only the days shown and not past).
+     */
+    public function handle_profe() {
+        global $wpdb;
+        $uid = get_current_user_id();
+        check_admin_referer('ap_comedor_profe');
+        if (!self::puede($uid)) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        $hoy = current_time('Y-m-d');
+        $valida = function ($f) use ($hoy) {
+            return preg_match('/^\d{4}-\d{2}-\d{2}$/', $f) && $f >= $hoy && $f <= gmdate('Y-m-d', strtotime($hoy . ' +' . (self::SEMANAS_PROFE * 7) . ' days')) && self::es_lectivo($f);
+        };
+        $vistos = array_filter(array_map('sanitize_text_field', isset($_POST['vistos']) ? (array) wp_unslash($_POST['vistos']) : array()), $valida);
+        $no = array_filter(array_map('sanitize_text_field', isset($_POST['no_come']) ? (array) wp_unslash($_POST['no_come']) : array()), $valida);
+        $no = array_values(array_intersect($no, $vistos));
+        if (isset($_POST['hoy'])) { // quick button for today
+            $vistos = $valida($hoy) ? array($hoy) : array();
+            $no = $_POST['hoy'] === 'no' && $vistos ? array($hoy) : array();
+        }
+        if (!$vistos) {
+            self::volver_profe('info', __('No hay días que cambiar.', 'area-profesores'));
+        }
+        $antes = self::dias_no_come($uid, min($vistos), max($vistos));
+        $hoy_antes = isset($antes[$hoy]);
+        foreach ($vistos as $f) {
+            $quiere = in_array($f, $no, true);
+            if ($quiere && !isset($antes[$f])) {
+                $wpdb->insert(self::t('profes'), array('user_id' => $uid, 'fecha' => $f, 'creado' => current_time('mysql')));
+            } elseif (!$quiere && isset($antes[$f])) {
+                $wpdb->delete(self::t('profes'), array('user_id' => $uid, 'fecha' => $f));
+            }
+        }
+
+        // Today changed after the kitchen summary: tell the kitchen.
+        $hoy_ahora = in_array($hoy, $no, true);
+        if (in_array($hoy, $vistos, true) && $hoy_ahora !== $hoy_antes && self::resumen_enviado($hoy)) {
+            $u = wp_get_current_user();
+            $lista = self::profes_texto($hoy);
+            Area_Profesores_Correos::enviar('comedor_profesor', array(), array(
+                'profesor' => $u->display_name,
+                'cambio'   => $hoy_ahora ? __('NO come hoy en el colegio', 'area-profesores') : __('SÍ come hoy en el colegio (lo había quitado)', 'area-profesores'),
+                'numero'   => count(self::profes_no_comen($hoy)),
+                'lista'    => $lista !== '' ? $lista : __('Ninguno: todos comen en el colegio.', 'area-profesores'),
+                'enlace'   => self::url_cocina(),
+            ));
+        }
+
+        $n = count(self::dias_no_come($uid, $hoy, gmdate('Y-m-d', strtotime($hoy . ' +' . (self::SEMANAS_PROFE * 7) . ' days'))));
+        self::volver_profe('success', $n
+            ? sprintf(_n('Guardado: %d día marcado en el que no comes en el colegio. Cocina lo verá en el resumen de ese día.', 'Guardado: %d días marcados en los que no comes en el colegio. Cocina lo verá en el resumen de cada día.', $n, 'area-profesores'), $n)
+            : __('Guardado: comes en el colegio todos los días.', 'area-profesores'));
+    }
+
+    private static function volver_profe($type, $text) {
+        set_transient('ap_comedor_flash_' . get_current_user_id(), array('type' => $type, 'text' => $text), 120);
+        $back = wp_get_referer() ? wp_get_referer() : self::url_portal();
+        wp_safe_redirect(strtok($back, '#') . '#comedor');
+        exit;
+    }
+
+    /**
+     * Teachers who did not eat at school in a month.
+     *
+     * @return array { profes: [user_id => {nombre, dias: [fecha]}], dias: [fecha => n], total }
+     */
+    public static function profes_mes($mes) {
+        global $wpdb;
+        $ini = $mes . '-01';
+        $fin = gmdate('Y-m-t', strtotime($ini . ' 12:00:00 UTC'));
+        $profes = array();
+        $dias = array();
+        $total = 0;
+        foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT user_id, fecha FROM ' . self::t('profes') . ' WHERE fecha >= %s AND fecha <= %s ORDER BY fecha ASC', $ini, $fin), ARRAY_A) as $r) {
+            $uid = (int) $r['user_id'];
+            if (!isset($profes[$uid])) {
+                $u = get_userdata($uid);
+                $profes[$uid] = array('nombre' => $u ? $u->display_name : sprintf(__('Usuario %d (borrado)', 'area-profesores'), $uid), 'dias' => array());
+            }
+            $profes[$uid]['dias'][] = $r['fecha'];
+            $dias[$r['fecha']] = (isset($dias[$r['fecha']]) ? $dias[$r['fecha']] : 0) + 1;
+            $total++;
+        }
+        uasort($profes, function ($a, $b) {
+            return strcasecmp(remove_accents($a['nombre']), remove_accents($b['nombre']));
+        });
+        return array('profes' => $profes, 'dias' => $dias, 'total' => $total);
     }
 
     /* ---------------------------------------------------------------------
@@ -444,12 +639,18 @@ class Area_Profesores_Comensales {
     }
 
     /**
-     * E-mails whose text was customised before {alergias} existed still get the allergies.
+     * E-mails whose text was customised before {alergias} (or {profesores}) existed still get them.
      */
-    private static function con_alergias($key, $vars, $bloque) {
+    private static function con_alergias($key, $vars, $bloque, $otros = array()) {
         $c = Area_Profesores_Correos::get($key);
-        if ($bloque !== '' && strpos($c['cuerpo'], '{alergias}') === false) {
-            $vars['_anexo'] = $bloque;
+        $anexo = array();
+        foreach (array_merge(array('alergias' => $bloque), $otros) as $var => $txt) {
+            if ($txt !== '' && strpos($c['cuerpo'], '{' . $var . '}') === false) {
+                $anexo[] = $txt;
+            }
+        }
+        if ($anexo) {
+            $vars['_anexo'] = implode("\n\n", $anexo);
         }
         return $vars;
     }
@@ -637,6 +838,7 @@ class Area_Profesores_Comensales {
             'dietas_prev' => $dietas_prev,
             'ajustes'     => self::ajustes(),
             'flash'       => $flash,
+            'profe'       => self::datos_profe($user_id),
         );
     }
 
@@ -778,7 +980,7 @@ class Area_Profesores_Comensales {
                 $dietas[] = '- ' . $e['label'] . ' (' . __('observaciones', 'area-profesores') . '): ' . str_replace("\n", ' · ', trim($r['observaciones']));
             }
         }
-        return array('total' => $total, 'clases' => $clases, 'pendientes' => $pendientes, 'dietas' => $dietas, 'alergias' => self::alergias_texto($fecha));
+        return array('total' => $total, 'clases' => $clases, 'pendientes' => $pendientes, 'dietas' => $dietas, 'alergias' => self::alergias_texto($fecha), 'profesores' => self::profes_no_comen($fecha));
     }
 
     /**
@@ -808,6 +1010,10 @@ class Area_Profesores_Comensales {
     public static function enviar_resumen_cocina($fecha) {
         $r = self::resumen($fecha);
         $alergias = $r['alergias'] !== '' ? $r['alergias'] : __('Ningún comensal validado tiene alergias alimentarias.', 'area-profesores');
+        $np = count($r['profesores']);
+        $profes = $np
+            ? sprintf(_n('%d profesor no come hoy en el colegio:', '%d profesores no comen hoy en el colegio:', $np, 'area-profesores'), $np) . "\n" . self::profes_texto($fecha)
+            : __('Todos los profesores comen hoy en el colegio.', 'area-profesores');
         return Area_Profesores_Correos::enviar('comedor_cocina', array(), self::con_alergias('comedor_cocina', array(
             'alergias'   => $alergias,
             'fecha'      => date_i18n('l j \d\e F', strtotime($fecha . ' 12:00:00')),
@@ -816,7 +1022,10 @@ class Area_Profesores_Comensales {
             'pendientes' => $r['pendientes'] ? implode("\n", $r['pendientes']) : __('Ninguna: todas las clases están validadas.', 'area-profesores'),
             'dietas'     => $r['dietas'] ? implode("\n", $r['dietas']) : __('Ninguna.', 'area-profesores'),
             'enlace'     => self::url_cocina(),
-        ), $r['alergias'] !== '' ? '⚠️ ' . __('ALERGIAS ALIMENTARIAS', 'area-profesores') . "\n" . $r['alergias'] : ''));
+            'profesores' => $profes,
+        ), $r['alergias'] !== '' ? '⚠️ ' . __('ALERGIAS ALIMENTARIAS', 'area-profesores') . "\n" . $r['alergias'] : '', array(
+            'profesores' => $np ? '👩‍🏫 ' . __('PROFESORES QUE NO COMEN', 'area-profesores') . "\n" . $profes : '',
+        )));
     }
 
     /**
@@ -829,6 +1038,7 @@ class Area_Profesores_Comensales {
         }
         global $wpdb;
         $firma = wp_json_encode($wpdb->get_results($wpdb->prepare('SELECT curso, total, validado FROM ' . self::t() . ' WHERE fecha = %s ORDER BY curso', $fecha), ARRAY_N));
+        $firma .= '|' . wp_json_encode($wpdb->get_col($wpdb->prepare('SELECT user_id FROM ' . self::t('profes') . ' WHERE fecha = %s ORDER BY user_id', $fecha)));
         $firma .= '|' . wp_json_encode($wpdb->get_col($wpdb->prepare('SELECT id FROM ' . Area_Profesores_Reservas::t() . ' WHERE fecha_inicio <= %s AND fecha_fin >= %s AND estado = %s ORDER BY id', $fecha, $fecha, 'activa')));
         nocache_headers();
         wp_send_json_success(array('firma' => md5($firma)));
@@ -907,6 +1117,14 @@ class Area_Profesores_Comensales {
         fputcsv($out, array('Día', 'Comensales', 'Extra', 'Reservas de familias', 'Clases validadas'), ';');
         foreach ($d['dias'] as $f => $x) {
             fputcsv($out, array($f, $x['total'], $x['extra'], $x['familia'], $x['clases']), ';');
+        }
+        $p = self::profes_mes($mes);
+        fputcsv($out, array(), ';');
+        fputcsv($out, array('Profesor/a', 'Días que no come en el colegio', 'Días'), ';');
+        foreach ($p['profes'] as $x) {
+            fputcsv($out, array($x['nombre'], count($x['dias']), implode(', ', array_map(function ($f) {
+                return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
+            }, $x['dias']))), ';');
         }
         fclose($out);
         exit;

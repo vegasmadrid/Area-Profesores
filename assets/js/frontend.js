@@ -567,7 +567,7 @@
         }
 
         // =========================================================================
-        // Comunicados a familias (Google Chat) - solo Dirección
+        // Comunicados a familias (Google Chat) - Dirección y Comunicación
         // =========================================================================
         var $comForm = $('#ap-comunicado-form');
         if ($('#tab-comunicados').length) {

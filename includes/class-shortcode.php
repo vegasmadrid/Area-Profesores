@@ -36,6 +36,15 @@ class Area_Profesores_Shortcode {
         // render the corresponding screen without needing any shortcode.
         // Late priority so wpautop/page builders do not alter the generated HTML.
         add_filter('the_content', array($this, 'inject_page_content'), 999);
+
+        // Printable manual (every section), for any logged-in teacher.
+        add_action('admin_post_ap_manual', array($this, 'render_manual'));
+    }
+
+    public function render_manual() {
+        nocache_headers();
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/manual-imprimir.php';
+        exit;
     }
 
     /**
@@ -137,8 +146,8 @@ class Area_Profesores_Shortcode {
         $aviso = trim((string) Area_Profesores_Admin::get_setting('aviso_profesores', ''));
         $logout_url = Area_Profesores_Access::get_logout_url();
 
-        // Comunicados a familias (Google Chat), only for Dirección
-        $is_direccion = Area_Profesores_Chat::is_user_direccion($user_id);
+        // Comunicados a familias (Google Chat), for Dirección and Comunicación
+        $is_direccion = Area_Profesores_Chat::puede_comunicados($user_id);
         $chat_grupos = $is_direccion ? Area_Profesores_Chat::get_espacios_agrupados() : array();
         $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
 
@@ -149,13 +158,13 @@ class Area_Profesores_Shortcode {
         $mis_alumnos = Area_Profesores_Alumnos::datos_mis_alumnos($user_id);
         $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
 
-        // Comedor diario (Primer Ciclo, Infantil y Primaria) and, for Secretaría, the monthly count.
+        // Comedor diario (Primer Ciclo, Infantil y Primaria) and, for Secretaría and Administración, the monthly count.
         $comedor = Area_Profesores_Comensales::datos_portal($user_id);
         $comensales_mes = null;
         if (Area_Profesores_Comensales::puede_ver_mes($user_id)) {
             $mes = isset($_GET['ap_mes']) ? sanitize_text_field(wp_unslash($_GET['ap_mes'])) : '';
             $mes = preg_match('/^\d{4}-\d{2}$/', $mes) ? $mes : current_time('Y-m');
-            $comensales_mes = array('mes' => $mes, 'datos' => Area_Profesores_Comensales::mes($mes));
+            $comensales_mes = array('mes' => $mes, 'datos' => Area_Profesores_Comensales::mes($mes), 'profes' => Area_Profesores_Comensales::profes_mes($mes));
         }
         if ($comedor !== null) {
             wp_enqueue_script('area-profesores-comedor');
@@ -184,6 +193,19 @@ class Area_Profesores_Shortcode {
                 'todos'    => $visibles === true,
             );
         }
+
+        // Ayuda: manual of the tabs this teacher can see.
+        $ayuda = array(
+            'mv' => array(
+                'comedor'     => $comedor !== null,
+                'mi_comida'   => $comedor !== null,
+                'alumnos'     => !empty($mis_alumnos['cursos']),
+                'reservas'    => $reservas !== null,
+                'comensales'  => $comensales_mes !== null,
+                'comunicados' => $is_direccion,
+            ),
+            'completo_url' => admin_url('admin-post.php?action=ap_manual'),
+        );
 
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/dashboard.php';
@@ -237,6 +259,7 @@ class Area_Profesores_Shortcode {
             }
         }
         $alergias = Area_Profesores_Comensales::alergias_dia($fecha);
+        $profes_no = Area_Profesores_Comensales::profes_no_comen($fecha);
         wp_enqueue_script('area-profesores-comedor');
         $vivo_url = add_query_arg(array('action' => 'ap_comedor_estado', 'fecha' => $fecha), admin_url('admin-ajax.php'));
 

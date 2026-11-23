@@ -1,6 +1,6 @@
 <?php
 /**
- * Teacher Portal: "Comunicados" tab (only for Dirección).
+ * Teacher Portal: "Comunicados" tab (Dirección and Comunicación).
  * Publish one announcement (text + optional image) in several Google Chat spaces
  * at once, now or at a scheduled date and time.
  *
@@ -26,7 +26,7 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 <div class="ap-form-card ap-comunicados">
     <div class="ap-form-header">
         <div>
-            <span class="ap-tag-primary"><?php esc_html_e('Dirección', 'area-profesores'); ?></span>
+            <span class="ap-tag-primary"><?php esc_html_e('Dirección y Comunicación', 'area-profesores'); ?></span>
             <h2 class="ap-form-title"><?php esc_html_e('Comunicado a las familias', 'area-profesores'); ?></h2>
             <p class="ap-form-subtitle"><?php esc_html_e('Se publicará en Google Chat, firmado como el colegio, en todos los espacios que marques. Puedes publicarlo ya o programarlo.', 'area-profesores'); ?></p>
         </div>
