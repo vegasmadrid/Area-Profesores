@@ -3,8 +3,8 @@
  * Teacher Portal: changes to a pupil's data from "Mis alumnos".
  *
  * A teacher who can see a pupil can change their allergies and the name and
- * emergency phone of their parents. A reason is required and Secretaría
- * (and optionally the tutors) receive an e-mail with the changes and the reason.
+ * emergency phone of their parents. A reason is required and the accounts chosen
+ * in "Avisos" (Secretaría by default) receive an e-mail with the changes and the reason.
  */
 
 if (!defined('ABSPATH')) {
@@ -88,7 +88,7 @@ class Area_Profesores_Alumnos_Portal {
         $curso = $alumno['curso'];
         $motivo = isset($_POST['motivo']) ? trim(sanitize_textarea_field(wp_unslash($_POST['motivo']))) : '';
         if ($motivo === '') {
-            self::volver('error', __('Escribe el motivo del cambio: se envía a Secretaría junto con los datos nuevos.', 'area-profesores'), $curso);
+            self::volver('error', __('Escribe el motivo del cambio: se envía por correo junto con los datos nuevos.', 'area-profesores'), $curso);
         }
 
         $cambios = array();      // lines for the e-mail
@@ -206,7 +206,7 @@ class Area_Profesores_Alumnos_Portal {
         ), false, $u->user_email);
 
         self::volver('success', $enviado
-            ? sprintf(__('Datos de %s guardados. Se ha enviado el aviso a Secretaría.', 'area-profesores'), $alumno['nombre'])
+            ? sprintf(__('Datos de %s guardados. Se ha enviado el aviso por correo.', 'area-profesores'), $alumno['nombre'])
             : sprintf(__('Datos de %s guardados.', 'area-profesores'), $alumno['nombre']), $curso);
     }
 }
