@@ -26,7 +26,7 @@ foreach ($rows as $r) {
         <div class="ap-admin-title-area">
             <span class="ap-admin-badge"><?php esc_html_e('Área Profesores', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Reservas de familias', 'area-profesores'); ?></h1>
-            <p class="ap-admin-lead"><?php esc_html_e('Servicios que reservan las familias desde el Área Familias (ampliación, comedor, ludoteca, dieta, salida anticipada, retraso…). Los servicios, sus horarios y plazos se configuran en el Área Familias; los correos de aviso, en "Correos automáticos".', 'area-profesores'); ?></p>
+            <p class="ap-admin-lead"><?php esc_html_e('Servicios que reservan las familias desde el Área Familias (ampliación, comedor, ludoteca, dieta, salida anticipada, retraso…). Los servicios, sus horarios y plazos se configuran en el Área Familias; los correos de aviso, en "Avisos".', 'area-profesores'); ?></p>
         </div>
     </div>
 

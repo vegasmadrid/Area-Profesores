@@ -6,7 +6,7 @@
  *   child): service, dates (one day or a range with weekdays), time and the
  *   details the family filled in (desayuno, dieta, motivo…). The services and
  *   their rules (schedules, deadlines…) are configured in the Área Familias.
- * - Notifications (Correos automáticos): the tutor/a of the child and
+ * - Notifications (Avisos): the tutor/a of the child and
  *   Secretaría, and a confirmation to the family. The same when it is cancelled.
  * - Teachers see the reservations of their pupils in the "Reservas" tab;
  *   Secretaría and Dirección see all of them, and the backend page
@@ -512,14 +512,8 @@ class Area_Profesores_Reservas {
         if ($conf['tutores']) {
             $para = array_merge($para, $A::emails_tutores($r['curso']));
         }
-        if ($conf['secretaria']) {
-            $para = array_merge($para, $A::get_secretaria_emails());
-        }
         if (!empty($conf['cocina']) && in_array($r['servicio'], array('comedor', 'dieta'), true) && class_exists('Area_Profesores_Cuentas')) {
             $para = array_merge($para, Area_Profesores_Cuentas::emails('cocina'));
-        }
-        if (!$para && !$conf['extra']) {
-            $para = array(get_option('admin_email'));
         }
         Area_Profesores_Correos::enviar($key, $para, array(
             'servicio' => $r['servicio_nombre'],

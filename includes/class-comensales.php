@@ -390,7 +390,7 @@ class Area_Profesores_Comensales {
             $c = Area_Profesores_Cursos::get_curso($curso);
             $u = get_userdata($user_id);
             $alergias_txt = $cambio_alergias ? implode("\n", $cambio_alergias) : __('Sin cambios.', 'area-profesores');
-            Area_Profesores_Correos::enviar('comedor_cambio', Area_Profesores_Cuentas::emails('cocina'), self::con_alergias('comedor_cambio', array(
+            Area_Profesores_Correos::enviar('comedor_cambio', array(), self::con_alergias('comedor_cambio', array(
                 'clase'    => $c ? $c['label'] : $curso,
                 'antes'    => $antes ? $antes['total'] : __('sin validar', 'area-profesores'),
                 'ahora'    => count($comen),
@@ -808,7 +808,7 @@ class Area_Profesores_Comensales {
     public static function enviar_resumen_cocina($fecha) {
         $r = self::resumen($fecha);
         $alergias = $r['alergias'] !== '' ? $r['alergias'] : __('Ningún comensal validado tiene alergias alimentarias.', 'area-profesores');
-        return Area_Profesores_Correos::enviar('comedor_cocina', Area_Profesores_Cuentas::emails('cocina'), self::con_alergias('comedor_cocina', array(
+        return Area_Profesores_Correos::enviar('comedor_cocina', array(), self::con_alergias('comedor_cocina', array(
             'alergias'   => $alergias,
             'fecha'      => date_i18n('l j \d\e F', strtotime($fecha . ' 12:00:00')),
             'total'      => $r['total'],

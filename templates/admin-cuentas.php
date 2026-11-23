@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
         <div class="ap-admin-title-area">
             <span class="ap-admin-badge"><?php esc_html_e('Área Profesores', 'area-profesores'); ?></span>
             <h1 class="wp-heading-inline"><?php esc_html_e('Cuentas especiales', 'area-profesores'); ?></h1>
-            <p class="ap-admin-lead"><?php esc_html_e('Elige qué cuentas son de Dirección, Secretaría, Cocina y Portería. Una misma cuenta puede estar en varios apartados y seguir siendo tutor/a o especialista.', 'area-profesores'); ?></p>
+            <p class="ap-admin-lead"><?php esc_html_e('Elige qué cuentas son de Dirección, Secretaría, Cocina, Portería, Administración y Comunicación. Una misma cuenta puede estar en varios apartados y seguir siendo tutor/a o especialista. Qué correos recibe cada apartado se elige en «Avisos».', 'area-profesores'); ?></p>
         </div>
     </div>
 

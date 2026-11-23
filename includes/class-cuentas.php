@@ -1,6 +1,7 @@
 <?php
 /**
- * Cuentas especiales: Dirección, Secretaría, Cocina y Portería.
+ * Cuentas especiales: Dirección, Secretaría, Cocina, Portería, Administración y Comunicación.
+ * Which e-mails each one receives is chosen in "Área Profesores › Avisos".
  *
  * They are few accounts, so instead of a column in the Profesores list they are
  * chosen in "Área Profesores › Cuentas especiales":
@@ -50,19 +51,31 @@ class Area_Profesores_Cuentas {
                 'meta'   => Area_Profesores_Alumnos::META_SECRETARIA,
                 'nombre' => __('Secretaría', 'area-profesores'),
                 'icono'  => 'dashicons-id-alt',
-                'desc'   => __('Reciben los avisos de las familias (cambios de datos y reservas), ven a todos los alumnos y la pestaña "Comensales" con el recuento mensual y las comidas extra para hacer los cobros.', 'area-profesores'),
+                'desc'   => __('Ven a todos los alumnos y la pestaña "Comensales" con el recuento mensual y las comidas extra para hacer los cobros. Reciben los avisos que elijas en "Avisos" (de serie, los cambios de datos y las reservas de las familias).', 'area-profesores'),
             ),
             'cocina' => array(
                 'meta'   => '_ap_is_cocina',
                 'nombre' => __('Cocina', 'area-profesores'),
                 'icono'  => 'dashicons-carrot',
-                'desc'   => __('Reciben cada día el resumen del comedor (total de comensales, dietas y reservas de las familias) y los cambios que se hagan después.', 'area-profesores'),
+                'desc'   => __('Reciben los avisos que elijas en "Avisos" (de serie, el resumen diario del comedor y los cambios que se hagan después).', 'area-profesores'),
             ),
             'porteria' => array(
                 'meta'   => '_ap_is_porteria',
                 'nombre' => __('Portería', 'area-profesores'),
                 'icono'  => 'dashicons-admin-network',
-                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…). Más adelante recibirán sus propios avisos.', 'area-profesores'),
+                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
+            ),
+            'administracion' => array(
+                'meta'   => '_ap_is_administracion',
+                'nombre' => __('Administración', 'area-profesores'),
+                'icono'  => 'dashicons-calculator',
+                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, las reservas de servicios de las familias).', 'area-profesores'),
+            ),
+            'comunicacion' => array(
+                'meta'   => '_ap_is_comunicacion',
+                'nombre' => __('Comunicación', 'area-profesores'),
+                'icono'  => 'dashicons-share',
+                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, los errores de los comunicados programados).', 'area-profesores'),
             ),
         );
     }

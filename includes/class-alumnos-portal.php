@@ -191,14 +191,10 @@ class Area_Profesores_Alumnos_Portal {
             ), 'alumno' => $alumno['nombre'], 'motivo' => $motivo));
         }
 
-        // Notice to Secretaría (and the tutors, if chosen in "Correos automáticos").
+        // Notice to Secretaría (and the tutors, if chosen in "Avisos").
         $conf = Area_Profesores_Correos::get('profesor_datos');
-        $para = $conf['secretaria'] ? $A::get_secretaria_emails() : array();
-        if ($conf['tutores']) {
-            $para = array_merge($para, $A::emails_tutores($curso));
-        }
+        $para = $conf['tutores'] ? $A::emails_tutores($curso) : array(); // + the accounts chosen in "Avisos"
         $u = wp_get_current_user();
-        $para = array_diff($para, array($u->user_email)); // not to oneself
         $c = Area_Profesores_Cursos::get_curso($curso);
         $enviado = Area_Profesores_Correos::enviar('profesor_datos', $para, array(
             'profesor' => $u->display_name,
@@ -210,7 +206,7 @@ class Area_Profesores_Alumnos_Portal {
         ), false, $u->user_email);
 
         self::volver('success', $enviado
-            ? sprintf(__('Datos de %s guardados. Se ha avisado a Secretaría.', 'area-profesores'), $alumno['nombre'])
+            ? sprintf(__('Datos de %s guardados. Se ha enviado el aviso a Secretaría.', 'area-profesores'), $alumno['nombre'])
             : sprintf(__('Datos de %s guardados.', 'area-profesores'), $alumno['nombre']), $curso);
     }
 }
