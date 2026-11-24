@@ -615,7 +615,7 @@ class Area_Profesores_Comensales {
      * the teacher who marked them are told by e-mail. If the tutor unmarks them, the
      * reservation is cancelled.
      */
-    private static function sincronizar_extras($fecha, $curso, $comen, $user_id) {
+    private static function sincronizar_extras($fecha, $curso, $comen, $user_id, $avisar = true) {
         if (self::$sincronizando || !class_exists('Area_Profesores_Reservas')) {
             return;
         }
@@ -675,7 +675,7 @@ class Area_Profesores_Comensales {
                 continue;
             }
             $apuntados[] = '- ' . $a['nombre'] . ($f ? ' (' . sprintf(__('familia %s', 'area-profesores'), $f['nombre']) . ')' : '');
-            if ($emails) {
+            if ($emails && $avisar) {
                 Area_Profesores_Correos::enviar('comedor_extra_familia', $emails, array(
                     'alumno' => $a['nombre'],
                     'clase'  => $clase,
@@ -691,7 +691,7 @@ class Area_Profesores_Comensales {
             $R::anular($r, 'colegio', '', false);
             $quit[] = '- ' . $r['alumno'];
         }
-        if ($apuntados || $quit) {
+        if (($apuntados || $quit) && $avisar) {
             Area_Profesores_Correos::enviar('comedor_extra', $u ? $u->user_email : array(), array(
                 'quien'     => $quien,
                 'clase'     => $clase,
@@ -702,6 +702,27 @@ class Area_Profesores_Comensales {
             ));
         }
         self::$sincronizando = false;
+    }
+
+    /**
+     * Register as reservations the extras of the days already validated this month
+     * (validated before this existed), without e-mails. Only what is missing.
+     *
+     * @return int classes reviewed
+     */
+    public static function registrar_extras_pendientes() {
+        global $wpdb;
+        $ini = current_time('Y-m') . '-01';
+        $hoy = current_time('Y-m-d');
+        $n = 0;
+        foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . self::t() . ' WHERE fecha >= %s AND fecha <= %s', $ini, $hoy), ARRAY_A) as $r) {
+            $r = self::fila($r);
+            if (self::es_curso($r['curso'])) {
+                self::sincronizar_extras($r['fecha'], $r['curso'], $r['alumnos'], $r['validado_por'], false);
+                $n++;
+            }
+        }
+        return $n;
     }
 
     /**
@@ -968,6 +989,10 @@ class Area_Profesores_Comensales {
         $obs = isset($_POST['observaciones']) ? sanitize_textarea_field(wp_unslash($_POST['observaciones'])) : '';
         $n = self::guardar($hoy, $curso, $ids, $dietas, $obs, $uid);
         $c = Area_Profesores_Cursos::get_curso($curso);
+        $alumnos = self::alumnos_curso($curso);
+        if ($n && !array_filter(self::fijos(wp_list_pluck($alumnos, 'id')))) {
+            self::volver($curso, 'warning', sprintf(_n('Comedor de %1$s validado: %2$d comensal. ATENCIÓN:', 'Comedor de %1$s validado: %2$d comensales. ATENCIÓN:', $n, 'area-profesores') . ' ' . __('Esta clase no tiene comensales fijos, así que todos cuentan como EXTRA: se ha avisado a Administración para cobrárselo a las familias y a cada familia por correo. Marca cuanto antes los fijos en "Comensales fijos de la clase" (abajo).', 'area-profesores'), $c['label'], $n));
+        }
         self::volver($curso, 'success', sprintf(_n('Comedor de %1$s validado: %2$d comensal. ¡Gracias!', 'Comedor de %1$s validado: %2$d comensales. ¡Gracias!', $n, 'area-profesores'), $c['label'], $n));
     }
 

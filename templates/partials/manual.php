@@ -77,6 +77,7 @@ $m_secciones = array(
     <h4><?php esc_html_e('Comensales fijos', 'area-profesores'); ?></h4>
     <ul>
         <li><?php esc_html_e('Abajo, en "Comensales fijos de la clase", marca los días de la semana que se queda cada alumno y pulsa "Guardar comensales fijos". Solo hay que hacerlo a principio de curso o cuando cambie algo.', 'area-profesores'); ?></li>
+        <li><strong><?php esc_html_e('Es muy importante tener los fijos marcados:', 'area-profesores'); ?></strong> <?php esc_html_e('todo alumno que se queda sin ser fijo cuenta como extra, y cada extra se notifica a Administración para cobrárselo a la familia. Si la clase no tiene fijos, el Área te avisa antes de validar.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Atajos: "Marcar todos (toda la semana)" marca a toda la clase de lunes a viernes; pulsa el nombre de un alumno para marcar su semana entera, o la letra de un día para marcar la columna.', 'area-profesores'); ?></li>
     </ul>
     <h4><?php esc_html_e('Poner el comedor de otra clase', 'area-profesores'); ?></h4>

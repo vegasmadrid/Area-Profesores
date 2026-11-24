@@ -621,8 +621,8 @@
             };
 
             var updatePreview = function() {
-                var title = $.trim($comTitle.val());
-                var msg = $comMsg.val();
+                var title = $.trim($comTitle.val() || '');
+                var msg = $comMsg.val() || '';
                 var text = (title ? '*' + title + '*\n\n' : '') + msg;
                 $('#ap-com-count').text((title ? title.length + 2 : 0) + msg.length);
                 $('#ap-com-preview-text').html($.trim(text) ? chatFormat($.trim(text)) : '<em>' + escapeHtml(i18n.com_placeholder) + '</em>');
