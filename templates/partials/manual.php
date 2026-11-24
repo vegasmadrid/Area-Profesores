@@ -26,7 +26,7 @@ $m_secciones = array(
     'reservas'    => __('Reservas de las familias', 'area-profesores'),
     'enlaces'     => __('Enlaces útiles', 'area-profesores'),
     'espacios'    => __('Espacios de aula', 'area-profesores'),
-    'comensales'  => __('Comensales (Secretaría y Administración)', 'area-profesores'),
+    'comensales'  => __('Administración (facturación del mes)', 'area-profesores'),
     'comunicados' => __('Comunicados (Dirección y Comunicación)', 'area-profesores'),
     'dudas'       => __('Preguntas frecuentes', 'area-profesores'),
 );
@@ -60,7 +60,7 @@ $m_secciones = array(
     <h4><?php esc_html_e('Validar el comedor de tu clase', 'area-profesores'); ?></h4>
     <ol>
         <li><?php esc_html_e('Abre la pestaña "Comedor". Sale tu clase con la lista de alumnos. Los que se quedan siempre ese día de la semana (comensales fijos) ya aparecen marcados.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Marca a quien se queda hoy sin ser fijo (aparece la etiqueta "Extra hoy") y desmarca a quien hoy no se queda ("Hoy no se queda").', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Marca a quien se queda hoy sin ser fijo (aparece la etiqueta "Extra hoy") y desmarca a quien hoy no se queda ("Hoy no se queda"). Al validar, cada extra queda registrado como un servicio de comedor de ese día: se avisa a su familia y a Administración, y te llega un correo de confirmación.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Los alumnos con reserva de la familia (👪) ya salen marcados: la familia lo ha pedido desde el Área de Familias.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Si hace falta, escribe las dietas del día (por ejemplo, "Pablo — dieta blanda") y otras observaciones para cocina.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pulsa "Validar el comedor". Arriba aparece en verde quién lo ha validado, a qué hora y cuántos comensales hay.', 'area-profesores'); ?></li>
@@ -160,9 +160,12 @@ $m_secciones = array(
 <?php if ($mv['comensales']) : $m_i++; ?>
 <section class="ap-manual-sec" id="ayuda-comensales">
     <h3><span><?php echo (int) $m_i; ?></span> <?php echo esc_html($m_secciones['comensales']); ?> <em class="ap-manual-solo"><?php esc_html_e('Solo Dirección, Secretaría y Administración', 'area-profesores'); ?></em></h3>
+    <p><?php esc_html_e('La pestaña "Administración" reúne todo lo del mes para facturar.', 'area-profesores'); ?></p>
     <ul>
-        <li><?php esc_html_e('Elige el mes con las flechas. Arriba están las cifras del mes: comidas, comidas extra, alumnos con comidas extra y comidas de profesores que no se hicieron.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Comidas extra por alumno": los días que cada alumno ha comido sin ser fijo, o con reserva de la familia (👪). Sirve para hacer los cobros.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Elige el mes con las flechas. Arriba están las cifras del mes: comidas, comidas extra, alumnos con comidas extra, reservas de servicios y comidas de profesores que no se hicieron.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('"Para facturar: resumen por alumno": una fila por alumno con los días de cada servicio del mes (comedor extra, ampliación con y sin desayuno, ludoteca, dieta…) y los totales.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('"Servicios y reservas del mes": pulsa cada servicio para ver sus reservas con los días, los detalles y quién la hizo (la familia, Portería o el profesor en el comedor del día).', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('"Comedor: comidas extra por alumno": los días que cada alumno ha comido sin ser fijo, o con reserva de la familia (👪).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('"Profesores que no comen en el colegio": los días que ha marcado cada profesor.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('"Comensales por día": total de cada día, extras, reservas de familias, clases validadas y profesores que no comieron.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('"Descargar (Excel)" baja todo el mes en un archivo que se abre con Excel; "Imprimir" lo saca en papel.', 'area-profesores'); ?></li>

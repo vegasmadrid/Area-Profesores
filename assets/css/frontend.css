@@ -3296,3 +3296,18 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-cocina-comedor-num { text-align: right !important; font-size: 20px !important; font-weight: 800; color: #0f172a; width: 1%; }
 @media print { .ap-cocina-comedor { border: 1px solid #333; } }
 .ap-cocina-comedor-grupos span.is-pend b { font-weight: 600; }
+
+/* Administración (facturación del mes) */
+.ap-adm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ap-adm-fact th, .ap-adm-fact td { white-space: nowrap; }
+.ap-adm-num { text-align: center !important; }
+.ap-adm-cero { color: #cbd5e1; }
+.ap-adm-fact tfoot th { background: #f1f5f9; font-weight: 800; }
+.ap-adm-serv { border: 1px solid #e2e8f0; border-radius: 12px; margin: 0 0 8px; background: #fff; }
+.ap-adm-serv > summary { cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 15px; }
+.ap-adm-serv > summary span { color: #64748b; font-size: 13px; }
+.ap-adm-serv[open] > summary { border-bottom: 1px solid #e2e8f0; }
+.ap-adm-serv .ap-ma-tabla { margin: 0; }
+.ap-cm-dia.is-tutor { background: #fff3e2; color: #9a5a12; }
+.ap-cm-dia.is-porteria { background: #ede9fe; color: #5b21b6; }
+@media print { .ap-adm-serv > summary { list-style: none; } .ap-adm-serv:not([open]) > *:not(summary) { display: block; } }

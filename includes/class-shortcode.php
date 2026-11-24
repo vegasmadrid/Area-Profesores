@@ -164,7 +164,7 @@ class Area_Profesores_Shortcode {
         if (Area_Profesores_Comensales::puede_ver_mes($user_id)) {
             $mes = isset($_GET['ap_mes']) ? sanitize_text_field(wp_unslash($_GET['ap_mes'])) : '';
             $mes = preg_match('/^\d{4}-\d{2}$/', $mes) ? $mes : current_time('Y-m');
-            $comensales_mes = array('mes' => $mes, 'datos' => Area_Profesores_Comensales::mes($mes), 'profes' => Area_Profesores_Comensales::profes_mes($mes));
+            $comensales_mes = array('mes' => $mes, 'adm' => Area_Profesores_Comensales::administracion($mes));
         }
         if ($comedor !== null) {
             wp_enqueue_script('area-profesores-comedor');

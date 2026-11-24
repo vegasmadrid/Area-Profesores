@@ -75,6 +75,7 @@ class Area_Profesores_Reservas {
             anulado DATETIME DEFAULT NULL,
             anulado_por VARCHAR(20) NOT NULL DEFAULT '',
             creado_por BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            origen VARCHAR(20) NOT NULL DEFAULT '',
             PRIMARY KEY  (id),
             KEY fechas (estado, fecha_inicio, fecha_fin),
             KEY alumno (alumno_id),
@@ -95,6 +96,8 @@ class Area_Profesores_Reservas {
         $r['alumno_id'] = (int) $r['alumno_id'];
         $r['familia_id'] = isset($r['familia_id']) ? (int) $r['familia_id'] : 0;
         $r['creado_por'] = isset($r['creado_por']) ? (int) $r['creado_por'] : 0;
+        // familia (Área Familias), porteria, tutor (extra of the daily dining room).
+        $r['origen'] = !empty($r['origen']) ? $r['origen'] : ($r['creado_por'] ? 'porteria' : 'familia');
         $r['dias'] = $r['dias'] === '' ? array() : array_map('intval', explode(',', $r['dias']));
         $d = json_decode((string) $r['detalles'], true);
         $r['detalles'] = is_array($d) ? $d : array();
@@ -427,7 +430,7 @@ class Area_Profesores_Reservas {
             'hora'            => $hora,
             'detalles'        => $detalles,
             'avisar'          => $avisar,
-        ), $alumnos, array($email), esc_url_raw((string) $request->get_param('panel_url')));
+        ), $alumnos, array($email), self::recordar_panel($request->get_param('panel_url')));
         if (!is_wp_error($creadas) && !$creadas) {
             $creadas = new WP_Error('area_bd', __('No se ha podido guardar la reserva. Inténtalo de nuevo en unos minutos.', 'area-profesores'), array('status' => 500));
         }
@@ -451,9 +454,11 @@ class Area_Profesores_Reservas {
      * @param array  $para    e-mails of the family for the confirmation
      * @param string $panel   families panel URL (button of the confirmation)
      * @param int    $por     user who made it at school (0 = the family)
+     * @param array  $opts    origen (familia|porteria|tutor), avisos (bool: usual e-mails), comedor (bool: update the daily dining room)
      * @return array|WP_Error created reservations
      */
-    public static function crear($d, $alumnos, $para, $panel = '', $por = 0) {
+    public static function crear($d, $alumnos, $para, $panel = '', $por = 0, $opts = array()) {
+        $opts = array_merge(array('origen' => $por ? 'porteria' : 'familia', 'avisos' => true, 'comedor' => true), $opts);
         global $wpdb;
         $nueva = array('fecha_inicio' => $d['fecha_inicio'], 'fecha_fin' => $d['fecha_fin'], 'dias' => $d['dias']);
 
@@ -491,6 +496,7 @@ class Area_Profesores_Reservas {
                 'estado'          => 'activa',
                 'creado'          => Area_Profesores_Alumnos::now(),
                 'creado_por'      => (int) $por,
+                'origen'          => $opts['origen'],
             );
             if (!$wpdb->insert(self::t(), $fila)) {
                 // The table may be out of date (files updated in several steps): repair it and retry.
@@ -503,14 +509,16 @@ class Area_Profesores_Reservas {
             $r = self::get((int) $wpdb->insert_id);
             if ($r) {
                 $creadas[] = $r;
-                self::avisar_colegio('reserva_nueva', $r);
-                if (class_exists('Area_Profesores_Comensales')) {
+                if ($opts['avisos']) {
+                    self::avisar_colegio('reserva_nueva', $r);
+                }
+                if ($opts['comedor'] && class_exists('Area_Profesores_Comensales')) {
                     Area_Profesores_Comensales::on_reserva($r);
                 }
             }
         }
 
-        if ($creadas && $para) {
+        if ($creadas && $para && $opts['avisos']) {
             Area_Profesores_Correos::enviar('reserva_familia', $para, array(
                 'servicio' => $d['servicio_nombre'],
                 'alumnos'  => implode(', ', array_map(function ($r) {
@@ -548,11 +556,14 @@ class Area_Profesores_Reservas {
     /**
      * Cancel and notify the school and the family.
      */
-    public static function anular($r, $por, $panel_url = '') {
+    public static function anular($r, $por, $panel_url = '', $avisar = true) {
         global $wpdb;
         $wpdb->update(self::t(), array('estado' => 'anulada', 'anulado' => Area_Profesores_Alumnos::now(), 'anulado_por' => $por), array('id' => $r['id']));
         $r['estado'] = 'anulada';
         $r['anulado_por'] = $por;
+        if (!$avisar) {
+            return;
+        }
         self::avisar_colegio('reserva_anulada', $r);
         if (class_exists('Area_Profesores_Comensales')) {
             Area_Profesores_Comensales::on_reserva($r);
@@ -684,8 +695,93 @@ class Area_Profesores_Reservas {
             );
         }
         $festivos = array_values(array_filter(array_map('strval', (array) $request->get_param('festivos')), array(__CLASS__, 'fecha_valida')));
+        self::recordar_panel($request->get_param('panel_url'));
         update_option(self::OPT_SERVICIOS, array('servicios' => $out, 'festivos' => array_slice($festivos, 0, 400), 'recibido' => current_time('mysql')), false);
         return rest_ensure_response(array('ok' => true, 'servicios' => count($out)));
+    }
+
+    /**
+     * Remember the URL of the families' panel (for the buttons of the e-mails sent from here).
+     */
+    public static function recordar_panel($url) {
+        $url = esc_url_raw((string) $url);
+        if ($url !== '' && get_option('ap_familias_panel_url') !== $url) {
+            update_option('ap_familias_panel_url', $url, false);
+        }
+        return $url;
+    }
+
+    public static function panel_familias() {
+        return (string) get_option('ap_familias_panel_url', '');
+    }
+
+    /**
+     * Services used in a month, for Administración (billing): every active reservation
+     * with the school days of that month it covers.
+     *
+     * @param string $mes Y-m
+     * @return array { servicios: [ clave => {nombre, servicio, alumnos, dias} ], filas: [ reservation + {clave, variante, dias_mes} ] }
+     */
+    public static function mes_servicios($mes) {
+        global $wpdb;
+        $ini = $mes . '-01';
+        $fin = gmdate('Y-m-t', strtotime($ini . ' 12:00:00 UTC'));
+        $rows = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . self::t() . " WHERE estado = 'activa' AND fecha_inicio <= %s AND fecha_fin >= %s", $fin, $ini), ARRAY_A);
+        $servicios = array();
+        $filas = array();
+        foreach ((array) $rows as $r) {
+            $r = self::fila($r);
+            $dias = array();
+            for ($t = strtotime(max($ini, $r['fecha_inicio']) . ' 12:00:00 UTC'), $e = strtotime(min($fin, $r['fecha_fin']) . ' 12:00:00 UTC'); $t <= $e; $t += DAY_IN_SECONDS) {
+                $d = gmdate('Y-m-d', $t);
+                if (self::aplica($r, $d) && self::es_lectivo($d)) {
+                    $dias[] = $d;
+                }
+            }
+            if (!$dias) {
+                continue;
+            }
+            // Variants that are charged differently (breakfast).
+            $variante = '';
+            foreach ($r['detalles'] as $x) {
+                if ($x['label'] === 'Desayuno') {
+                    $variante = stripos($x['valor'], 's') === 0 ? __('con desayuno', 'area-profesores') : __('sin desayuno', 'area-profesores');
+                }
+            }
+            $clave = $r['servicio'] . ($variante !== '' ? '|' . $variante : '');
+            if (!isset($servicios[$clave])) {
+                $servicios[$clave] = array('nombre' => $r['servicio_nombre'] . ($variante !== '' ? ' ' . $variante : ''), 'servicio' => $r['servicio'], 'alumnos' => array(), 'dias' => 0, 'reservas' => 0);
+            }
+            $servicios[$clave]['alumnos'][$r['alumno_id']] = true;
+            $servicios[$clave]['dias'] += count($dias);
+            $servicios[$clave]['reservas']++;
+            $r['clave'] = $clave;
+            $r['dias_mes'] = $dias;
+            $filas[] = $r;
+        }
+        $orden = array_flip(array('ampliacion', 'comedor', 'dieta', 'ludoteca', 'salida', 'retraso'));
+        uksort($servicios, function ($a, $b) use ($servicios, $orden) {
+            $oa = isset($orden[$servicios[$a]['servicio']]) ? $orden[$servicios[$a]['servicio']] : 99;
+            $ob = isset($orden[$servicios[$b]['servicio']]) ? $orden[$servicios[$b]['servicio']] : 99;
+            return array($oa, $a) <=> array($ob, $b);
+        });
+        usort($filas, function ($a, $b) {
+            return array($a['clave'], $a['curso'], $a['alumno'], $a['fecha_inicio']) <=> array($b['clave'], $b['curso'], $b['alumno'], $b['fecha_inicio']);
+        });
+        return array('servicios' => $servicios, 'filas' => $filas);
+    }
+
+    /** Text of who made a reservation. */
+    public static function origen_texto($r) {
+        $u = $r['creado_por'] ? get_userdata($r['creado_por']) : null;
+        switch ($r['origen']) {
+            case 'tutor':
+                return sprintf(__('Profesor/a (%s), comedor del día', 'area-profesores'), $u ? $u->display_name : '?');
+            case 'porteria':
+                return sprintf(__('Portería (%s)', 'area-profesores'), $u ? $u->display_name : '?');
+            default:
+                return __('Familia (Área Familias)', 'area-profesores');
+        }
     }
 
     /** Portería (and administrators) can book any service for any family. */

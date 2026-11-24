@@ -473,8 +473,8 @@ class Area_Profesores_Comensales {
             return array($comedor, $dietas);
         }
         foreach (Area_Profesores_Reservas::del_dia($fecha, array($curso)) as $r) {
-            if ($r['servicio'] !== 'comedor' && $r['servicio'] !== 'dieta') {
-                continue;
+            if (($r['servicio'] !== 'comedor' && $r['servicio'] !== 'dieta') || $r['origen'] === 'tutor') {
+                continue; // the extras the tutor marks are registered as reservations too, but they are still "extra"
             }
             if ($r['servicio'] === 'comedor') {
                 $comedor[$r['alumno_id']] = $r;
@@ -582,6 +582,7 @@ class Area_Profesores_Comensales {
             $wpdb->insert(self::t(), $data);
         }
         self::sincronizar_registro_antiguo($fecha, $curso, $data, $comen);
+        self::sincronizar_extras($fecha, $curso, $comen, $user_id);
 
         // After the kitchen summary, the kitchen is told about the change
         // (number of diners, or a pupil with a food allergy who now eats / does not eat).
@@ -602,6 +603,105 @@ class Area_Profesores_Comensales {
             ), $cambio_alergias ? __('Alergias alimentarias:', 'area-profesores') . "\n" . $alergias_txt : ''));
         }
         return count($comen);
+    }
+
+    /** Avoid loops while the extras are registered as reservations. */
+    private static $sincronizando = false;
+
+    /**
+     * The extras the tutor marks (pupils who are not regular diners that day and have no
+     * family reservation) are registered as a "comedor" reservation of the day, so that they
+     * appear in the family's area and in Administración. Administración, the family and
+     * the teacher who marked them are told by e-mail. If the tutor unmarks them, the
+     * reservation is cancelled.
+     */
+    private static function sincronizar_extras($fecha, $curso, $comen, $user_id) {
+        if (self::$sincronizando || !class_exists('Area_Profesores_Reservas')) {
+            return;
+        }
+        $R = 'Area_Profesores_Reservas';
+        $A = 'Area_Profesores_Alumnos';
+        $extras = array();
+        foreach ($comen as $a) {
+            if ($a['tipo'] === 'extra') {
+                $extras[(int) $a['id']] = $a;
+            }
+        }
+        $registradas = array();
+        foreach ($R::del_dia($fecha, array($curso), 'comedor') as $r) {
+            if ($r['origen'] === 'tutor') {
+                $registradas[(int) $r['alumno_id']] = $r;
+            }
+        }
+        $nuevos = array_diff_key($extras, $registradas);
+        $quitados = array_diff_key($registradas, $extras);
+        if (!$nuevos && !$quitados) {
+            return;
+        }
+        self::$sincronizando = true;
+
+        $serv = $R::servicios();
+        $s = isset($serv['comedor']) ? $serv['comedor'] : array('nombre' => __('Comedor', 'area-profesores'), 'precio' => '');
+        $u = get_userdata($user_id);
+        $quien = $u ? $u->display_name : __('el colegio', 'area-profesores');
+        $c = Area_Profesores_Cursos::get_curso($curso);
+        $clase = $c ? $c['label'] : $curso;
+        $fecha_txt = date_i18n('l j \d\e F', strtotime($fecha . ' 12:00:00'));
+        $fams = $nuevos ? $A::familias_de_alumnos(array_keys($nuevos)) : array();
+        $apuntados = array();
+        foreach ($nuevos as $id => $a) {
+            $f = !empty($fams[$id]) ? $fams[$id][0] : null;
+            $emails = $f ? $A::emails_array($f['emails']) : array();
+            $det = array(
+                array('label' => __('Tipo', 'area-profesores'), 'valor' => __('Comedor extra (ese día no es comensal fijo)', 'area-profesores')),
+                array('label' => __('Apuntado por', 'area-profesores'), 'valor' => sprintf(__('%s, desde el comedor diario', 'area-profesores'), $quien)),
+            );
+            if ($s['precio'] !== '') {
+                $det[] = array('label' => __('Precio', 'area-profesores'), 'valor' => $s['precio']);
+            }
+            $res = $R::crear(array(
+                'email'           => $emails ? $emails[0] : '',
+                'servicio'        => 'comedor',
+                'servicio_nombre' => $s['nombre'],
+                'fecha_inicio'    => $fecha,
+                'fecha_fin'       => $fecha,
+                'dias'            => array(),
+                'hora'            => '',
+                'detalles'        => $det,
+                'avisar'          => array(),
+            ), array($id => array('alumno' => array('nombre' => $a['nombre'], 'curso' => $curso), 'familia' => $f ? $f['nombre'] : '', 'familia_id' => $f ? (int) $f['id'] : 0)),
+            array(), '', (int) $user_id, array('origen' => 'tutor', 'avisos' => false, 'comedor' => false));
+            if (is_wp_error($res) || !$res) {
+                continue;
+            }
+            $apuntados[] = '- ' . $a['nombre'] . ($f ? ' (' . sprintf(__('familia %s', 'area-profesores'), $f['nombre']) . ')' : '');
+            if ($emails) {
+                Area_Profesores_Correos::enviar('comedor_extra_familia', $emails, array(
+                    'alumno' => $a['nombre'],
+                    'clase'  => $clase,
+                    'fecha'  => $fecha_txt,
+                    'quien'  => $quien,
+                    'precio' => $s['precio'] !== '' ? $s['precio'] : '—',
+                    'enlace' => $R::panel_familias(),
+                ), false, $u ? $u->user_email : '');
+            }
+        }
+        $quit = array();
+        foreach ($quitados as $r) {
+            $R::anular($r, 'colegio', '', false);
+            $quit[] = '- ' . $r['alumno'];
+        }
+        if ($apuntados || $quit) {
+            Area_Profesores_Correos::enviar('comedor_extra', $u ? $u->user_email : array(), array(
+                'quien'     => $quien,
+                'clase'     => $clase,
+                'fecha'     => $fecha_txt,
+                'apuntados' => $apuntados ? implode("\n", $apuntados) : __('Ninguno.', 'area-profesores'),
+                'quitados'  => $quit ? implode("\n", $quit) : __('Ninguno.', 'area-profesores'),
+                'enlace'    => self::url_portal($curso),
+            ));
+        }
+        self::$sincronizando = false;
     }
 
     /**
@@ -1168,18 +1268,77 @@ class Area_Profesores_Comensales {
         return array('dias' => $dias, 'extras' => $extras, 'total' => $total, 'total_extra' => $total_extra);
     }
 
+    /**
+     * Everything Administración needs to bill a month.
+     *
+     * @return array { comedor: mes(), profes: profes_mes(), servicios: Reservas::mes_servicios(), columnas: [clave => nombre], alumnos: [id => {nombre, curso, familia, cols: [clave => días]}] }
+     */
+    public static function administracion($mes) {
+        $comedor = self::mes($mes);
+        $serv = class_exists('Area_Profesores_Reservas') ? Area_Profesores_Reservas::mes_servicios($mes) : array('servicios' => array(), 'filas' => array());
+        $columnas = array('comedor_extra' => __('Comedor extra', 'area-profesores'));
+        $alumnos = array();
+        $add = function ($id, $nombre, $curso_label, $orden, $clave, $n) use (&$alumnos) {
+            if (!isset($alumnos[$id])) {
+                $alumnos[$id] = array('nombre' => $nombre, 'curso' => $curso_label, 'orden' => $orden, 'familia' => '', 'cols' => array());
+            }
+            $alumnos[$id]['cols'][$clave] = (isset($alumnos[$id]['cols'][$clave]) ? $alumnos[$id]['cols'][$clave] : 0) + $n;
+        };
+        foreach ($comedor['extras'] as $id => $e) {
+            $add($id, $e['nombre'], $e['curso'], $e['orden'], 'comedor_extra', count($e['dias']));
+        }
+        // The comedor is billed with the real meals (above); exits and delays are not charged.
+        foreach ($serv['filas'] as $r) {
+            if (in_array($r['servicio'], array('comedor', 'salida', 'retraso'), true)) {
+                continue;
+            }
+            $columnas[$r['clave']] = $serv['servicios'][$r['clave']]['nombre'];
+            $c = Area_Profesores_Cursos::get_curso($r['curso']);
+            $add($r['alumno_id'], $r['alumno'], $r['curso_label'], $c ? $c['orden'] : 999, $r['clave'], count($r['dias_mes']));
+        }
+        if ($alumnos) {
+            foreach (Area_Profesores_Alumnos::familias_de_alumnos(array_keys($alumnos)) as $id => $fs) {
+                $alumnos[$id]['familia'] = implode(' / ', wp_list_pluck($fs, 'nombre'));
+            }
+        }
+        uasort($alumnos, function ($a, $b) {
+            return array($a['orden'], $a['nombre']) <=> array($b['orden'], $b['nombre']);
+        });
+        return array('comedor' => $comedor, 'profes' => self::profes_mes($mes), 'servicios' => $serv, 'columnas' => $columnas, 'alumnos' => $alumnos);
+    }
+
     public function handle_csv_mes() {
         if (!self::puede_ver_mes(get_current_user_id())) {
             wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
         }
         check_admin_referer('ap_comedor_csv_mes');
         $mes = isset($_GET['mes']) && preg_match('/^\d{4}-\d{2}$/', $_GET['mes']) ? sanitize_text_field(wp_unslash($_GET['mes'])) : current_time('Y-m');
-        $d = self::mes($mes);
+        $adm = self::administracion($mes);
+        $d = $adm['comedor'];
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="comidas-extra-' . $mes . '.csv"');
+        header('Content-Disposition: attachment; filename="administracion-' . $mes . '.csv"');
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF");
+        // 1. Billing summary per pupil.
+        fputcsv($out, array_merge(array('Alumno', 'Curso', 'Familia'), array_values($adm['columnas'])), ';');
+        foreach ($adm['alumnos'] as $a) {
+            $l = array($a['nombre'], $a['curso'], $a['familia']);
+            foreach (array_keys($adm['columnas']) as $k) {
+                $l[] = isset($a['cols'][$k]) ? $a['cols'][$k] : '';
+            }
+            fputcsv($out, $l, ';');
+        }
+        // 2. Every reservation of the month.
+        fputcsv($out, array(), ';');
+        fputcsv($out, array('Servicio', 'Alumno', 'Curso', 'Familia', 'Días del mes', 'Fechas', 'Detalles', 'Reservado por', 'Reservado el'), ';');
+        foreach ($adm['servicios']['filas'] as $r) {
+            fputcsv($out, array($adm['servicios']['servicios'][$r['clave']]['nombre'], $r['alumno'], $r['curso_label'], $r['familia'], count($r['dias_mes']), implode(', ', array_map(function ($f) {
+                return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
+            }, $r['dias_mes'])), str_replace("\n", ' · ', Area_Profesores_Reservas::detalles_texto($r)), Area_Profesores_Reservas::origen_texto($r), $r['creado']), ';');
+        }
+        // 3. Comedor: extra meals of each pupil.
+        fputcsv($out, array(), ';');
         fputcsv($out, array('Alumno', 'Curso', 'Comidas extra', 'De ellas, reservadas por la familia', 'Días'), ';');
         foreach ($d['extras'] as $e) {
             fputcsv($out, array($e['nombre'], $e['curso'], count($e['dias']), count(array_filter($e['dias'], function ($t) {
