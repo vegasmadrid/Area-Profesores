@@ -779,22 +779,52 @@ class Area_Profesores_Reservas {
                 return sprintf(__('Profesor/a (%s), comedor del día', 'area-profesores'), $u ? $u->display_name : '?');
             case 'porteria':
                 return sprintf(__('Portería (%s)', 'area-profesores'), $u ? $u->display_name : '?');
+            case 'profesor':
+                return sprintf(__('Profesor/a (%s), a petición de la familia', 'area-profesores'), $u ? $u->display_name : '?');
             default:
                 return __('Familia (Área Familias)', 'area-profesores');
         }
     }
 
-    /** Portería (and administrators) can book any service for any family. */
-    public static function puede_reservar($user_id) {
+    /** Portería (and administrators) book for any family. */
+    public static function es_porteria($user_id) {
         return $user_id && (user_can($user_id, 'manage_options') || Area_Profesores_Cuentas::tiene($user_id, 'porteria'));
     }
 
     /**
-     * Families with their children (for the Portería form).
+     * Courses a user can book for: every course for Portería (and Dirección / Secretaría),
+     * the tutoría and assigned classes for a teacher (the pupils of "Mis alumnos").
      *
+     * @return true|string[]
+     */
+    public static function cursos_reserva($user_id) {
+        if (!$user_id) {
+            return array();
+        }
+        if (self::es_porteria($user_id)) {
+            return true;
+        }
+        $v = Area_Profesores_Alumnos::cursos_visibles($user_id);
+        return $v === true ? true : array_values((array) $v);
+    }
+
+    /** Portería and teachers (for their pupils) can book services for the families. */
+    public static function puede_reservar($user_id) {
+        return self::cursos_reserva($user_id) !== array();
+    }
+
+    /** Portería cancels any reservation; a teacher, the ones they made. */
+    public static function puede_anular($user_id, $r) {
+        return self::es_porteria($user_id) || ($user_id && $r['creado_por'] === (int) $user_id && $r['origen'] !== 'tutor');
+    }
+
+    /**
+     * Families with their children (for the booking form), only the children of $cursos.
+     *
+     * @param true|string[] $cursos
      * @return array[] { id, nombre, emails, hijos: [ {id, nombre, curso, etapa} ] }
      */
-    public static function familias_para_reservar() {
+    public static function familias_para_reservar($cursos = true) {
         global $wpdb;
         $A = 'Area_Profesores_Alumnos';
         $fams = $wpdb->get_results('SELECT id, nombre, emails FROM ' . $A::t('familias') . ' ORDER BY nombre', ARRAY_A);
@@ -806,10 +836,15 @@ class Area_Profesores_Reservas {
             }
             $l = array();
             foreach ($hijos[$f['id']] as $a) {
+                if ($cursos !== true && !in_array($a['curso'], $cursos, true)) {
+                    continue;
+                }
                 $c = Area_Profesores_Cursos::get_curso($a['curso']);
                 $l[] = array('id' => (int) $a['id'], 'nombre' => $a['nombre'], 'curso' => $c ? $c['label'] : $a['curso'], 'etapa' => $c ? $c['etapa'] : '');
             }
-            $out[] = array('id' => (int) $f['id'], 'nombre' => $f['nombre'], 'emails' => $A::emails_array($f['emails']), 'hijos' => $l);
+            if ($l) {
+                $out[] = array('id' => (int) $f['id'], 'nombre' => $f['nombre'], 'emails' => $A::emails_array($f['emails']), 'hijos' => $l);
+            }
         }
         return $out;
     }
@@ -858,6 +893,10 @@ class Area_Profesores_Reservas {
         foreach ($ids as $id) {
             if (!isset($por_id[$id])) {
                 return new WP_Error('ap', __('Ese alumno no es de esa familia.', 'area-profesores'));
+            }
+            $permitidos = self::cursos_reserva(get_current_user_id());
+            if ($permitidos !== true && !in_array($por_id[$id]['curso'], $permitidos, true)) {
+                return new WP_Error('ap', sprintf(__('%s no es alumno de tus clases: pide a Portería que haga la reserva.', 'area-profesores'), $por_id[$id]['nombre']));
             }
             $c = Area_Profesores_Cursos::get_curso($por_id[$id]['curso']);
             if ($s['etapas'] && (!$c || !in_array($c['etapa'], (array) $s['etapas'], true))) {
@@ -975,7 +1014,7 @@ class Area_Profesores_Reservas {
         }
         $u = wp_get_current_user();
         $pedido = $txt('pedido', 200);
-        $add(__('Reservada por', 'area-profesores'), sprintf(__('Portería (%s)', 'area-profesores'), $u->display_name) . ($pedido !== '' ? ' — ' . sprintf(__('lo ha pedido: %s', 'area-profesores'), $pedido) : ''));
+        $add(__('Reservada por', 'area-profesores'), sprintf(self::es_porteria($u->ID) ? __('Portería (%s)', 'area-profesores') : __('Profesor/a (%s)', 'area-profesores'), $u->display_name) . ($pedido !== '' ? ' — ' . sprintf(__('lo ha pedido: %s', 'area-profesores'), $pedido) : ''));
 
         $emails = $A::emails_array($fam['emails']);
         return array(
@@ -1000,7 +1039,7 @@ class Area_Profesores_Reservas {
         $uid = get_current_user_id();
         check_admin_referer('ap_reserva_porteria');
         if (!self::puede_reservar($uid)) {
-            wp_die(esc_html__('Solo Portería puede hacer reservas para las familias.', 'area-profesores'));
+            wp_die(esc_html__('No puedes hacer reservas para las familias.', 'area-profesores'));
         }
         $post = wp_unslash($_POST);
         unset($post['_wpnonce'], $post['_wp_http_referer'], $post['action']);
@@ -1008,7 +1047,7 @@ class Area_Profesores_Reservas {
         if (is_wp_error($v)) {
             self::volver_portal('error', $v->get_error_message(), '', $post);
         }
-        $creadas = self::crear($v['datos'], $v['alumnos'], !empty($post['confirmar']) ? $v['emails'] : array(), '', $uid);
+        $creadas = self::crear($v['datos'], $v['alumnos'], !empty($post['confirmar']) ? $v['emails'] : array(), self::panel_familias(), $uid, array('origen' => self::es_porteria($uid) ? 'porteria' : 'profesor'));
         if (!is_wp_error($creadas) && !$creadas) {
             $creadas = new WP_Error('area_bd', __('No se ha guardado la reserva. Inténtalo de nuevo y, si vuelve a pasar, avisa al administrador de la web.', 'area-profesores'));
         }
@@ -1024,11 +1063,11 @@ class Area_Profesores_Reservas {
     public function handle_anular_portal() {
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         check_admin_referer('ap_reserva_anular_portal_' . $id);
-        if (!self::puede_reservar(get_current_user_id())) {
+        $r = self::get($id);
+        if (!$r || !self::puede_anular(get_current_user_id(), $r)) {
             wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
         }
-        $r = self::get($id);
-        if (!$r || $r['estado'] !== 'activa') {
+        if ($r['estado'] !== 'activa') {
             self::volver_portal('error', __('Esa reserva ya estaba anulada.', 'area-profesores'));
         }
         self::anular($r, 'colegio');
@@ -1048,7 +1087,9 @@ class Area_Profesores_Reservas {
         }
         return array(
             'servicios' => self::servicios(),
-            'familias'  => self::familias_para_reservar(),
+            'familias'  => self::familias_para_reservar(self::cursos_reserva($user_id)),
+            'porteria'  => self::es_porteria($user_id),
+            'uid'       => (int) $user_id,
             'flash'     => $flash,
             'hoy'       => current_time('Y-m-d'),
         );

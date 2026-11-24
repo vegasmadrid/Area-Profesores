@@ -100,12 +100,14 @@ foreach ($ap_r['lista'] as $r) {
                             </td>
                             <?php if ($ap_pt) : ?>
                                 <td class="ap-ma-acc no-print">
+                                    <?php if (Area_Profesores_Reservas::puede_anular($ap_pt['uid'], $r)) : ?>
                                     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(sprintf(__('¿Anular la reserva de %1$s de %2$s (%3$s)? Se avisará a la familia y al tutor/a.', 'area-profesores'), $r['servicio_nombre'], $r['alumno'], $r['fechas_texto'])); ?>');">
                                         <input type="hidden" name="action" value="ap_reserva_anular_portal">
                                         <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
                                         <?php wp_nonce_field('ap_reserva_anular_portal_' . $r['id']); ?>
                                         <button type="submit" class="ap-btn ap-btn-sm ap-btn-outline ap-res-anular"><?php esc_html_e('Anular', 'area-profesores'); ?></button>
                                     </form>
+                                    <?php endif; ?>
                                 </td>
                             <?php endif; ?>
                         </tr>
