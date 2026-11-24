@@ -68,9 +68,9 @@ if (!defined('ABSPATH')) {
 
     <!-- Navigation / Tabs Menu -->
     <nav class="ap-nav-tabs">
-        <?php $ap_primera = $comedor !== null ? 'tab-comedor' : 'tab-enlaces'; ?>
+        <?php $ap_primera = ($comedor !== null && empty($comedor['solo_mi_comida'])) ? 'tab-comedor' : 'tab-enlaces'; ?>
         <?php if ($comedor !== null) : ?>
-            <button type="button" class="ap-tab-btn is-active" data-target="tab-comedor">
+            <button type="button" class="ap-tab-btn<?php echo $ap_primera === 'tab-comedor' ? ' is-active' : ''; ?>" data-target="tab-comedor">
                 <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -153,7 +153,7 @@ if (!defined('ABSPATH')) {
     <main class="ap-portal-body">
         <?php if ($comedor !== null) : ?>
             <!-- Pestaña: Comedor de hoy (Primer Ciclo, Infantil y Primaria) -->
-            <section id="tab-comedor" class="ap-tab-content is-active">
+            <section id="tab-comedor" class="ap-tab-content<?php echo $ap_primera === 'tab-comedor' ? ' is-active' : ''; ?>">
                 <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comedor-diario.php'; ?>
             </section>
         <?php endif; ?>

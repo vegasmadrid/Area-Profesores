@@ -97,9 +97,9 @@ $m_secciones = array(
 <?php if ($mv['mi_comida']) : $m_i++; ?>
 <section class="ap-manual-sec" id="ayuda-mi_comida">
     <h3><span><?php echo (int) $m_i; ?></span> <?php echo esc_html($m_secciones['mi_comida']); ?></h3>
-    <p><?php esc_html_e('Se da por hecho que todos los profesores comen en el colegio. Si algún día no vas a comer, márcalo para que cocina no prepare tu comida.', 'area-profesores'); ?></p>
+    <p><?php esc_html_e('Se da por hecho que todos los profesores comen en el colegio todos los días (salvo los que Dirección haya marcado como que no comen nunca). Si algún día no vas a comer, márcalo para que cocina no prepare tu comida.', 'area-profesores'); ?></p>
     <ul>
-        <li><?php esc_html_e('En la pestaña "Comedor", arriba, está el recuadro "Mi comida en el colegio".', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('En la pestaña "Comedor", arriba, está el recuadro "Mi comida en el colegio". Los profesores de Secundaria y Bachillerato también tienen la pestaña "Comedor", solo con este recuadro.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Para hoy: pulsa "Hoy no como". Si cambias de idea, pulsa "Sí como hoy".', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Para otros días: abre "Marcar otros días que no como en el colegio", pulsa los días (se ponen en rojo con "No como") y pulsa "Guardar mis días". Puedes marcar días de las próximas semanas.', 'area-profesores'); ?></li>
         <li><?php printf(esc_html__('Cocina recibe cada día, en el resumen de las %s, cuántos profesores no comen y quiénes. Si cambias el día de hoy después de esa hora, cocina recibe un aviso.', 'area-profesores'), esc_html($m_coc)); ?></li>

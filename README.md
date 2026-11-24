@@ -111,6 +111,7 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 29. **Reservas desde los tutores**: el mismo formulario de Portería (*Nueva reserva para una familia*, pestaña *Reservas*) lo tienen los profesores para los alumnos de su tutoría y clases asignadas (Dirección y Secretaría, todos), para cuando los padres lo piden de palabra o por correo. Queda anotado *Reservada por: Profesor/a (nombre)*; cada profesor puede anular las reservas que ha hecho él.
 30. **Remitente de los correos**: los avisos a las familias llegan como *Área de Familias* y el resto como *Área de Profesores* (en lugar de *WordPress*). Se ve en cada aviso de *Avisos*.
 31. **Capturas en la Ayuda**: el manual (pestaña *Ayuda* y versión para imprimir) lleva capturas de pantalla con datos ficticios (`assets/img/ayuda/`).
+32. **Profesores que comen** (*Área Profesores › Profesores*, casilla *Come en el colegio*, marcada por defecto): se cuenta que todos los profesores comen todos los días salvo los días que ellos avisan en *Mi comida* (ahora disponible para todo el profesorado, también Secundaria y Bachillerato). Los desmarcados no comen nunca y no cuentan. Cocina ve cada día *Hoy comen N profesores* (página y correo) y Administración tiene la columna *Profesores que comen* para cotejar con cocina.
 
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`

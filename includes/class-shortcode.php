@@ -198,8 +198,8 @@ class Area_Profesores_Shortcode {
         // Ayuda: manual of the tabs this teacher can see.
         $ayuda = array(
             'mv' => array(
-                'comedor'     => $comedor !== null,
-                'mi_comida'   => $comedor !== null,
+                'comedor'     => $comedor !== null && empty($comedor['solo_mi_comida']),
+                'mi_comida'   => $comedor !== null && !empty($comedor['profe']),
                 'alumnos'     => !empty($mis_alumnos['cursos']),
                 'reservas'    => $reservas !== null,
                 'comensales'  => $comensales_mes !== null,

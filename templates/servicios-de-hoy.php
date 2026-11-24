@@ -137,12 +137,12 @@ if (!defined('ABSPATH')) {
         </section>
     <?php endif; ?>
 
-    <!-- Profesores que no comen hoy en el colegio (lo marcan ellos en su pestaña Comedor) -->
+    <!-- Profesores que comen hoy: los habituales (Área Profesores › Profesores) menos los que han avisado -->
+    <?php $ap_ncomen = Area_Profesores_Comensales::profes_comen($fecha); ?>
     <section class="ap-cocina-profes<?php echo empty($profes_no) ? ' is-todos' : ''; ?>">
-        <?php if (empty($profes_no)) : ?>
-            <h2>👩‍🏫 <?php esc_html_e('Todos los profesores comen hoy en el colegio', 'area-profesores'); ?></h2>
-        <?php else : ?>
-            <h2>👩‍🏫 <?php printf(esc_html(_n('%d profesor NO come hoy en el colegio', '%d profesores NO comen hoy en el colegio', count($profes_no), 'area-profesores')), count($profes_no)); ?></h2>
+        <h2>👩‍🏫 <?php printf(esc_html(_n('Hoy come %d profesor', 'Hoy comen %d profesores', $ap_ncomen, 'area-profesores')), (int) $ap_ncomen); ?></h2>
+        <?php if (!empty($profes_no)) : ?>
+            <p><?php printf(esc_html(_n('%d ha avisado de que no come:', '%d han avisado de que no comen:', count($profes_no), 'area-profesores')), count($profes_no)); ?></p>
             <ul>
                 <?php foreach ($profes_no as $p) : ?><li><?php echo esc_html($p['nombre']); ?></li><?php endforeach; ?>
             </ul>

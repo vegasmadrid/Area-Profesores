@@ -72,16 +72,16 @@ if (!defined('ABSPATH')) {
 
     <!-- Table of Requests -->
     <div class="ap-card-table-wrap">
-        <table class="wp-list-table widefat fixed striped table-view-list ap-table">
+        <table class="wp-list-table widefat striped table-view-list ap-table ap-sol-tabla">
             <thead>
                 <tr>
-                    <th style="width: 220px;"><?php esc_html_e('Profesor / Solicitante', 'area-profesores'); ?></th>
-                    <th style="width: 230px;"><?php esc_html_e('Email Institucional', 'area-profesores'); ?></th>
-                    <th style="width: 170px;"><?php esc_html_e('Tutoría Asignada', 'area-profesores'); ?></th>
-                    <th><?php esc_html_e('Observaciones / Especialidad', 'area-profesores'); ?></th>
-                    <th style="width: 110px;"><?php esc_html_e('Fecha', 'area-profesores'); ?></th>
-                    <th style="width: 110px; text-align: center;"><?php esc_html_e('Estado', 'area-profesores'); ?></th>
-                    <th style="width: 180px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
+                    <th ><?php esc_html_e('Profesor / Solicitante', 'area-profesores'); ?></th>
+                    <th ><?php esc_html_e('Email Institucional', 'area-profesores'); ?></th>
+                    <th style="min-width: 140px;"><?php esc_html_e('Tutoría Asignada', 'area-profesores'); ?></th>
+                    <th style="min-width: 160px;"><?php esc_html_e('Observaciones / Especialidad', 'area-profesores'); ?></th>
+                    <th ><?php esc_html_e('Fecha', 'area-profesores'); ?></th>
+                    <th style="text-align: center;"><?php esc_html_e('Estado', 'area-profesores'); ?></th>
+                    <th style="text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                 </tr>
             </thead>
             <tbody>

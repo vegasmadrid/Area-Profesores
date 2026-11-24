@@ -3347,3 +3347,4 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
     .ap-adm-fam > *:not(summary), .ap-adm-serv > *:not(summary) { display: block; }
 }
 .ap-adm-fam-nombre strong { font-size: 16px; font-weight: 700; color: #0f172a; }
+.ap-cocina-profes p { margin: 6px 0 0; font-size: 15px; }

@@ -59,7 +59,7 @@ $cm_dia = function ($f) {
             <?php foreach ($cm_co['comedores'] as $ck => $c) : ?>
                 <div><b><?php echo (int) $cm_co['totales']['c'][$ck]; ?></b><span><?php echo esc_html($c['nombre']); ?></span></div>
             <?php endforeach; ?>
-            <div><b><?php echo (int) $cm_co['totales']['profes']; ?></b><span><?php esc_html_e('comidas de profesores que no se hicieron', 'area-profesores'); ?></span></div>
+            <div><b><?php echo (int) $cm_co['totales']['comen']; ?></b><span><?php printf(esc_html__('comidas de profesores (%d comen habitualmente)', 'area-profesores'), (int) $cm_co['profes_habituales']); ?></span></div>
         </div>
 
         <?php if (!$cm_co['dias']) : ?>
@@ -73,7 +73,8 @@ $cm_dia = function ($f) {
                         <th class="ap-adm-num"><?php esc_html_e('Total alumnos', 'area-profesores'); ?></th>
                         <th class="ap-adm-num"><?php esc_html_e('De ellas, extra', 'area-profesores'); ?></th>
                         <th class="ap-adm-num"><?php esc_html_e('Clases validadas', 'area-profesores'); ?></th>
-                        <th class="ap-adm-num"><?php esc_html_e('Profesores que no comen', 'area-profesores'); ?></th>
+                        <th class="ap-adm-num"><?php esc_html_e('Profesores que comen', 'area-profesores'); ?></th>
+                        <th class="ap-adm-num"><?php esc_html_e('Profesores que avisaron que no comen', 'area-profesores'); ?></th>
                     </tr></thead>
                     <tbody>
                         <?php foreach ($cm_co['dias'] as $f => $x) : $cm_falta = $x['clases'] < $cm_co['clases']; ?>
@@ -83,6 +84,7 @@ $cm_dia = function ($f) {
                                 <td class="ap-adm-num"><strong><?php echo (int) $x['total']; ?></strong></td>
                                 <td class="ap-adm-num"><?php echo (int) $x['extra']; ?></td>
                                 <td class="ap-adm-num<?php echo $cm_falta ? ' ap-adm-aviso' : ''; ?>" title="<?php echo $cm_falta ? esc_attr__('Alguna clase no validó el comedor ese día', 'area-profesores') : ''; ?>"><?php echo (int) $x['clases'] . ' / ' . (int) $cm_co['clases']; ?></td>
+                                <td class="ap-adm-num"><strong><?php echo (int) $x['comen']; ?></strong></td>
                                 <td class="ap-adm-num"><?php echo (int) $x['profes']; ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -93,15 +95,16 @@ $cm_dia = function ($f) {
                         <th class="ap-adm-num"><?php echo (int) $cm_co['totales']['total']; ?></th>
                         <th class="ap-adm-num"><?php echo (int) $cm_co['totales']['extra']; ?></th>
                         <th></th>
+                        <th class="ap-adm-num"><?php echo (int) $cm_co['totales']['comen']; ?></th>
                         <th class="ap-adm-num"><?php echo (int) $cm_co['totales']['profes']; ?></th>
                     </tr></tfoot>
                 </table>
             </div>
-            <p class="ap-records-subtitle"><?php esc_html_e('"Clases validadas" en naranja: ese día alguna clase no validó, así que sus comidas no están contadas.', 'area-profesores'); ?></p>
+            <p class="ap-records-subtitle"><?php esc_html_e('"Clases validadas" en naranja: ese día alguna clase no validó, así que sus comidas no están contadas. "Profesores que comen": los que comen habitualmente (casilla "Come en el colegio" de Área Profesores › Profesores) menos los que avisaron de que ese día no comían.', 'area-profesores'); ?></p>
         <?php endif; ?>
 
         <details class="ap-adm-serv">
-            <summary><strong><?php esc_html_e('Profesores que no comen en el colegio', 'area-profesores'); ?></strong>
+            <summary><strong><?php esc_html_e('Profesores que avisaron de que no comían', 'area-profesores'); ?></strong>
                 <span><?php printf(esc_html(_n('%d comida', '%d comidas', $cm_a['profes']['total'], 'area-profesores')), (int) $cm_a['profes']['total']); ?></span></summary>
             <?php if (!$cm_a['profes']['profes']) : ?>
                 <p class="ap-ma-vacio"><?php esc_html_e('Ningún profesor ha marcado días sin comer en el colegio este mes.', 'area-profesores'); ?></p>

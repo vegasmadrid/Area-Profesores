@@ -56,6 +56,7 @@ if (!defined('ABSPATH')) {
 
         <div class="ap-toolbar-stats">
             <span><?php printf(esc_html__('Mostrando %d de %d usuarios', 'area-profesores'), count($users), $total_users); ?></span>
+            <span><?php printf(esc_html__('Comen en el colegio: %d', 'area-profesores'), count(Area_Profesores_Comensales::profes_comensales())); ?></span>
         </div>
     </div>
 
@@ -63,20 +64,21 @@ if (!defined('ABSPATH')) {
         <?php wp_nonce_field('ap_save_profesores_nonce'); ?>
 
         <div class="ap-card-table-wrap">
-            <table class="wp-list-table widefat fixed striped table-view-list ap-table">
+            <table class="wp-list-table widefat striped table-view-list ap-table ap-prof-tabla">
                 <thead>
                     <tr>
                         <th style="width: 60px;"><?php esc_html_e('Avatar', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Nombre y Usuario', 'area-profesores'); ?></th>
                         <th><?php esc_html_e('Correo electrónico', 'area-profesores'); ?></th>
-                        <th style="width: 250px;"><?php esc_html_e('Tutoría o especialista', 'area-profesores'); ?></th>
+                        <th style="min-width: 230px;"><?php esc_html_e('Tutoría o especialista', 'area-profesores'); ?></th>
+                        <th style="width: 110px; text-align: center;" title="<?php esc_attr_e('Desmarca a quien no come nunca en el colegio. Los demás cuentan como que comen todos los días, salvo los que ellos avisen.', 'area-profesores'); ?>"><?php esc_html_e('Come en el colegio', 'area-profesores'); ?></th>
                         <th style="width: 160px; text-align: right;"><?php esc_html_e('Acciones', 'area-profesores'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($users)) : ?>
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 24px;">
+                            <td colspan="6" style="text-align: center; padding: 24px;">
                                 <?php esc_html_e('No se encontraron usuarios que coincidan con la búsqueda.', 'area-profesores'); ?>
                             </td>
                         </tr>
@@ -117,6 +119,13 @@ if (!defined('ABSPATH')) {
                                                 data-nonce="<?php echo esc_attr(wp_create_nonce('ap_clases_guardar_' . $u->ID)); ?>"
                                                 data-clases="<?php echo esc_attr(wp_json_encode($ap_cl)); ?>"><?php esc_html_e('Clases', 'area-profesores'); ?></button>
                                     </div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="ap-come-label">
+                                        <input type="checkbox" class="ap-come-check" name="come[<?php echo esc_attr($u->ID); ?>]" value="1" data-user-id="<?php echo esc_attr($u->ID); ?>" <?php checked(Area_Profesores_Comensales::come_en_colegio($u->ID)); ?>>
+                                        <span class="screen-reader-text"><?php printf(esc_html__('%s come en el colegio', 'area-profesores'), esc_html($u->display_name)); ?></span>
+                                    </label>
+                                    <span class="ap-ajax-status" id="status-come-<?php echo esc_attr($u->ID); ?>"></span>
                                 </td>
                                 <td style="text-align: right;">
                                     <a href="<?php echo esc_url(get_edit_user_link($u->ID)); ?>" class="button button-small" target="_blank">

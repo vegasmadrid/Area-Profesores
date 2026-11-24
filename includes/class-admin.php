@@ -191,10 +191,12 @@ class Area_Profesores_Admin {
             $asignaciones = isset($_POST['asignacion']) && is_array($_POST['asignacion']) ? wp_unslash($_POST['asignacion']) : array();
             $all_user_ids = isset($_POST['all_user_ids']) && is_array($_POST['all_user_ids']) ? array_map('absint', $_POST['all_user_ids']) : array();
 
+            $come = isset($_POST['come']) && is_array($_POST['come']) ? array_map('absint', array_keys($_POST['come'])) : array();
             foreach ($all_user_ids as $uid) {
                 if (isset($asignaciones[$uid])) {
                     Area_Profesores_Cursos::set_asignacion($uid, sanitize_text_field($asignaciones[$uid]));
                 }
+                update_user_meta($uid, Area_Profesores_Comensales::META_NO_COME, in_array($uid, $come, true) ? '0' : '1');
             }
 
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Configuración de profesores actualizada correctamente.', 'area-profesores') . '</p></div>';
@@ -375,6 +377,9 @@ class Area_Profesores_Admin {
 
         if (isset($_POST['asignacion'])) {
             Area_Profesores_Cursos::set_asignacion($user_id, sanitize_text_field(wp_unslash($_POST['asignacion'])));
+        }
+        if (isset($_POST['come'])) {
+            update_user_meta($user_id, Area_Profesores_Comensales::META_NO_COME, $_POST['come'] === '1' ? '0' : '1');
         }
 
         wp_send_json_success(array(

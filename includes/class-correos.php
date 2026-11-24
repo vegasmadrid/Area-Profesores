@@ -144,10 +144,10 @@ class Area_Profesores_Correos {
                 'cuentas' => array('cocina'),
                 'grupo'   => __('Comedor', 'area-profesores'),
                 'asunto'  => __('Comedor: {profesor} {cambio}', 'area-profesores'),
-                'cuerpo'  => __("{profesor} {cambio}.\n\nProfesores que hoy no comen en el colegio: {numero}\n{lista}\n\n{enlace}", 'area-profesores'),
+                'cuerpo'  => __("{profesor} {cambio}.\n\nHoy comen {comen} profesores.\n\nHan avisado de que no comen hoy ({numero}):\n{lista}\n\n{enlace}", 'area-profesores'),
                 'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
-                'vars'    => array('profesor' => __('profesor/a', 'area-profesores'), 'cambio' => __('"NO come hoy" o "SÍ come hoy"', 'area-profesores'), 'numero' => __('número de profesores que hoy no comen', 'area-profesores'), 'lista' => __('sus nombres', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
-                'ejemplo' => array('profesor' => 'Ana García', 'cambio' => 'NO come hoy en el colegio', 'numero' => '3', 'lista' => "- Ana García\n- Luis Pérez\n- Marta Sanz", 'enlace' => home_url('/')),
+                'vars'    => array('profesor' => __('profesor/a', 'area-profesores'), 'cambio' => __('"NO come hoy" o "SÍ come hoy"', 'area-profesores'), 'comen' => __('número de profesores que comen hoy', 'area-profesores'), 'numero' => __('número de profesores que hoy no comen', 'area-profesores'), 'lista' => __('sus nombres', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('profesor' => 'Ana García', 'cambio' => 'NO come hoy en el colegio', 'comen' => '41', 'numero' => '3', 'lista' => "- Ana García\n- Luis Pérez\n- Marta Sanz", 'enlace' => home_url('/')),
             ),
             'profesor_datos' => array(
                 'titulo'  => __('Un profesor cambia datos de un alumno o su familia', 'area-profesores'),

@@ -240,6 +240,32 @@ class Area_Profesores_Comensales {
     /** Weeks shown to the teacher (from the current one). */
     const SEMANAS_PROFE = 5;
 
+    /** User meta: '1' = this teacher never eats at school (unticked in Profesores). */
+    const META_NO_COME = '_ap_no_come_colegio';
+
+    /** By default every teacher eats at school, except those unticked in the Profesores list. */
+    public static function come_en_colegio($user_id) {
+        return get_user_meta($user_id, self::META_NO_COME, true) !== '1';
+    }
+
+    /** IDs of the teachers who usually eat at school. */
+    public static function profes_comensales() {
+        static $ids = null;
+        if ($ids === null) {
+            $ids = array_map('intval', get_users(array('fields' => 'ID', 'meta_query' => array(
+                'relation' => 'OR',
+                array('key' => self::META_NO_COME, 'compare' => 'NOT EXISTS'),
+                array('key' => self::META_NO_COME, 'value' => '1', 'compare' => '!='),
+            ))));
+        }
+        return $ids;
+    }
+
+    /** Number of teachers who eat at school on a date (the usual ones minus those who marked the day). */
+    public static function profes_comen($fecha) {
+        return max(0, count(self::profes_comensales()) - count(self::profes_no_comen($fecha)));
+    }
+
     /**
      * Teachers who do not eat at school on a date.
      *
@@ -250,7 +276,7 @@ class Area_Profesores_Comensales {
         $out = array();
         foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT user_id, creado FROM ' . self::t('profes') . ' WHERE fecha = %s', $fecha), ARRAY_A) as $r) {
             $u = get_userdata((int) $r['user_id']);
-            if ($u) {
+            if ($u && self::come_en_colegio($u->ID)) {
                 $out[] = array('user_id' => (int) $u->ID, 'nombre' => $u->display_name, 'creado' => $r['creado']);
             }
         }
@@ -332,7 +358,7 @@ class Area_Profesores_Comensales {
         global $wpdb;
         $uid = get_current_user_id();
         check_admin_referer('ap_comedor_profe');
-        if (!self::puede($uid)) {
+        if (!self::come_en_colegio($uid)) {
             wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
         }
         $hoy = current_time('Y-m-d');
@@ -374,6 +400,7 @@ class Area_Profesores_Comensales {
             Area_Profesores_Correos::enviar('comedor_profesor', array(), array(
                 'profesor' => $u->display_name,
                 'cambio'   => $hoy_ahora ? __('NO come hoy en el colegio', 'area-profesores') : __('SÍ come hoy en el colegio (lo había quitado)', 'area-profesores'),
+                'comen'    => self::profes_comen($hoy),
                 'numero'   => count(self::profes_no_comen($hoy)),
                 'lista'    => $lista !== '' ? $lista : __('Ninguno: todos comen en el colegio.', 'area-profesores'),
                 'enlace'   => self::url_cocina(),
@@ -407,6 +434,9 @@ class Area_Profesores_Comensales {
         $total = 0;
         foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT user_id, fecha FROM ' . self::t('profes') . ' WHERE fecha >= %s AND fecha <= %s ORDER BY fecha ASC', $ini, $fin), ARRAY_A) as $r) {
             $uid = (int) $r['user_id'];
+            if (!self::come_en_colegio($uid)) {
+                continue; // never eats at school: their marks do not count
+            }
             if (!isset($profes[$uid])) {
                 $u = get_userdata($uid);
                 $profes[$uid] = array('nombre' => $u ? $u->display_name : sprintf(__('Usuario %d (borrado)', 'area-profesores'), $uid), 'dias' => array());
@@ -932,7 +962,15 @@ class Area_Profesores_Comensales {
      */
     public static function datos_portal($user_id) {
         if (!self::puede($user_id)) {
-            return null;
+            // Teachers of other stages only have "Mi comida" (if they eat at school).
+            if (!$user_id || !self::come_en_colegio($user_id)) {
+                return null;
+            }
+            $flash = get_transient('ap_comedor_flash_' . $user_id);
+            if ($flash) {
+                delete_transient('ap_comedor_flash_' . $user_id);
+            }
+            return array('solo_mi_comida' => true, 'lectivo' => false, 'mi_curso' => '', 'estados' => array(), 'flash' => $flash, 'profe' => self::datos_profe($user_id), 'ajustes' => self::ajustes());
         }
         $hoy = current_time('Y-m-d');
         $tutoria = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
@@ -965,7 +1003,7 @@ class Area_Profesores_Comensales {
             'dietas_prev' => $dietas_prev,
             'ajustes'     => self::ajustes(),
             'flash'       => $flash,
-            'profe'       => self::datos_profe($user_id),
+            'profe'       => self::come_en_colegio($user_id) ? self::datos_profe($user_id) : null,
         );
     }
 
@@ -1209,9 +1247,9 @@ class Area_Profesores_Comensales {
         $alergias = $r['alergias'] !== '' ? $r['alergias'] : __('Ningún comensal validado tiene alergias alimentarias.', 'area-profesores');
         $np = count($r['profesores']);
         $comedores = self::comedores_texto($fecha);
-        $profes = $np
-            ? sprintf(_n('%d profesor no come hoy en el colegio:', '%d profesores no comen hoy en el colegio:', $np, 'area-profesores'), $np) . "\n" . self::profes_texto($fecha)
-            : __('Todos los profesores comen hoy en el colegio.', 'area-profesores');
+        $ncomen = self::profes_comen($fecha);
+        $profes = sprintf(_n('Comen hoy %d profesor.', 'Comen hoy %d profesores.', $ncomen, 'area-profesores'), $ncomen)
+            . ($np ? "\n" . sprintf(_n('%d profesor ha avisado de que no come hoy:', '%d profesores han avisado de que no comen hoy:', $np, 'area-profesores'), $np) . "\n" . self::profes_texto($fecha) : '');
         return Area_Profesores_Correos::enviar('comedor_cocina', array(), self::con_alergias('comedor_cocina', array(
             'alergias'   => $alergias,
             'fecha'      => date_i18n('l j \d\e F', strtotime($fecha . ' 12:00:00')),
@@ -1223,7 +1261,7 @@ class Area_Profesores_Comensales {
             'profesores' => $profes,
             'comedores'  => $comedores,
         ), $r['alergias'] !== '' ? '⚠️ ' . __('ALERGIAS ALIMENTARIAS', 'area-profesores') . "\n" . $r['alergias'] : '', array(
-            'profesores' => $np ? '👩‍🏫 ' . __('PROFESORES QUE NO COMEN', 'area-profesores') . "\n" . $profes : '',
+            'profesores' => '👩‍🏫 ' . __('PROFESORES', 'area-profesores') . "\n" . $profes,
             'comedores'  => '🍽️ ' . __('POR COMEDORES', 'area-profesores') . "\n" . $comedores,
         )));
     }
@@ -1322,7 +1360,8 @@ class Area_Profesores_Comensales {
         $cursos = self::cursos();
         $vacio = array_fill_keys(array_keys(self::comedores()), 0);
         $dias = array();
-        $tot = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'profes' => array_sum($profes_pasados));
+        $tot = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'profes' => array_sum($profes_pasados), 'comen' => 0);
+        $n_profes = count(self::profes_comensales());
         $extras = array(); // alumno_id => {nombre, curso, orden, dias: [fecha => tipo]}
         foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . self::t() . ' WHERE fecha >= %s AND fecha <= %s ORDER BY fecha ASC', $ini, $fin), ARRAY_A) as $r) {
             $r = self::fila($r);
@@ -1331,7 +1370,7 @@ class Area_Profesores_Comensales {
             }
             $f = $r['fecha'];
             if (!isset($dias[$f])) {
-                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => isset($profes_pasados[$f]) ? $profes_pasados[$f] : 0);
+                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => isset($profes_pasados[$f]) ? $profes_pasados[$f] : 0, 'comen' => 0);
             }
             $ck = isset($nivel_comedor[$cursos[$r['curso']]['nivel']]) ? $nivel_comedor[$cursos[$r['curso']]['nivel']] : null;
             if ($ck) {
@@ -1357,10 +1396,16 @@ class Area_Profesores_Comensales {
         // Days when only teachers are recorded (no class validated).
         foreach ($profes_pasados as $f => $n) {
             if (!isset($dias[$f])) {
-                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => $n);
+                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => $n, 'comen' => 0);
             }
         }
         ksort($dias);
+        // Teachers who ate: the usual ones (Profesores list) minus those who said they would not.
+        foreach ($dias as $f => &$x) {
+            $x['comen'] = self::es_lectivo($f) ? max(0, $n_profes - $x['profes']) : 0;
+            $tot['comen'] += $x['comen'];
+        }
+        unset($x);
 
         // 2. Cobros: extra meals + services (exits and delays are not charged).
         $columnas = array('comedor_extra' => __('Comedor extra', 'area-profesores'));
@@ -1435,7 +1480,7 @@ class Area_Profesores_Comensales {
         }
 
         return array(
-            'cocina'   => array('dias' => $dias, 'totales' => $tot, 'comedores' => self::comedores(), 'clases' => count(self::estados(current_time('Y-m-d')))),
+            'cocina'   => array('dias' => $dias, 'totales' => $tot, 'comedores' => self::comedores(), 'clases' => count(self::estados(current_time('Y-m-d'))), 'profes_habituales' => $n_profes),
             'familias' => $familias,
             'columnas' => $columnas,
             'totales'  => $tot_cobro,
@@ -1480,11 +1525,11 @@ class Area_Profesores_Comensales {
         $co = $adm['cocina'];
         fputcsv($out, array(), ';');
         fputcsv($out, array('COMIDAS DE ALUMNOS (COCINA) ' . $mes), ';');
-        fputcsv($out, array_merge(array('Día'), wp_list_pluck($co['comedores'], 'nombre'), array('Total alumnos', 'De ellas, extra', 'Clases validadas', 'Profesores que no comen')), ';');
+        fputcsv($out, array_merge(array('Día'), wp_list_pluck($co['comedores'], 'nombre'), array('Total alumnos', 'De ellas, extra', 'Clases validadas', 'Profesores que comen', 'Profesores que no comen')), ';');
         foreach ($co['dias'] as $f => $x) {
-            fputcsv($out, array_merge(array($f), array_values($x['c']), array($x['total'], $x['extra'], $x['clases'], $x['profes'])), ';');
+            fputcsv($out, array_merge(array($f), array_values($x['c']), array($x['total'], $x['extra'], $x['clases'], $x['comen'], $x['profes'])), ';');
         }
-        fputcsv($out, array_merge(array('TOTAL'), array_values($co['totales']['c']), array($co['totales']['total'], $co['totales']['extra'], '', $co['totales']['profes'])), ';');
+        fputcsv($out, array_merge(array('TOTAL'), array_values($co['totales']['c']), array($co['totales']['total'], $co['totales']['extra'], '', $co['totales']['comen'], $co['totales']['profes'])), ';');
 
         // 3. Teachers who did not eat.
         fputcsv($out, array(), ';');
