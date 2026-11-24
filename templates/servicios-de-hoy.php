@@ -149,6 +149,38 @@ if (!defined('ABSPATH')) {
         <?php endif; ?>
     </section>
 
+    <!-- Comensales por comedor y por curso (clases validadas) -->
+    <?php if (!empty($comedores) && (array_sum(wp_list_pluck($comedores, 'total')) || array_sum(wp_list_pluck($comedores, 'pendientes')))) : ?>
+        <section class="ap-cocina-comedores">
+            <?php foreach ($comedores as $ap_c) : ?>
+                <div class="ap-cocina-comedor">
+                    <div class="ap-cocina-comedor-head">
+                        <h2><?php echo esc_html($ap_c['nombre']); ?></h2>
+                        <span class="ap-cocina-comedor-total"><b><?php echo (int) $ap_c['total']; ?></b> <?php echo esc_html(_n('comensal', 'comensales', $ap_c['total'], 'area-profesores')); ?></span>
+                    </div>
+                    <?php if ($ap_c['pendientes']) : ?>
+                        <p class="ap-cocina-comedor-pend"><?php printf(esc_html(_n('Falta %d clase por validar', 'Faltan %d clases por validar', $ap_c['pendientes'], 'area-profesores')), (int) $ap_c['pendientes']); ?></p>
+                    <?php endif; ?>
+                    <table class="ap-cocina-comedor-tabla">
+                        <tbody>
+                            <?php foreach ($ap_c['cursos'] as $ap_cur) : ?>
+                                <tr>
+                                    <th scope="row"><?php echo esc_html($ap_cur['label']); ?></th>
+                                    <td class="ap-cocina-comedor-grupos">
+                                        <?php foreach ($ap_cur['grupos'] as $ap_g) : ?>
+                                            <span class="<?php echo $ap_g['total'] === null ? 'is-pend' : ''; ?>" title="<?php echo esc_attr($ap_g['label']); ?>"><?php echo esc_html($ap_g['grupo']); ?> <b><?php echo $ap_g['total'] === null ? esc_html__('sin validar', 'area-profesores') : (int) $ap_g['total']; ?></b></span>
+                                        <?php endforeach; ?>
+                                    </td>
+                                    <td class="ap-cocina-comedor-num"><?php echo (int) $ap_cur['total']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
+
     <!-- Tarjetas de Resumen Numérico (Grandes y Cómodas de leer en cocina) -->
     <div class="ap-cocina-metrics-grid">
         <!-- 1. Total Comensales Estándar -->

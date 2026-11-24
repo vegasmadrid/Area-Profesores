@@ -948,6 +948,72 @@ class Area_Profesores_Comensales {
     }
 
     /**
+     * Dining rooms and the courses (niveles) that eat in each one.
+     * Secundaria and Bachillerato are not part of the system.
+     */
+    public static function comedores() {
+        return array(
+            'c1' => array('nombre' => __('Comedor 1', 'area-profesores'), 'niveles' => array('PC1', 'PC2', 'I3')),
+            'c2' => array('nombre' => __('Comedor 2', 'area-profesores'), 'niveles' => array('I4', 'I5', 'EP1')),
+            'c3' => array('nombre' => __('Comedor 3', 'area-profesores'), 'niveles' => array('EP2', 'EP3', 'EP4', 'EP5', 'EP6')),
+        );
+    }
+
+    /**
+     * Diners of a date by dining room and course (only validated classes count).
+     *
+     * @return array[] key => { nombre, total, pendientes, cursos: [ nivel => { label, total, grupos: [ {grupo, label, total|null} ] } ] }
+     *                 total null = the class is not validated yet
+     */
+    public static function por_comedores($fecha) {
+        $estados = self::estados($fecha);
+        $out = array();
+        foreach (self::comedores() as $ck => $c) {
+            $com = array('nombre' => $c['nombre'], 'total' => 0, 'pendientes' => 0, 'cursos' => array());
+            foreach ($c['niveles'] as $nivel) {
+                $cur = array('label' => '', 'total' => 0, 'grupos' => array());
+                foreach (self::cursos() as $k => $x) {
+                    if ($x['nivel'] !== $nivel || !isset($estados[$k])) {
+                        continue;
+                    }
+                    $cur['label'] = trim(preg_replace('/\s+' . preg_quote($x['grupo'], '/') . '$/', '', $x['label']));
+                    $reg = $estados[$k]['registro'];
+                    $n = $reg ? (int) $reg['total'] : null;
+                    $cur['grupos'][] = array('grupo' => $x['grupo'], 'label' => $x['label'], 'total' => $n);
+                    if ($n === null) {
+                        $com['pendientes']++;
+                    } else {
+                        $cur['total'] += $n;
+                    }
+                }
+                if ($cur['grupos']) {
+                    $com['total'] += $cur['total'];
+                    $com['cursos'][$nivel] = $cur;
+                }
+            }
+            $out[$ck] = $com;
+        }
+        return $out;
+    }
+
+    /** The same as text (kitchen e-mail). */
+    public static function comedores_texto($fecha) {
+        $l = array();
+        foreach (self::por_comedores($fecha) as $c) {
+            $l[] = sprintf(_n('%1$s: %2$d comensal', '%1$s: %2$d comensales', $c['total'], 'area-profesores'), $c['nombre'], $c['total'])
+                . ($c['pendientes'] ? ' ' . sprintf(_n('(falta %d clase por validar)', '(faltan %d clases por validar)', $c['pendientes'], 'area-profesores'), $c['pendientes']) : '');
+            foreach ($c['cursos'] as $cur) {
+                $g = array();
+                foreach ($cur['grupos'] as $x) {
+                    $g[] = $x['grupo'] . ' ' . ($x['total'] === null ? __('sin validar', 'area-profesores') : $x['total']);
+                }
+                $l[] = '   - ' . $cur['label'] . ': ' . $cur['total'] . (count($g) > 1 || $cur['grupos'][0]['total'] === null ? ' (' . implode(' · ', $g) . ')' : '');
+            }
+        }
+        return implode("\n", $l);
+    }
+
+    /**
      * Text summary of a day (for the kitchen).
      */
     public static function resumen($fecha) {
@@ -1017,6 +1083,7 @@ class Area_Profesores_Comensales {
         $r = self::resumen($fecha);
         $alergias = $r['alergias'] !== '' ? $r['alergias'] : __('Ningún comensal validado tiene alergias alimentarias.', 'area-profesores');
         $np = count($r['profesores']);
+        $comedores = self::comedores_texto($fecha);
         $profes = $np
             ? sprintf(_n('%d profesor no come hoy en el colegio:', '%d profesores no comen hoy en el colegio:', $np, 'area-profesores'), $np) . "\n" . self::profes_texto($fecha)
             : __('Todos los profesores comen hoy en el colegio.', 'area-profesores');
@@ -1029,8 +1096,10 @@ class Area_Profesores_Comensales {
             'dietas'     => $r['dietas'] ? implode("\n", $r['dietas']) : __('Ninguna.', 'area-profesores'),
             'enlace'     => self::url_cocina(),
             'profesores' => $profes,
+            'comedores'  => $comedores,
         ), $r['alergias'] !== '' ? '⚠️ ' . __('ALERGIAS ALIMENTARIAS', 'area-profesores') . "\n" . $r['alergias'] : '', array(
             'profesores' => $np ? '👩‍🏫 ' . __('PROFESORES QUE NO COMEN', 'area-profesores') . "\n" . $profes : '',
+            'comedores'  => '🍽️ ' . __('POR COMEDORES', 'area-profesores') . "\n" . $comedores,
         )));
     }
 

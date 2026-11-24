@@ -3278,3 +3278,21 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-rp-emails, .ap-rp-familia-nombre { overflow-wrap: anywhere; }
 .ap-rp-familia-nombre { font-size: 16px; }
 @media (max-width: 480px) { .ap-rp-form { padding: 10px; } .ap-rp-paso { padding: 8px 10px 10px; } }
+
+/* Cocina: comensales por comedor y por curso */
+.ap-cocina-comedores { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 0 0 22px; }
+.ap-cocina-comedor { background: #fff; border: 2px solid #1e293b; border-radius: 14px; padding: 14px 16px; break-inside: avoid; }
+.ap-cocina-comedor-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 6px; }
+.ap-cocina-comedor-head h2 { margin: 0; font-family: inherit; font-size: 20px; font-weight: 800; letter-spacing: 0; text-transform: none; color: #0f172a; }
+.ap-cocina-comedor-total { font-size: 15px; color: #334155; white-space: nowrap; }
+.ap-cocina-comedor-total b { font-size: 30px; font-weight: 800; color: #0f172a; }
+.ap-cocina-comedor-pend { margin: 4px 0 6px; font-size: 14px; font-weight: 600; color: #9a5a12; }
+.ap-cocina-comedor-tabla { width: 100%; border-collapse: collapse; margin: 0; }
+.ap-cocina-comedor-tabla th, .ap-cocina-comedor-tabla td { padding: 7px 4px; border: 0; border-bottom: 1px solid #f1f5f9; font-size: 16px; text-align: left; vertical-align: middle; background: none; }
+.ap-cocina-comedor-tabla tr:last-child th, .ap-cocina-comedor-tabla tr:last-child td { border-bottom: 0; }
+.ap-cocina-comedor-tabla th { font-weight: 700; color: #0f172a; white-space: nowrap; }
+.ap-cocina-comedor-grupos span { display: inline-block; margin: 1px 6px 1px 0; padding: 1px 8px; border-radius: 999px; background: #f1f5f9; font-size: 13px; color: #475569; }
+.ap-cocina-comedor-grupos span.is-pend { background: #fff7ed; color: #9a5a12; }
+.ap-cocina-comedor-num { text-align: right !important; font-size: 20px !important; font-weight: 800; color: #0f172a; width: 1%; }
+@media print { .ap-cocina-comedor { border: 1px solid #333; } }
+.ap-cocina-comedor-grupos span.is-pend b { font-weight: 600; }

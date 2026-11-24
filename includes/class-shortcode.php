@@ -261,6 +261,7 @@ class Area_Profesores_Shortcode {
         }
         $alergias = Area_Profesores_Comensales::alergias_dia($fecha);
         $profes_no = Area_Profesores_Comensales::profes_no_comen($fecha);
+        $comedores = Area_Profesores_Comensales::por_comedores($fecha);
         wp_enqueue_script('area-profesores-comedor');
         $vivo_url = add_query_arg(array('action' => 'ap_comedor_estado', 'fecha' => $fecha), admin_url('admin-ajax.php'));
 
