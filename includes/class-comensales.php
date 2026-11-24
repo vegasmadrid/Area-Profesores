@@ -1294,42 +1294,154 @@ class Area_Profesores_Comensales {
     }
 
     /**
-     * Everything Administración needs to bill a month.
+     * Everything Administración needs for a month, in two blocks:
+     * - cocina: the pupils' meals of each day by dining room (to check the kitchen's invoice)
+     *   and the teachers who did not eat;
+     * - familias: what to charge each family (extra meals and the other services), with the days.
      *
-     * @return array { comedor: mes(), profes: profes_mes(), servicios: Reservas::mes_servicios(), columnas: [clave => nombre], alumnos: [id => {nombre, curso, familia, cols: [clave => días]}] }
+     * @return array { cocina, familias, columnas, otras, profes }
      */
     public static function administracion($mes) {
-        $comedor = self::mes($mes);
-        $serv = class_exists('Area_Profesores_Reservas') ? Area_Profesores_Reservas::mes_servicios($mes) : array('servicios' => array(), 'filas' => array());
-        $columnas = array('comedor_extra' => __('Comedor extra', 'area-profesores'));
-        $alumnos = array();
-        $add = function ($id, $nombre, $curso_label, $orden, $clave, $n) use (&$alumnos) {
-            if (!isset($alumnos[$id])) {
-                $alumnos[$id] = array('nombre' => $nombre, 'curso' => $curso_label, 'orden' => $orden, 'familia' => '', 'cols' => array());
+        global $wpdb;
+        $ini = $mes . '-01';
+        $fin = gmdate('Y-m-t', strtotime($ini . ' 12:00:00 UTC'));
+        $profes = self::profes_mes($mes);
+        // For the kitchen only the days already gone count (teachers mark future days too).
+        $hoy = current_time('Y-m-d');
+        $profes_pasados = array_filter($profes['dias'], function ($f) use ($hoy) {
+            return $f <= $hoy;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // 1. Cocina: validated meals per day and dining room.
+        $nivel_comedor = array();
+        foreach (self::comedores() as $ck => $c) {
+            foreach ($c['niveles'] as $n) {
+                $nivel_comedor[$n] = $ck;
             }
-            $alumnos[$id]['cols'][$clave] = (isset($alumnos[$id]['cols'][$clave]) ? $alumnos[$id]['cols'][$clave] : 0) + $n;
-        };
-        foreach ($comedor['extras'] as $id => $e) {
-            $add($id, $e['nombre'], $e['curso'], $e['orden'], 'comedor_extra', count($e['dias']));
         }
-        // The comedor is billed with the real meals (above); exits and delays are not charged.
-        foreach ($serv['filas'] as $r) {
-            if (in_array($r['servicio'], array('comedor', 'salida', 'retraso'), true)) {
+        $cursos = self::cursos();
+        $vacio = array_fill_keys(array_keys(self::comedores()), 0);
+        $dias = array();
+        $tot = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'profes' => array_sum($profes_pasados));
+        $extras = array(); // alumno_id => {nombre, curso, orden, dias: [fecha => tipo]}
+        foreach ((array) $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . self::t() . ' WHERE fecha >= %s AND fecha <= %s ORDER BY fecha ASC', $ini, $fin), ARRAY_A) as $r) {
+            $r = self::fila($r);
+            if (!isset($cursos[$r['curso']])) {
                 continue;
             }
-            $columnas[$r['clave']] = $serv['servicios'][$r['clave']]['nombre'];
-            $c = Area_Profesores_Cursos::get_curso($r['curso']);
-            $add($r['alumno_id'], $r['alumno'], $r['curso_label'], $c ? $c['orden'] : 999, $r['clave'], count($r['dias_mes']));
-        }
-        if ($alumnos) {
-            foreach (Area_Profesores_Alumnos::familias_de_alumnos(array_keys($alumnos)) as $id => $fs) {
-                $alumnos[$id]['familia'] = implode(' / ', wp_list_pluck($fs, 'nombre'));
+            $f = $r['fecha'];
+            if (!isset($dias[$f])) {
+                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => isset($profes_pasados[$f]) ? $profes_pasados[$f] : 0);
+            }
+            $ck = isset($nivel_comedor[$cursos[$r['curso']]['nivel']]) ? $nivel_comedor[$cursos[$r['curso']]['nivel']] : null;
+            if ($ck) {
+                $dias[$f]['c'][$ck] += $r['total'];
+                $tot['c'][$ck] += $r['total'];
+            }
+            $dias[$f]['total'] += $r['total'];
+            $dias[$f]['clases']++;
+            $tot['total'] += $r['total'];
+            foreach ($r['alumnos'] as $a) {
+                if ($a['tipo'] !== 'extra' && $a['tipo'] !== 'familia') {
+                    continue;
+                }
+                $dias[$f]['extra']++;
+                $tot['extra']++;
+                $id = (int) $a['id'];
+                if (!isset($extras[$id])) {
+                    $extras[$id] = array('nombre' => $a['nombre'], 'curso' => $cursos[$r['curso']]['label'], 'orden' => $cursos[$r['curso']]['orden'], 'dias' => array());
+                }
+                $extras[$id]['dias'][$f] = $a['tipo'];
             }
         }
-        uasort($alumnos, function ($a, $b) {
-            return array($a['orden'], $a['nombre']) <=> array($b['orden'], $b['nombre']);
+        // Days when only teachers are recorded (no class validated).
+        foreach ($profes_pasados as $f => $n) {
+            if (!isset($dias[$f])) {
+                $dias[$f] = array('c' => $vacio, 'total' => 0, 'extra' => 0, 'clases' => 0, 'profes' => $n);
+            }
+        }
+        ksort($dias);
+
+        // 2. Cobros: extra meals + services (exits and delays are not charged).
+        $columnas = array('comedor_extra' => __('Comedor extra', 'area-profesores'));
+        $alumnos = array(); // id => {nombre, curso, orden, servicios: [clave => [fecha => origen]]}
+        foreach ($extras as $id => $e) {
+            $alumnos[$id] = array('nombre' => $e['nombre'], 'curso' => $e['curso'], 'orden' => $e['orden'], 'servicios' => array('comedor_extra' => array()));
+            foreach ($e['dias'] as $f => $tipo) {
+                $alumnos[$id]['servicios']['comedor_extra'][$f] = $tipo === 'familia' ? __('reserva', 'area-profesores') : __('apuntado por el profesor', 'area-profesores');
+            }
+        }
+        $serv = class_exists('Area_Profesores_Reservas') ? Area_Profesores_Reservas::mes_servicios($mes) : array('servicios' => array(), 'filas' => array());
+        $otras = array();
+        foreach ($serv['filas'] as $r) {
+            if ($r['servicio'] === 'comedor') {
+                continue; // charged with the real meals (above)
+            }
+            if (in_array($r['servicio'], array('salida', 'retraso'), true)) {
+                $otras[] = $r;
+                continue;
+            }
+            $k = $r['clave'];
+            $columnas[$k] = $serv['servicios'][$k]['nombre'];
+            $id = (int) $r['alumno_id'];
+            if (!isset($alumnos[$id])) {
+                $c = Area_Profesores_Cursos::get_curso($r['curso']);
+                $alumnos[$id] = array('nombre' => $r['alumno'], 'curso' => $r['curso_label'], 'orden' => $c ? $c['orden'] : 999, 'servicios' => array());
+            }
+            $origen = $r['origen'] === 'familia' ? __('reserva de la familia', 'area-profesores') : Area_Profesores_Reservas::origen_texto($r);
+            foreach ($r['dias_mes'] as $f) {
+                $alumnos[$id]['servicios'][$k][$f] = $origen;
+            }
+        }
+
+        // Group by family.
+        $familias = array();
+        $fams = $alumnos ? Area_Profesores_Alumnos::familias_de_alumnos(array_keys($alumnos)) : array();
+        foreach ($alumnos as $id => $a) {
+            $fs = isset($fams[$id]) ? $fams[$id] : array();
+            $fk = $fs ? implode('-', wp_list_pluck($fs, 'id')) : 'sin-' . $id;
+            if (!isset($familias[$fk])) {
+                $emails = array();
+                foreach ($fs as $f) {
+                    $emails = array_merge($emails, Area_Profesores_Alumnos::emails_array($f['emails']));
+                }
+                $familias[$fk] = array('nombre' => $fs ? implode(' / ', wp_list_pluck($fs, 'nombre')) : __('(sin familia)', 'area-profesores'), 'emails' => array_values(array_unique($emails)), 'alumnos' => array(), 'totales' => array());
+            }
+            $familias[$fk]['alumnos'][$id] = $a;
+            foreach ($a['servicios'] as $k => $d) {
+                $familias[$fk]['totales'][$k] = (isset($familias[$fk]['totales'][$k]) ? $familias[$fk]['totales'][$k] : 0) + count($d);
+            }
+        }
+        foreach ($familias as &$f) {
+            uasort($f['alumnos'], function ($a, $b) {
+                return array($a['orden'], $a['nombre']) <=> array($b['orden'], $b['nombre']);
+            });
+            foreach ($f['alumnos'] as &$a) {
+                foreach ($a['servicios'] as &$d) {
+                    ksort($d);
+                }
+            }
+            unset($a, $d);
+        }
+        unset($f);
+        uasort($familias, function ($a, $b) {
+            return strcasecmp(remove_accents($a['nombre']), remove_accents($b['nombre']));
         });
-        return array('comedor' => $comedor, 'profes' => self::profes_mes($mes), 'servicios' => $serv, 'columnas' => $columnas, 'alumnos' => $alumnos);
+        $tot_cobro = array();
+        foreach ($familias as $f) {
+            foreach ($f['totales'] as $k => $n) {
+                $tot_cobro[$k] = (isset($tot_cobro[$k]) ? $tot_cobro[$k] : 0) + $n;
+            }
+        }
+
+        return array(
+            'cocina'   => array('dias' => $dias, 'totales' => $tot, 'comedores' => self::comedores(), 'clases' => count(self::estados(current_time('Y-m-d')))),
+            'familias' => $familias,
+            'columnas' => $columnas,
+            'totales'  => $tot_cobro,
+            'otras'    => $otras,
+            'profes'   => $profes,
+        );
     }
 
     public function handle_csv_mes() {
@@ -1339,51 +1451,46 @@ class Area_Profesores_Comensales {
         check_admin_referer('ap_comedor_csv_mes');
         $mes = isset($_GET['mes']) && preg_match('/^\d{4}-\d{2}$/', $_GET['mes']) ? sanitize_text_field(wp_unslash($_GET['mes'])) : current_time('Y-m');
         $adm = self::administracion($mes);
-        $d = $adm['comedor'];
+        $dm = function ($f) {
+            return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
+        };
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="administracion-' . $mes . '.csv"');
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF");
-        // 1. Billing summary per pupil.
-        fputcsv($out, array_merge(array('Alumno', 'Curso', 'Familia'), array_values($adm['columnas'])), ';');
-        foreach ($adm['alumnos'] as $a) {
-            $l = array($a['nombre'], $a['curso'], $a['familia']);
-            foreach (array_keys($adm['columnas']) as $k) {
-                $l[] = isset($a['cols'][$k]) ? $a['cols'][$k] : '';
+
+        // 1. Cobros a las familias: one line per pupil and service.
+        fputcsv($out, array('COBROS A LAS FAMILIAS ' . $mes), ';');
+        fputcsv($out, array('Familia', 'Correo', 'Alumno', 'Curso', 'Servicio', 'Días', 'Fechas'), ';');
+        foreach ($adm['familias'] as $f) {
+            foreach ($f['alumnos'] as $a) {
+                foreach ($a['servicios'] as $k => $d) {
+                    fputcsv($out, array($f['nombre'], implode(', ', $f['emails']), $a['nombre'], $a['curso'], $adm['columnas'][$k], count($d), implode(', ', array_map($dm, array_keys($d)))), ';');
+                }
             }
-            fputcsv($out, $l, ';');
-        }
-        // 2. Every reservation of the month.
-        fputcsv($out, array(), ';');
-        fputcsv($out, array('Servicio', 'Alumno', 'Curso', 'Familia', 'Días del mes', 'Fechas', 'Detalles', 'Reservado por', 'Reservado el'), ';');
-        foreach ($adm['servicios']['filas'] as $r) {
-            fputcsv($out, array($adm['servicios']['servicios'][$r['clave']]['nombre'], $r['alumno'], $r['curso_label'], $r['familia'], count($r['dias_mes']), implode(', ', array_map(function ($f) {
-                return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
-            }, $r['dias_mes'])), str_replace("\n", ' · ', Area_Profesores_Reservas::detalles_texto($r)), Area_Profesores_Reservas::origen_texto($r), $r['creado']), ';');
-        }
-        // 3. Comedor: extra meals of each pupil.
-        fputcsv($out, array(), ';');
-        fputcsv($out, array('Alumno', 'Curso', 'Comidas extra', 'De ellas, reservadas por la familia', 'Días'), ';');
-        foreach ($d['extras'] as $e) {
-            fputcsv($out, array($e['nombre'], $e['curso'], count($e['dias']), count(array_filter($e['dias'], function ($t) {
-                return $t === 'familia';
-            })), implode(', ', array_map(function ($f) {
-                return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
-            }, array_keys($e['dias'])))), ';');
         }
         fputcsv($out, array(), ';');
-        fputcsv($out, array('Día', 'Comensales', 'Extra', 'Reservas de familias', 'Clases validadas'), ';');
-        foreach ($d['dias'] as $f => $x) {
-            fputcsv($out, array($f, $x['total'], $x['extra'], $x['familia'], $x['clases']), ';');
+        fputcsv($out, array('Total por servicio'), ';');
+        foreach ($adm['columnas'] as $k => $n) {
+            fputcsv($out, array($n, isset($adm['totales'][$k]) ? $adm['totales'][$k] : 0), ';');
         }
-        $p = self::profes_mes($mes);
+
+        // 2. Cocina: meals per day and dining room.
+        $co = $adm['cocina'];
+        fputcsv($out, array(), ';');
+        fputcsv($out, array('COMIDAS DE ALUMNOS (COCINA) ' . $mes), ';');
+        fputcsv($out, array_merge(array('Día'), wp_list_pluck($co['comedores'], 'nombre'), array('Total alumnos', 'De ellas, extra', 'Clases validadas', 'Profesores que no comen')), ';');
+        foreach ($co['dias'] as $f => $x) {
+            fputcsv($out, array_merge(array($f), array_values($x['c']), array($x['total'], $x['extra'], $x['clases'], $x['profes'])), ';');
+        }
+        fputcsv($out, array_merge(array('TOTAL'), array_values($co['totales']['c']), array($co['totales']['total'], $co['totales']['extra'], '', $co['totales']['profes'])), ';');
+
+        // 3. Teachers who did not eat.
         fputcsv($out, array(), ';');
         fputcsv($out, array('Profesor/a', 'Días que no come en el colegio', 'Días'), ';');
-        foreach ($p['profes'] as $x) {
-            fputcsv($out, array($x['nombre'], count($x['dias']), implode(', ', array_map(function ($f) {
-                return gmdate('j/n', strtotime($f . ' 12:00:00 UTC'));
-            }, $x['dias']))), ';');
+        foreach ($adm['profes']['profes'] as $x) {
+            fputcsv($out, array($x['nombre'], count($x['dias']), implode(', ', array_map($dm, $x['dias']))), ';');
         }
         fclose($out);
         exit;

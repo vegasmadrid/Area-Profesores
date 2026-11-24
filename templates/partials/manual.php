@@ -31,7 +31,7 @@ $m_secciones = array(
     'reservas'    => __('Reservas de las familias', 'area-profesores'),
     'enlaces'     => __('Enlaces útiles', 'area-profesores'),
     'espacios'    => __('Espacios de aula', 'area-profesores'),
-    'comensales'  => __('Administración (facturación del mes)', 'area-profesores'),
+    'comensales'  => __('Administración (cocina y cobros del mes)', 'area-profesores'),
     'comunicados' => __('Comunicados (Dirección y Comunicación)', 'area-profesores'),
     'dudas'       => __('Preguntas frecuentes', 'area-profesores'),
 );
@@ -177,18 +177,17 @@ $m_secciones = array(
 <?php if ($mv['comensales']) : $m_i++; ?>
 <section class="ap-manual-sec" id="ayuda-comensales">
     <h3><span><?php echo (int) $m_i; ?></span> <?php echo esc_html($m_secciones['comensales']); ?> <em class="ap-manual-solo"><?php esc_html_e('Solo Dirección, Secretaría y Administración', 'area-profesores'); ?></em></h3>
-    <p><?php esc_html_e('La pestaña "Administración" reúne todo lo del mes para facturar.', 'area-profesores'); ?></p>
+    <p><?php esc_html_e('La pestaña "Administración" reúne lo del mes en dos bloques. Elige el mes con las flechas.', 'area-profesores'); ?></p>
+    <ol>
+        <li><strong><?php esc_html_e('Comidas de los alumnos (para cotejar con cocina):', 'area-profesores'); ?></strong> <?php esc_html_e('las comidas validadas de cada día por comedor (Comedor 1, 2 y 3), cuántas fueron extra, cuántas clases validaron y los profesores que no comieron. Abajo, el total del mes para comparar con la factura de cocina. Si un día alguna clase no validó, sale en naranja.', 'area-profesores'); ?></li>
+        <li><strong><?php esc_html_e('Cobros a las familias:', 'area-profesores'); ?></strong> <?php esc_html_e('una línea por familia con lo que hay que cobrarle (comidas extra, ampliación con o sin desayuno, ludoteca, dieta…). Pulsa la familia para ver cada alumno, cada servicio y sus días; con el ratón sobre un día ves cómo se pidió. Puedes buscar una familia o desplegarlas todas.', 'area-profesores'); ?></li>
+    </ol>
     <ul>
-        <li><?php esc_html_e('Elige el mes con las flechas. Arriba están las cifras del mes: comidas, comidas extra, alumnos con comidas extra, reservas de servicios y comidas de profesores que no se hicieron.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Para facturar: resumen por alumno": una fila por alumno con los días de cada servicio del mes (comedor extra, ampliación con y sin desayuno, ludoteca, dieta…) y los totales.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Servicios y reservas del mes": pulsa cada servicio para ver sus reservas con los días, los detalles y quién la hizo (la familia, Portería o el profesor en el comedor del día).', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Comedor: comidas extra por alumno": los días que cada alumno ha comido sin ser fijo, o con reserva de la familia (👪).', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Profesores que no comen en el colegio": los días que ha marcado cada profesor.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Comensales por día": total de cada día, extras, reservas de familias, clases validadas y profesores que no comieron.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('"Descargar (Excel)" baja todo el mes en un archivo que se abre con Excel; "Imprimir" lo saca en papel.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Las salidas anticipadas y los retrasos no se cobran: están al final, plegados.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('"Descargar (Excel)" baja el mes con los cobros (una línea por alumno y servicio, con las fechas) y las comidas por día; "Imprimir" lo saca en papel.', 'area-profesores'); ?></li>
     </ul>
-    <?php $m_fig('administracion', __('Administración: cifras del mes y resumen por alumno para facturar.', 'area-profesores')); ?>
-    <?php $m_fig('administracion-servicios', __('Cada servicio se despliega con sus reservas, días y quién la hizo.', 'area-profesores')); ?>
+    <?php $m_fig('administracion', __('Bloque 1: comidas de cada día por comedor, para cotejar con cocina.', 'area-profesores')); ?>
+    <?php $m_fig('administracion-servicios', __('Bloque 2: lo que hay que cobrar a cada familia, con sus días.', 'area-profesores')); ?>
 </section>
 <?php endif; ?>
 
