@@ -125,6 +125,7 @@ class Area_Profesores_Correos {
                 'ejemplo' => array('quien' => 'Ana García', 'clase' => '3º EP A', 'fecha' => 'martes 24 de noviembre', 'apuntados' => '- Pablo Ruiz (familia Ruiz Gil)', 'quitados' => 'Ninguno.', 'enlace' => home_url('/')),
             ),
             'comedor_extra_familia' => array(
+                'remitente' => 'familias',
                 'titulo'  => __('Aviso a la familia: su hijo/a come hoy en el colegio', 'area-profesores'),
                 'cuando'  => __('Cuando un profesor apunta al comedor del día a un alumno que no es comensal fijo ese día (lo habitual: la familia lo ha pedido de palabra o por correo).', 'area-profesores'),
                 'para'    => __('Los correos de la familia del alumno.', 'area-profesores'),
@@ -187,6 +188,7 @@ Puedes ver las reservas de tus alumnos en la pestaña Reservas del Área de Prof
                 'cocina' => true,
             ),
             'reserva_familia' => array(
+                'remitente' => 'familias',
                 'titulo'  => __('Confirmación de la reserva a la familia', 'area-profesores'),
                 'cuando'  => __('Cuando una familia reserva un servicio.', 'area-profesores'),
                 'para'    => __('La cuenta de la familia que ha hecho la reserva.', 'area-profesores'),
@@ -235,6 +237,7 @@ Fechas: {fechas}
                 'cocina' => true,
             ),
             'reserva_anulada_familia' => array(
+                'remitente' => 'familias',
                 'titulo'  => __('Aviso a la familia de una reserva anulada', 'area-profesores'),
                 'cuando'  => __('Cuando la familia anula una reserva, o se anula desde "Reservas de familias".', 'area-profesores'),
                 'para'    => __('La cuenta de la familia que hizo la reserva.', 'area-profesores'),
@@ -395,7 +398,24 @@ Colegio Casa de la Virgen", 'area-profesores'),
         if ($reply_to !== '' && is_email($reply_to)) {
             $headers[] = 'Reply-To: ' . $reply_to;
         }
-        return wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, $headers);
+        // Sender name: "Área de Familias" for the e-mails to the families, "Área de Profesores" for the rest
+        // (instead of WordPress's default "WordPress").
+        $nombre = self::remitente($key);
+        $filtro = function () use ($nombre) {
+            return $nombre;
+        };
+        add_filter('wp_mail_from_name', $filtro, 99);
+        $ok = wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, $headers);
+        remove_filter('wp_mail_from_name', $filtro, 99);
+        return $ok;
+    }
+
+    /** Sender name of an e-mail. */
+    public static function remitente($key) {
+        $defs = self::definiciones();
+        return isset($defs[$key]['remitente']) && $defs[$key]['remitente'] === 'familias'
+            ? __('Área de Familias', 'area-profesores')
+            : __('Área de Profesores', 'area-profesores');
     }
 
     private static function reemplazar($texto, $vars) {

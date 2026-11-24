@@ -18,6 +18,11 @@ $mv = array_merge(array(
 $maj = isset($maj) ? $maj : Area_Profesores_Comensales::ajustes();
 $m_rec = $maj['hora_recordatorio'];
 $m_coc = $maj['hora_cocina'];
+// Screenshot with its caption (assets/img/ayuda/).
+$m_fig = function ($img, $cap) {
+    $url = AREA_PROFESORES_PLUGIN_URL . 'assets/img/ayuda/' . $img . '.png?ver=' . AREA_PROFESORES_VERSION;
+    echo '<figure class="ap-manual-fig"><a href="' . esc_url($url) . '" target="_blank" rel="noopener"><img src="' . esc_url($url) . '" alt="' . esc_attr($cap) . '" loading="lazy"></a><figcaption>' . esc_html($cap) . '</figcaption></figure>';
+};
 $m_secciones = array(
     'entrar'      => __('Entrar en el Área', 'area-profesores'),
     'comedor'     => __('Comedor de hoy (tutores)', 'area-profesores'),
@@ -50,6 +55,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Para salir, pulsa "Salir" (arriba a la derecha). Hazlo siempre si usas un ordenador compartido.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('El Área funciona igual en el móvil: las pestañas se pueden deslizar a los lados.', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('entrar', __('Arriba, tu nombre y tu clase; debajo, las pestañas que puedes usar.', 'area-profesores')); ?>
 </section>
 <?php endif; ?>
 
@@ -65,6 +71,8 @@ $m_secciones = array(
         <li><?php esc_html_e('Si hace falta, escribe las dietas del día (por ejemplo, "Pablo — dieta blanda") y otras observaciones para cocina.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pulsa "Validar el comedor". Arriba aparece en verde quién lo ha validado, a qué hora y cuántos comensales hay.', 'area-profesores'); ?></li>
     </ol>
+    <?php $m_fig('comedor-lista', __('El comedor de la clase: los fijos ya salen marcados (verde), un extra de hoy (naranja), un fijo que hoy no se queda (tachado), las alergias en rojo y una reserva de la familia con dieta.', 'area-profesores')); ?>
+    <?php $m_fig('comedor-validar', __('Dietas y observaciones para cocina (debajo está el botón "Validar el comedor").', 'area-profesores')); ?>
     <div class="ap-manual-nota">
         <?php printf(esc_html__('A las %1$s se envía un recordatorio a los tutores que no lo hayan validado y a las %2$s se manda el resumen a cocina. Si cambias algo después de esa hora, vuelve a validar: cocina recibe un aviso con el cambio.', 'area-profesores'), esc_html($m_rec), esc_html($m_coc)); ?>
     </div>
@@ -80,6 +88,7 @@ $m_secciones = array(
         <li><strong><?php esc_html_e('Es muy importante tener los fijos marcados:', 'area-profesores'); ?></strong> <?php esc_html_e('todo alumno que se queda sin ser fijo cuenta como extra, y cada extra se notifica a Administración para cobrárselo a la familia. Si la clase no tiene fijos, el Área te avisa antes de validar.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Atajos: "Marcar todos (toda la semana)" marca a toda la clase de lunes a viernes; pulsa el nombre de un alumno para marcar su semana entera, o la letra de un día para marcar la columna.', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('comedor-fijos', __('Comensales fijos: marca los días que se queda cada alumno y guarda.', 'area-profesores')); ?>
     <h4><?php esc_html_e('Poner el comedor de otra clase', 'area-profesores'); ?></h4>
     <p><?php esc_html_e('Si un compañero falta, elige su clase en "Poner el comedor de un compañero". En la lista, ✓ indica las clases ya validadas y ⏳ las pendientes.', 'area-profesores'); ?></p>
 </section>
@@ -96,6 +105,8 @@ $m_secciones = array(
         <li><?php printf(esc_html__('Cocina recibe cada día, en el resumen de las %s, cuántos profesores no comen y quiénes. Si cambias el día de hoy después de esa hora, cocina recibe un aviso.', 'area-profesores'), esc_html($m_coc)); ?></li>
         <li><?php esc_html_e('Administración y Secretaría ven cada mes los días que cada profesor no ha comido en el colegio.', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('mi-comida', __('Mi comida en el colegio: el botón para el día de hoy.', 'area-profesores')); ?>
+    <?php $m_fig('mi-comida-dias', __('Los días marcados en rojo son los que no comes en el colegio.', 'area-profesores')); ?>
 </section>
 <?php endif; ?>
 
@@ -108,6 +119,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Las alergias alimentarias salen en rojo; las no alimentarias (polen, látex…), debajo.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('"Imprimir" saca la lista de la clase en papel (por ejemplo, para llevarla a una excursión).', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('mis-alumnos', __('Mis alumnos: padres, teléfono de emergencia y alergias, con el botón "Editar".', 'area-profesores')); ?>
     <h4><?php esc_html_e('Corregir un dato', 'area-profesores'); ?></h4>
     <ol>
         <li><?php esc_html_e('Pulsa "Editar" en la fila del alumno.', 'area-profesores'); ?></li>
@@ -115,6 +127,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Escribe el motivo del cambio (es obligatorio). Por ejemplo: "La madre me lo ha comunicado hoy en la entrada".', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pulsa "Guardar y avisar a Secretaría". El cambio se ve al momento y Secretaría recibe un correo con los datos anteriores, los nuevos y el motivo.', 'area-profesores'); ?></li>
     </ol>
+    <?php $m_fig('mis-alumnos-editar', __('Al editar hay que escribir el motivo, que se envía a Secretaría.', 'area-profesores')); ?>
     <div class="ap-manual-nota"><?php esc_html_e('Los datos de los padres son de la familia: si el alumno tiene hermanos en el colegio, el cambio también se ve en sus fichas.', 'area-profesores'); ?></div>
 </section>
 <?php endif; ?>
@@ -129,6 +142,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Las reservas de comedor y de dieta ya salen marcadas en la pestaña "Comedor"; no hace falta apuntarlas.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Portería ve las reservas de todos los cursos.', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('reservas', __('Reservas del día por servicio, con los próximos días arriba.', 'area-profesores')); ?>
     <h4><?php esc_html_e('Reservar un servicio para una familia (tutores y Portería)', 'area-profesores'); ?></h4>
     <p><?php esc_html_e('Cuando un padre o una madre pide un servicio de palabra, por teléfono o por correo, el tutor/a (para los alumnos de sus clases) o Portería (para cualquier alumno) lo reserva desde esta misma pestaña:', 'area-profesores'); ?></p>
     <ol>
@@ -136,6 +150,8 @@ $m_secciones = array(
         <li><?php esc_html_e('Elige el servicio, el día (o varios días con los días de la semana) y rellena lo que pida: hora, desayuno, dieta, quién le recoge, motivo…', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Escribe quién lo ha pedido (por ejemplo, "la madre, por teléfono") y pulsa "Hacer la reserva".', 'area-profesores'); ?></li>
     </ol>
+    <?php $m_fig('reservas-buscar', __('Escribe parte del nombre y elige al alumno en la lista.', 'area-profesores')); ?>
+    <?php $m_fig('reservas-nueva', __('Formulario de una nueva reserva (en el ejemplo, una salida anticipada).', 'area-profesores')); ?>
     <ul>
         <li><?php esc_html_e('No hay plazos: se puede reservar para hoy a cualquier hora. No se puede reservar dos veces el mismo servicio para el mismo alumno y día.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Se avisa al tutor/a (y a quien corresponda según "Avisos") y, si está marcado, la familia recibe la confirmación por correo. La reserva aparece en su Área de Familias con "Reservada por: Portería".', 'area-profesores'); ?></li>
@@ -171,6 +187,8 @@ $m_secciones = array(
         <li><?php esc_html_e('"Comensales por día": total de cada día, extras, reservas de familias, clases validadas y profesores que no comieron.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('"Descargar (Excel)" baja todo el mes en un archivo que se abre con Excel; "Imprimir" lo saca en papel.', 'area-profesores'); ?></li>
     </ul>
+    <?php $m_fig('administracion', __('Administración: cifras del mes y resumen por alumno para facturar.', 'area-profesores')); ?>
+    <?php $m_fig('administracion-servicios', __('Cada servicio se despliega con sus reservas, días y quién la hizo.', 'area-profesores')); ?>
 </section>
 <?php endif; ?>
 
@@ -184,6 +202,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Marca los espacios: uno a uno, por etapa o "Todo el colegio". En la vista previa ves cómo quedará.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Elige "Publicar ahora" o "Programar" (con fecha y hora, o el atajo "Mañana 8:00").', 'area-profesores'); ?></li>
     </ol>
+    <?php $m_fig('comunicados', __('Comunicado a las familias con su vista previa.', 'area-profesores')); ?>
     <ul>
         <li><?php esc_html_e('Los programados se publican solos. Hasta entonces puedes editarlos, enviarlos ya o cancelarlos. Si alguno falla, se avisa por correo a quien lo programó.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('En "Últimos comunicados" se ve en qué espacios se entregó cada uno; si alguno falló, pulsa "Reintentar los que han fallado".', 'area-profesores'); ?></li>
