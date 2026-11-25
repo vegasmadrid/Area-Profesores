@@ -686,10 +686,11 @@ class Area_Profesores_Chat {
                     && !is_wp_error(Area_Profesores_Google::anadir_miembro($e['space_id'], $cuenta))) {
                     $r = Area_Profesores_Google::publicar($cuenta, $e['space_id'], $texto, $archivo);
                 }
-                // Last resort: the space's webhook, if it still has one.
+                // Last resort: the space's webhook, if it still has one (and say why).
                 if (!$r['ok'] && $e['webhook'] !== '') {
                     $w = self::send_to_webhook($e['webhook'], $hacer_payload());
                     if ($w['ok']) {
+                        $w['aviso'] = sprintf(__('Publicado con el webhook (como "Colegio" y con el archivo en la web) porque con %1$s ha fallado: %2$s', 'area-profesores'), $cuenta, $r['error']);
                         $r = $w;
                         $via = 'webhook';
                     }
@@ -705,9 +706,10 @@ class Area_Profesores_Chat {
                 'ok'     => $r['ok'],
                 'error'  => $r['error'],
                 'via'    => $via,
+                'aviso'  => isset($r['aviso']) ? $r['aviso'] : '',
                 'fecha'  => current_time('mysql'),
             );
-            $out[] = array('id' => $eid, 'nombre' => $e['titulo'], 'ok' => $r['ok'], 'error' => $r['error']);
+            $out[] = array('id' => $eid, 'nombre' => $e['titulo'], 'ok' => $r['ok'], 'error' => $r['error'], 'aviso' => isset($r['aviso']) ? $r['aviso'] : '');
         }
 
         update_post_meta($post_id, '_ap_resultados', $resultados);

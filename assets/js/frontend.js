@@ -806,7 +806,7 @@
                     if (!r.ok) { lastFailed.push(r.id); }
                     $('<li>').addClass(r.ok ? 'is-ok' : 'is-error')
                         .append($('<strong>').text((r.ok ? '✓ ' : '✗ ') + r.nombre))
-                        .append($('<span>').text(' — ' + (r.ok ? i18n.com_ok : r.error)))
+                        .append($('<span>').text(' — ' + (r.ok ? (r.aviso ? r.aviso : i18n.com_ok) : r.error)))
                         .appendTo($list);
                 });
                 $title.text(

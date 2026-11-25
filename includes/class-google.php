@@ -602,7 +602,23 @@ class Area_Profesores_Google {
         if (is_wp_error($r) && strpos($r->get_error_message(), 'HTTP 409') !== 0) {
             return $r;
         }
+        // In announcement spaces only owners and managers can post: it must be a manager.
+        $m = self::request('GET', 'spaces/' . rawurlencode($space_id) . '/members/' . rawurlencode($email));
+        if (is_wp_error($m)) {
+            return $m;
+        }
+        if (!empty($m['name']) && (!isset($m['role']) || !in_array($m['role'], array('ROLE_MANAGER', 'ROLE_ASSISTANT_MANAGER'), true))) {
+            $p = self::request_path('PATCH', $m['name'], array('updateMask' => 'role'), array('role' => 'ROLE_ASSISTANT_MANAGER'));
+            if (is_wp_error($p)) {
+                return new WP_Error('google', sprintf(__('%s ya está en el espacio, pero no se ha podido hacerla administradora (hace falta para publicar en los espacios de anuncios):', 'area-profesores'), $email) . ' ' . $p->get_error_message());
+            }
+        }
         return true;
+    }
+
+    /** request() with a resource name that is already encoded (spaces/…/members/…). */
+    private static function request_path($method, $name, $query = array(), $body = null) {
+        return self::request($method, implode('/', array_map('rawurlencode', explode('/', $name))), $query, $body);
     }
 
     /**
@@ -642,7 +658,7 @@ class Area_Profesores_Google {
             self::save_settings($s);
         }
         $r = self::anadir_a_espacios();
-        $txt = sprintf(__('%1$s está en %2$d espacios.', 'area-profesores'), self::cuenta_espacios(), $r['ok']);
+        $txt = sprintf(__('%1$s está en %2$d espacios como administradora (puede publicar también en los espacios de anuncios).', 'area-profesores'), self::cuenta_espacios(), $r['ok']);
         if ($r['errores']) {
             $l = array();
             foreach (array_slice($r['errores'], 0, 5, true) as $t => $m) {
