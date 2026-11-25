@@ -709,6 +709,11 @@ class Area_Profesores_Chat {
                 'aviso'  => isset($r['aviso']) ? $r['aviso'] : '',
                 'fecha'  => current_time('mysql'),
             );
+            if ($r['ok'] && empty($r['aviso'])) {
+                $r['aviso'] = $via === 'api'
+                    ? sprintf(__('Publicado como %s (el archivo queda guardado en Google)', 'area-profesores'), $cuenta)
+                    : __('Publicado con el webhook (como "Colegio · Aplicación")', 'area-profesores');
+            }
             $out[] = array('id' => $eid, 'nombre' => $e['titulo'], 'ok' => $r['ok'], 'error' => $r['error'], 'aviso' => isset($r['aviso']) ? $r['aviso'] : '');
         }
 

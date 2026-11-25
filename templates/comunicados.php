@@ -65,6 +65,8 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                         </select>
                         <small class="ap-optional"><?php esc_html_e('El comunicado aparece en el chat enviado por esta cuenta. La imagen o el PDF se adjuntan y se guardan en Google, como cuando se publica a mano.', 'area-profesores'); ?></small>
                     </div>
+                <?php else : ?>
+                    <div class="ap-com-sin-cuenta"><?php esc_html_e('Se publicará con el webhook de cada espacio (como "Colegio Casa de la Virgen · Aplicación" y con la imagen o el PDF guardados en esta web), porque no hay ninguna cuenta de Google conectada para publicar. Se conecta en Área Profesores › Aulas › Cuentas para publicar los comunicados.', 'area-profesores'); ?></div>
                 <?php endif; ?>
 
                 <!-- Título -->
