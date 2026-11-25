@@ -148,9 +148,9 @@ class Area_Profesores_Comensales {
         return (bool) array_intersect(Area_Profesores_Cursos::get_etapas_usuario($user_id), self::etapas());
     }
 
-    /** "Comensales" tab: Dirección, Secretaría, Administración and administrators. */
+    /** "Administración" tab (by default Dirección, Secretaría, Administración and administrators). */
     public static function puede_ver_mes($user_id) {
-        return $user_id && (user_can($user_id, 'manage_options') || Area_Profesores_Chat::has_direccion_flag($user_id) || Area_Profesores_Alumnos::es_secretaria($user_id) || Area_Profesores_Cuentas::tiene($user_id, 'administracion'));
+        return Area_Profesores_Pestanas::ve($user_id, 'administracion'); // who: Área Profesores › Pestañas
     }
 
     /* ---------------------------------------------------------------------

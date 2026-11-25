@@ -73,7 +73,7 @@ class Area_Profesores_Chat {
      * Is the user allowed to publish announcements? (Dirección, Comunicación or administrator)
      */
     public static function puede_comunicados($user_id) {
-        return self::is_user_direccion($user_id) || ($user_id && Area_Profesores_Cuentas::tiene($user_id, 'comunicacion'));
+        return Area_Profesores_Pestanas::ve($user_id, 'comunicados'); // who: Área Profesores › Pestañas
     }
 
     /**
