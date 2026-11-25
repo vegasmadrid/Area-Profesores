@@ -71,14 +71,15 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 
                 <!-- Imagen -->
                 <div class="ap-form-group-card">
-                    <span class="ap-label"><?php esc_html_e('Imagen', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(JPG, PNG o GIF, máx. 8 MB)', 'area-profesores'); ?></span></span>
+                    <span class="ap-label"><?php esc_html_e('Imagen o PDF', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(imagen JPG, PNG o GIF de hasta 8 MB, o PDF de hasta 20 MB, por ejemplo el menú)', 'area-profesores'); ?></span></span>
                     <label class="ap-com-dropzone" id="ap-com-dropzone">
-                        <input type="file" id="ap-com-imagen" name="imagen" accept="image/jpeg,image/png,image/gif">
-                        <span class="ap-com-dropzone-text">🖼️ <?php esc_html_e('Pulsa para elegir una imagen o arrástrala aquí', 'area-profesores'); ?></span>
+                        <input type="file" id="ap-com-imagen" name="imagen" accept="image/jpeg,image/png,image/gif,application/pdf,.pdf">
+                        <span class="ap-com-dropzone-text">🖼️ 📄 <?php esc_html_e('Pulsa para elegir una imagen o un PDF, o arrástralo aquí', 'area-profesores'); ?></span>
                     </label>
                     <div class="ap-com-image-preview" id="ap-com-image-preview" style="display:none;">
                         <img src="" alt="">
-                        <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar imagen', 'area-profesores'); ?></button>
+                        <span class="ap-com-pdf-nombre" id="ap-com-pdf-nombre" style="display:none;"></span>
+                        <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar', 'area-profesores'); ?></button>
                     </div>
                 </div>
 
@@ -159,7 +160,13 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     </div>
                     <div class="ap-chat-bubble-text" id="ap-com-preview-text"><em><?php esc_html_e('El texto aparecerá aquí…', 'area-profesores'); ?></em></div>
                     <img class="ap-chat-bubble-img" id="ap-com-preview-img" src="" alt="" style="display:none;">
+                    <div class="ap-chat-pdf" id="ap-com-preview-pdf" style="display:none;">
+                        <small><?php esc_html_e('Documento PDF', 'area-profesores'); ?></small>
+                        <span class="ap-chat-pdf-nombre"></span>
+                        <span class="ap-chat-pdf-btn"><?php esc_html_e('Abrir el PDF', 'area-profesores'); ?></span>
+                    </div>
                 </div>
+                <p class="ap-com-preview-note" id="ap-com-pdf-nota" style="display:none;"><?php esc_html_e('Google Chat no deja que la web adjunte archivos: el PDF se guarda en la web y en el espacio sale esta tarjeta (con la primera página si el servidor puede generarla) y el botón para abrirlo.', 'area-profesores'); ?></p>
                 <p class="ap-com-preview-note"><?php esc_html_e('El nombre y el icono son los del webhook configurado en cada espacio.', 'area-profesores'); ?></p>
             </aside>
         </div>

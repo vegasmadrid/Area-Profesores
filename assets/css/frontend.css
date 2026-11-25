@@ -3348,3 +3348,11 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 }
 .ap-adm-fam-nombre strong { font-size: 16px; font-weight: 700; color: #0f172a; }
 .ap-cocina-profes p { margin: 6px 0 0; font-size: 15px; }
+
+/* Comunicados: PDF adjunto (menú…) */
+.ap-com-pdf-nombre { display: inline-block; font-weight: 600; font-size: 14px; color: #0f172a; margin-right: 10px; overflow-wrap: anywhere; }
+.ap-chat-pdf { margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; background: #fff; display: grid; gap: 4px; }
+.ap-chat-pdf small { color: #64748b; font-size: 11px; }
+.ap-chat-pdf-nombre { font-size: 14px; color: #0f172a; overflow-wrap: anywhere; }
+.ap-chat-pdf-btn { justify-self: start; margin-top: 4px; padding: 4px 12px; border-radius: 6px; background: #1a73e8; color: #fff; font-size: 13px; font-weight: 600; }
+.ap-com-item-pdf { display: grid; place-items: center; background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 13px; text-decoration: none; }

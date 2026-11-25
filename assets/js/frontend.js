@@ -699,28 +699,45 @@
 
             // Image selection + preview
             var setImagePreview = function(url) {
-                $('#ap-com-image-preview').show().find('img').attr('src', url);
+                $('#ap-com-image-preview').show().find('img').attr('src', url).show();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
                 $('#ap-com-dropzone').hide();
                 $('#ap-com-preview-img').attr('src', url).show();
+            };
+            // PDF (e.g. the menu): sent as a card with a button that opens it.
+            var setPdfPreview = function(nombre, thumb) {
+                var $p = $('#ap-com-image-preview').show();
+                if (thumb) { $p.find('img').attr('src', thumb).show(); } else { $p.find('img').hide().attr('src', ''); }
+                $('#ap-com-pdf-nombre').text('📄 ' + nombre).show();
+                $('#ap-com-dropzone').hide();
+                $('#ap-com-preview-img').hide().attr('src', '');
+                $('#ap-com-preview-pdf').show().find('.ap-chat-pdf-nombre').text('📄 ' + nombre);
+                $('#ap-com-pdf-nota').show();
             };
             var clearImage = function() {
                 $comFile.val('');
                 $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
                 $('#ap-com-image-preview').hide();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
                 $('#ap-com-dropzone').show();
                 $('#ap-com-preview-img').hide().attr('src', '');
             };
             var showImage = function(file) {
-                var okType = /^image\/(jpeg|png|gif)$/.test(file.type);
-                if (!okType || file.size > 8 * 1024 * 1024) {
+                var esPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+                var okType = esPdf || /^image\/(jpeg|png|gif)$/.test(file.type);
+                if (!okType || file.size > (esPdf ? 20 : 8) * 1024 * 1024) {
                     clearImage();
                     showComAlert('error', i18n.com_bad_image);
                     return;
                 }
                 $comAlert.hide();
                 $reuseImage.val('');
-                if (previewUrl) { URL.revokeObjectURL(previewUrl); }
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+                if (esPdf) {
+                    setPdfPreview(file.name, '');
+                    return;
+                }
                 previewUrl = URL.createObjectURL(file);
                 setImagePreview(previewUrl);
             };
@@ -840,7 +857,7 @@
                 });
                 if (data.image_id && data.image_url) {
                     $reuseImage.val(data.image_id);
-                    setImagePreview(data.image_url);
+                    if (data.es_pdf) { setPdfPreview(data.archivo, data.thumb_url || ''); } else { setImagePreview(data.image_url); }
                 }
                 if (editId) {
                     $replaceId.val(editId);

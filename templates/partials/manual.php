@@ -197,7 +197,7 @@ $m_secciones = array(
     <p><?php esc_html_e('Publica un comunicado a las familias en sus espacios de Google Chat, firmado como el colegio, en varios espacios a la vez.', 'area-profesores'); ?></p>
     <ol>
         <li><?php esc_html_e('Escribe un título (opcional, sale en negrita) y el texto. Para dar formato: *negrita*, _cursiva_, ~tachado~. Los enlaces se activan solos.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Si quieres, añade una imagen (JPG, PNG o GIF, hasta 8 MB).', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si quieres, añade una imagen (JPG, PNG o GIF, hasta 8 MB) o un PDF (hasta 20 MB, por ejemplo el menú). El PDF sale en el espacio como una tarjeta con el botón "Abrir el PDF".', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Marca los espacios: uno a uno, por etapa o "Todo el colegio". En la vista previa ves cómo quedará.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Elige "Publicar ahora" o "Programar" (con fecha y hora, o el atajo "Mañana 8:00").', 'area-profesores'); ?></li>
     </ol>

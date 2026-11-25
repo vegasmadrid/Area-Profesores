@@ -22,6 +22,8 @@ if (!defined('ABSPATH')) {
                     <a href="<?php echo esc_url($c['image_url']); ?>" target="_blank" rel="noopener" class="ap-com-item-thumb">
                         <img src="<?php echo esc_url($c['thumb_url']); ?>" alt="" loading="lazy">
                     </a>
+                <?php elseif (!empty($c['es_pdf'])) : ?>
+                    <a href="<?php echo esc_url($c['image_url']); ?>" target="_blank" rel="noopener" class="ap-com-item-thumb ap-com-item-pdf" title="<?php echo esc_attr($c['archivo']); ?>">PDF</a>
                 <?php endif; ?>
                 <div class="ap-com-item-body">
                     <div class="ap-com-item-when">

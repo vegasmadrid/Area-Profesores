@@ -27,6 +27,7 @@ class Area_Profesores_Chat {
     const CRON_HOOK   = 'ap_chat_enviar_programado';
     const MAX_TEXT    = 4000;       // Google Chat admite 4096 caracteres por mensaje.
     const MAX_IMAGE   = 8388608;    // 8 MB
+    const MAX_PDF     = 20971520;   // 20 MB
     const MAX_DIAS_PROGRAMACION = 180;
     const WEBHOOK_RE  = '#^https://chat\.googleapis\.com/v1/spaces/[A-Za-z0-9_-]+/messages\?#';
 
@@ -505,9 +506,13 @@ class Area_Profesores_Chat {
     /**
      * Build the Google Chat message payload.
      * The text goes in "text" (so it is shown in the families' push notification);
-     * the image goes in a card below it.
+     * the image goes in a card below it. A PDF (incoming webhooks cannot attach files)
+     * goes as a card with a preview of its first page, if the server made one, and a
+     * button that opens the file on the website.
+     *
+     * @param array|null $pdf { url, nombre, preview }
      */
-    public static function build_payload($titulo, $mensaje, $image_url = '') {
+    public static function build_payload($titulo, $mensaje, $image_url = '', $pdf = null) {
         $text = '';
         if ($titulo !== '') {
             $text .= '*' . $titulo . "*\n\n";
@@ -515,6 +520,28 @@ class Area_Profesores_Chat {
         $text .= $mensaje;
 
         $payload = array('text' => trim($text));
+
+        if ($pdf) {
+            $widgets = array();
+            if (!empty($pdf['preview'])) {
+                $widgets[] = array('image' => array(
+                    'imageUrl' => $pdf['preview'],
+                    'altText'  => $pdf['nombre'],
+                    'onClick'  => array('openLink' => array('url' => $pdf['url'])),
+                ));
+            }
+            $widgets[] = array('decoratedText' => array(
+                'topLabel' => __('Documento PDF', 'area-profesores'),
+                'text'     => '📄 ' . $pdf['nombre'],
+                'wrapText' => true,
+            ));
+            $widgets[] = array('buttonList' => array('buttons' => array(array(
+                'text'    => __('Abrir el PDF', 'area-profesores'),
+                'onClick' => array('openLink' => array('url' => $pdf['url'])),
+            ))));
+            $payload['cardsV2'] = array(array('cardId' => 'pdf', 'card' => array('sections' => array(array('widgets' => $widgets)))));
+            return $payload;
+        }
 
         if ($image_url !== '') {
             $payload['cardsV2'] = array(
@@ -593,7 +620,9 @@ class Area_Profesores_Chat {
         $post = get_post($post_id);
         $titulo = (string) get_post_meta($post_id, '_ap_titulo', true);
         $image_id = (int) get_post_meta($post_id, '_ap_image_id', true);
-        $payload = self::build_payload($titulo, $post->post_content, $image_id ? self::get_image_url($image_id) : '');
+        $payload = self::es_pdf($image_id)
+            ? self::build_payload($titulo, $post->post_content, '', self::datos_pdf($image_id))
+            : self::build_payload($titulo, $post->post_content, $image_id ? self::get_image_url($image_id) : '');
 
         $espacios = self::get_espacios();
         $resultados = get_post_meta($post_id, '_ap_resultados', true);
@@ -897,6 +926,8 @@ class Area_Profesores_Chat {
             'image_id'    => $image_id,
             'image_url'   => $image_id ? (string) wp_get_attachment_url($image_id) : '',
             'thumb_url'   => $image_id ? (string) wp_get_attachment_image_url($image_id, 'thumbnail') : '',
+            'es_pdf'      => self::es_pdf($image_id),
+            'archivo'     => self::es_pdf($image_id) ? self::datos_pdf($image_id)['nombre'] : '',
             'espacios'    => $espacio_ids,
             'espacio_nombres' => $espacio_nombres,
             'resultados'  => is_array($resultados) ? $resultados : array(),
@@ -913,12 +944,35 @@ class Area_Profesores_Chat {
             'espacios'  => $c['espacios'],
             'image_id'  => $c['image_id'],
             'image_url' => $c['image_url'],
+            'es_pdf'    => $c['es_pdf'],
+            'archivo'   => $c['archivo'],
+            'thumb_url' => $c['thumb_url'],
         );
         if ($c['programado']) {
             $data['fecha'] = wp_date('Y-m-d', $c['programado']);
             $data['hora'] = wp_date('H:i', $c['programado']);
         }
         return $data;
+    }
+
+    /** Is the attachment a PDF? */
+    public static function es_pdf($attachment_id) {
+        return $attachment_id && get_post_mime_type($attachment_id) === 'application/pdf';
+    }
+
+    /**
+     * Data of a PDF for Google Chat: public URL, file name and preview of the first
+     * page (WordPress makes it when the server has Imagick + Ghostscript; '' if not).
+     */
+    public static function datos_pdf($attachment_id) {
+        $url = (string) wp_get_attachment_url($attachment_id);
+        $src = wp_get_attachment_image_src($attachment_id, 'large');
+        $file = get_attached_file($attachment_id);
+        return array(
+            'url'     => $url ? set_url_scheme($url, 'https') : '',
+            'nombre'  => $file ? wp_basename($file) : get_the_title($attachment_id) . '.pdf',
+            'preview' => $src && !empty($src[0]) ? set_url_scheme($src[0], 'https') : '',
+        );
     }
 
     /**
@@ -997,12 +1051,12 @@ class Area_Profesores_Chat {
         $mensaje = str_replace(array("\r\n", "\r"), "\n", $mensaje);
         $has_file = !empty($_FILES['imagen']) && !empty($_FILES['imagen']['name']);
         $reuse_image = isset($_POST['reuse_image_id']) ? absint($_POST['reuse_image_id']) : 0;
-        if ($reuse_image && (get_post_type($reuse_image) !== 'attachment' || !wp_attachment_is_image($reuse_image))) {
+        if ($reuse_image && (get_post_type($reuse_image) !== 'attachment' || (!wp_attachment_is_image($reuse_image) && !self::es_pdf($reuse_image)))) {
             $reuse_image = 0;
         }
 
         if ($mensaje === '' && !$has_file && !$reuse_image) {
-            wp_send_json_error(array('message' => __('Escribe un mensaje o adjunta una imagen.', 'area-profesores')));
+            wp_send_json_error(array('message' => __('Escribe un mensaje o adjunta una imagen o un PDF.', 'area-profesores')));
         }
         if (mb_strlen($titulo . "\n\n" . $mensaje) > self::MAX_TEXT) {
             wp_send_json_error(array('message' => sprintf(__('El mensaje es demasiado largo (máximo %d caracteres).', 'area-profesores'), self::MAX_TEXT)));
@@ -1134,20 +1188,22 @@ class Area_Profesores_Chat {
         $file = $_FILES['imagen'];
 
         if (!empty($file['error'])) {
-            return new WP_Error('upload', __('No se pudo subir la imagen (puede que sea demasiado grande).', 'area-profesores'));
-        }
-        if ($file['size'] > self::MAX_IMAGE) {
-            return new WP_Error('upload', __('La imagen es demasiado grande (máximo 8 MB).', 'area-profesores'));
+            return new WP_Error('upload', __('No se pudo subir el archivo (puede que sea demasiado grande para el servidor).', 'area-profesores'));
         }
 
         $allowed = array(
             'jpg|jpeg|jpe' => 'image/jpeg',
             'png'          => 'image/png',
             'gif'          => 'image/gif',
+            'pdf'          => 'application/pdf',
         );
         $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name'], $allowed);
         if (empty($check['type']) || !in_array($check['type'], $allowed, true)) {
-            return new WP_Error('upload', __('Formato no admitido. Usa una imagen JPG, PNG o GIF.', 'area-profesores'));
+            return new WP_Error('upload', __('Formato no admitido. Usa una imagen JPG, PNG o GIF, o un PDF.', 'area-profesores'));
+        }
+        $es_pdf = $check['type'] === 'application/pdf';
+        if ($file['size'] > ($es_pdf ? self::MAX_PDF : self::MAX_IMAGE)) {
+            return new WP_Error('upload', $es_pdf ? __('El PDF es demasiado grande (máximo 20 MB).', 'area-profesores') : __('La imagen es demasiado grande (máximo 8 MB).', 'area-profesores'));
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -1160,7 +1216,7 @@ class Area_Profesores_Chat {
         ));
 
         if (is_wp_error($attachment_id)) {
-            return new WP_Error('upload', __('No se pudo guardar la imagen: ', 'area-profesores') . $attachment_id->get_error_message());
+            return new WP_Error('upload', __('No se pudo guardar el archivo: ', 'area-profesores') . $attachment_id->get_error_message());
         }
 
         return (int) $attachment_id;
