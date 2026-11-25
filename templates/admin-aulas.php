@@ -207,6 +207,68 @@ $ap_etapas = Area_Profesores_Cursos::get_etapas();
                     <?php endif; ?>
                 </p>
             <?php endif; ?>
+            <?php if ($google_connected && !Area_Profesores_Google::puede_anadir_miembros()) : ?>
+                <div class="notice notice-warning inline"><p><?php esc_html_e('Para que la web pueda meter la cuenta del colegio en los espacios, desconecta y vuelve a pulsar "Conectar con Google" con tu cuenta de administrador: se pedirá el permiso nuevo para gestionar los miembros de los espacios.', 'area-profesores'); ?></p></div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Cuentas para publicar los comunicados (API de Google Chat) -->
+        <div class="ap-settings-card ap-chat-help" id="ap-cuentas-publicar">
+            <h2 class="ap-settings-section-title"><span class="dashicons dashicons-megaphone"></span> <?php esc_html_e('Cuentas para publicar los comunicados', 'area-profesores'); ?></h2>
+            <p><?php esc_html_e('Con una cuenta conectada, los comunicados se publican con la API de Google Chat: aparecen enviados por esa cuenta y la imagen o el PDF se adjuntan y se guardan en Google (no en esta web), como cuando se publica a mano.', 'area-profesores'); ?></p>
+            <ul class="ap-google-steps">
+                <li><strong><?php esc_html_e('Compartida', 'area-profesores'); ?></strong> <?php esc_html_e('(por ejemplo colegio@): la pueden usar Dirección y Comunicación para publicar sin conocer su contraseña.', 'area-profesores'); ?></li>
+                <li><strong><?php esc_html_e('Solo para mí', 'area-profesores'); ?></strong> <?php esc_html_e(': solo la ve y la usa quien la conecta.', 'area-profesores'); ?></li>
+            </ul>
+            <?php $ap_cuentas = Area_Profesores_Google::cuentas(); $ap_ce = Area_Profesores_Google::cuenta_espacios(); ?>
+            <?php if ($ap_cuentas) : ?>
+                <table class="widefat striped">
+                    <tbody>
+                        <?php foreach ($ap_cuentas as $ap_c) : $ap_u = $ap_c['propietario'] ? get_userdata($ap_c['propietario']) : null; ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($ap_c['email']); ?></strong><br>
+                                    <span class="description"><?php echo !empty($ap_c['compartida']) ? esc_html__('Compartida: Dirección y Comunicación', 'area-profesores') : esc_html(sprintf(__('Solo para %s', 'area-profesores'), $ap_u ? $ap_u->display_name : '?')); ?>
+                                        <?php if ($ap_c['email'] === $ap_ce) : ?> · <?php esc_html_e('se añade a todos los espacios', 'area-profesores'); ?><?php endif; ?></span></td>
+                                <td style="text-align:right;">
+                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('¿Quitar esta cuenta? No se podrá publicar con ella hasta volver a conectarla.', 'area-profesores')); ?>');">
+                                        <input type="hidden" name="action" value="ap_google_cuenta_quitar">
+                                        <input type="hidden" name="email" value="<?php echo esc_attr($ap_c['email']); ?>">
+                                        <?php wp_nonce_field('ap_google_cuenta_quitar'); ?>
+                                        <button type="submit" class="button button-link-delete"><?php esc_html_e('Quitar', 'area-profesores'); ?></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else : ?>
+                <p class="description"><?php esc_html_e('Todavía no hay ninguna cuenta: los comunicados se publican con los webhooks de cada espacio.', 'area-profesores'); ?></p>
+            <?php endif; ?>
+
+            <?php if (Area_Profesores_Google::is_configured()) : ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-cuenta-nueva">
+                    <input type="hidden" name="action" value="ap_google_cuenta">
+                    <?php wp_nonce_field('ap_google_cuenta'); ?>
+                    <p><label><strong><?php esc_html_e('Conectar una cuenta', 'area-profesores'); ?></strong><br>
+                        <input type="email" name="email" class="regular-text" placeholder="colegio@casadelavirgen.es"></label></p>
+                    <p><label><input type="radio" name="compartida" value="1" checked> <?php esc_html_e('Compartida (Dirección y Comunicación)', 'area-profesores'); ?></label>
+                        <label style="margin-left:12px;"><input type="radio" name="compartida" value=""> <?php esc_html_e('Solo para mí', 'area-profesores'); ?></label></p>
+                    <p><button type="submit" class="button button-primary"><?php esc_html_e('Conectar con Google', 'area-profesores'); ?></button>
+                        <span class="description"><?php esc_html_e('Google pedirá iniciar sesión con esa cuenta y aceptar el permiso para enviar mensajes.', 'area-profesores'); ?></span></p>
+                </form>
+            <?php endif; ?>
+
+            <?php if ($ap_ce !== '') : ?>
+                <hr>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="ap_google_miembros">
+                    <?php wp_nonce_field('ap_google_miembros'); ?>
+                    <p><strong><?php esc_html_e('Meter la cuenta en los espacios', 'area-profesores'); ?></strong><br>
+                        <?php printf(esc_html__('La cuenta compartida %s tiene que ser miembro de los espacios para publicar. Se añade sola al dar de alta un espacio nuevo y al publicar en uno en el que no esté; con este botón se añade ahora a todos.', 'area-profesores'), '<strong>' . esc_html($ap_ce) . '</strong>'); ?></p>
+                    <p><button type="submit" class="button" <?php disabled(!Area_Profesores_Google::puede_anadir_miembros()); ?>><?php esc_html_e('Añadir a todos los espacios', 'area-profesores'); ?></button>
+                        <?php if (!Area_Profesores_Google::puede_anadir_miembros()) : ?><span class="description"><?php esc_html_e('(antes vuelve a conectar la cuenta de administrador, arriba)', 'area-profesores'); ?></span><?php endif; ?></p>
+                </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>

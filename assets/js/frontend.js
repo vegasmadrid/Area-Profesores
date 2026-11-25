@@ -567,7 +567,7 @@
         }
 
         // =========================================================================
-        // Comunicados a familias (Google Chat) - solo Dirección
+        // Comunicados a familias (Google Chat) - Dirección y Comunicación
         // =========================================================================
         var $comForm = $('#ap-comunicado-form');
         if ($('#tab-comunicados').length) {
@@ -621,8 +621,8 @@
             };
 
             var updatePreview = function() {
-                var title = $.trim($comTitle.val());
-                var msg = $comMsg.val();
+                var title = $.trim($comTitle.val() || '');
+                var msg = $comMsg.val() || '';
                 var text = (title ? '*' + title + '*\n\n' : '') + msg;
                 $('#ap-com-count').text((title ? title.length + 2 : 0) + msg.length);
                 $('#ap-com-preview-text').html($.trim(text) ? chatFormat($.trim(text)) : '<em>' + escapeHtml(i18n.com_placeholder) + '</em>');
@@ -699,28 +699,57 @@
 
             // Image selection + preview
             var setImagePreview = function(url) {
-                $('#ap-com-image-preview').show().find('img').attr('src', url);
+                $('#ap-com-image-preview').show().find('img').attr('src', url).show();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
                 $('#ap-com-dropzone').hide();
                 $('#ap-com-preview-img').attr('src', url).show();
             };
+            // PDF (e.g. the menu): sent as a card with a button that opens it.
+            var setPdfPreview = function(nombre, thumb) {
+                var $p = $('#ap-com-image-preview').show();
+                if (thumb) { $p.find('img').attr('src', thumb).show(); } else { $p.find('img').hide().attr('src', ''); }
+                $('#ap-com-pdf-nombre').text('📄 ' + nombre).show();
+                $('#ap-com-dropzone').hide();
+                $('#ap-com-preview-img').hide().attr('src', '');
+                var $card = $('#ap-com-preview-pdf').show();
+                $card.find('.ap-chat-pdf-nombre').text('📄 ' + nombre);
+                // Through the API the PDF goes as a real attachment (no card or button).
+                var api = $('#ap-com-cuenta').length > 0;
+                $card.toggleClass('is-adjunto', api).find('small, .ap-chat-pdf-btn').toggle(!api);
+                $('#ap-com-pdf-nota').toggle(!api);
+            };
+            // "Publicar como": the preview shows that account as the sender.
+            var $comCuenta = $('#ap-com-cuenta');
+            var actualizarRemitente = function() {
+                if (!$comCuenta.length) { return; }
+                $('.ap-chat-bubble-head strong').text($comCuenta.val());
+            };
+            $comCuenta.on('change', actualizarRemitente);
+            actualizarRemitente();
             var clearImage = function() {
                 $comFile.val('');
                 $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
                 $('#ap-com-image-preview').hide();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
                 $('#ap-com-dropzone').show();
                 $('#ap-com-preview-img').hide().attr('src', '');
             };
             var showImage = function(file) {
-                var okType = /^image\/(jpeg|png|gif)$/.test(file.type);
-                if (!okType || file.size > 8 * 1024 * 1024) {
+                var esPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+                var okType = esPdf || /^image\/(jpeg|png|gif)$/.test(file.type);
+                if (!okType || file.size > (esPdf ? 20 : 8) * 1024 * 1024) {
                     clearImage();
                     showComAlert('error', i18n.com_bad_image);
                     return;
                 }
                 $comAlert.hide();
                 $reuseImage.val('');
-                if (previewUrl) { URL.revokeObjectURL(previewUrl); }
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+                if (esPdf) {
+                    setPdfPreview(file.name, '');
+                    return;
+                }
                 previewUrl = URL.createObjectURL(file);
                 setImagePreview(previewUrl);
             };
@@ -777,7 +806,7 @@
                     if (!r.ok) { lastFailed.push(r.id); }
                     $('<li>').addClass(r.ok ? 'is-ok' : 'is-error')
                         .append($('<strong>').text((r.ok ? '✓ ' : '✗ ') + r.nombre))
-                        .append($('<span>').text(' — ' + (r.ok ? i18n.com_ok : r.error)))
+                        .append($('<span>').text(' — ' + (r.ok ? (r.aviso ? r.aviso : i18n.com_ok) : r.error)))
                         .appendTo($list);
                 });
                 $title.text(
@@ -835,12 +864,16 @@
                 $comForm.show();
                 $comTitle.val(data.titulo || '');
                 $comMsg.val(data.mensaje || '');
+                if (data.cuenta && $comCuenta.find('option[value="' + data.cuenta + '"]').length) {
+                    $comCuenta.val(data.cuenta);
+                    actualizarRemitente();
+                }
                 $comForm.find('input[name="espacios[]"]').each(function() {
                     $(this).prop('checked', $.inArray($(this).val(), data.espacios || []) !== -1);
                 });
                 if (data.image_id && data.image_url) {
                     $reuseImage.val(data.image_id);
-                    setImagePreview(data.image_url);
+                    if (data.es_pdf) { setPdfPreview(data.archivo, data.thumb_url || ''); } else { setImagePreview(data.image_url); }
                 }
                 if (editId) {
                     $replaceId.val(editId);

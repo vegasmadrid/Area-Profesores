@@ -8,7 +8,7 @@
  * - Dirección: publishes announcements to the families (Google Chat) and sees
  *   every pupil.
  * - Secretaría: receives the families' notices, sees every pupil and the
- *   "Comensales" tab (monthly count of meals and extra meals to charge).
+ *   "Administración" tab (everything to bill a month).
  * - Cocina: receives the daily summary of the dining room.
  * - Portería: sees the families' reservations of every course (early
  *   departures, late arrivals…). Ready for future notices.
@@ -51,7 +51,7 @@ class Area_Profesores_Cuentas {
                 'meta'   => Area_Profesores_Alumnos::META_SECRETARIA,
                 'nombre' => __('Secretaría', 'area-profesores'),
                 'icono'  => 'dashicons-id-alt',
-                'desc'   => __('Ven a todos los alumnos y la pestaña "Comensales" con el recuento mensual y las comidas extra para hacer los cobros. Reciben los avisos que elijas en "Avisos" (de serie, los cambios de datos y las reservas de las familias).', 'area-profesores'),
+                'desc'   => __('Ven a todos los alumnos y la pestaña "Administración" con todo lo del mes para facturar. Reciben los avisos que elijas en "Avisos" (de serie, los cambios de datos y las reservas de las familias).', 'area-profesores'),
             ),
             'cocina' => array(
                 'meta'   => '_ap_is_cocina',
@@ -63,19 +63,19 @@ class Area_Profesores_Cuentas {
                 'meta'   => '_ap_is_porteria',
                 'nombre' => __('Portería', 'area-profesores'),
                 'icono'  => 'dashicons-admin-network',
-                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
+                'desc'   => __('Ven la pestaña "Reservas" de todos los cursos (salidas anticipadas, retrasos justificados…), pueden reservar cualquier servicio para cualquier familia (cuando lo piden en persona o por teléfono) y anular reservas. Reciben los avisos que elijas en "Avisos".', 'area-profesores'),
             ),
             'administracion' => array(
                 'meta'   => '_ap_is_administracion',
                 'nombre' => __('Administración', 'area-profesores'),
                 'icono'  => 'dashicons-calculator',
-                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, las reservas de servicios de las familias).', 'area-profesores'),
+                'desc'   => __('Ven la pestaña "Administración": por meses, todos los servicios y reservas de cada alumno para facturar, las comidas extra y los días que los profesores no comen en el colegio. Reciben los avisos que elijas en "Avisos" (de serie, los comedores extra que apuntan los profesores).', 'area-profesores'),
             ),
             'comunicacion' => array(
                 'meta'   => '_ap_is_comunicacion',
                 'nombre' => __('Comunicación', 'area-profesores'),
                 'icono'  => 'dashicons-share',
-                'desc'   => __('Reciben los avisos que elijas en "Avisos" (por ejemplo, los errores de los comunicados programados).', 'area-profesores'),
+                'desc'   => __('Publican comunicados a las familias en los espacios de Google Chat (pestaña "Comunicados", igual que Dirección) y reciben los avisos que elijas en "Avisos".', 'area-profesores'),
             ),
         );
     }

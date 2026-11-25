@@ -37,6 +37,22 @@
             });
         }
 
+        // "Come en el colegio" (auto-save)
+        $('.ap-come-check').on('change', function() {
+            var userId = $(this).data('user-id');
+            var $st = $('#status-come-' + userId);
+            $st.stop(true, true).show().text('…').css('color', '#64748b');
+            $.post(AreaProfesoresAdminData.ajax_url, {
+                action: 'ap_admin_save_teacher',
+                nonce: AreaProfesoresAdminData.nonce,
+                user_id: userId,
+                come: this.checked ? '1' : '0'
+            }, function(r) {
+                $st.text(r && r.success ? '✓' : 'Error').css('color', r && r.success ? '#10b981' : '#ef4444');
+                setTimeout(function() { $st.fadeOut(400); }, 1500);
+            }, 'json').fail(function() { $st.text('Error de red').css('color', '#ef4444'); });
+        });
+
         // Etapa / tutoría select change (auto-save)
         $('.ap-tutoria-select').on('change', function() {
             var userId = $(this).data('user-id');

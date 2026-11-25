@@ -31,6 +31,10 @@ if (!defined('ABSPATH')) {
                     <a href="<?php echo esc_url($c['image_url']); ?>" target="_blank" rel="noopener" class="ap-com-item-thumb">
                         <img src="<?php echo esc_url($c['thumb_url']); ?>" alt="" loading="lazy">
                     </a>
+                <?php elseif (!empty($c['archivo_google'])) : ?>
+                    <span class="ap-com-item-thumb ap-com-item-pdf" title="<?php echo esc_attr(sprintf(__('%s (guardado en Google Chat)', 'area-profesores'), $c['archivo_google']['nombre'])); ?>"><?php echo !empty($c['archivo_google']['pdf']) ? 'PDF' : '🖼️'; ?></span>
+                <?php elseif (!empty($c['es_pdf'])) : ?>
+                    <a href="<?php echo esc_url($c['image_url']); ?>" target="_blank" rel="noopener" class="ap-com-item-thumb ap-com-item-pdf" title="<?php echo esc_attr($c['archivo']); ?>">PDF</a>
                 <?php endif; ?>
                 <div class="ap-com-item-body">
                     <div class="ap-com-item-meta">
@@ -44,7 +48,7 @@ if (!defined('ABSPATH')) {
                             <?php endif; ?>
                         <?php endif; ?>
                         <?php if ($c['autor']) : ?>
-                            <span>· <?php echo esc_html($c['autor']); ?></span>
+                            <span>· <?php echo esc_html($c['autor']); ?><?php if ($c['cuenta'] !== '') : ?> <?php printf(esc_html__('(como %s)', 'area-profesores'), esc_html($c['cuenta'])); ?><?php endif; ?></span>
                         <?php endif; ?>
                     </div>
                     <h4 class="ap-com-item-title"><?php echo esc_html($c['titulo_lista']); ?></h4>

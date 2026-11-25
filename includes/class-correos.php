@@ -95,10 +95,10 @@ class Area_Profesores_Correos {
                 'cuentas' => array('cocina'),
                 'grupo'   => __('Comedor', 'area-profesores'),
                 'asunto'  => __('Comedor del {fecha}: {total} comensales', 'area-profesores'),
-                'cuerpo'  => __("Comedor del {fecha}\n\nTotal de comensales: {total}\n\n⚠️ ALERGIAS ALIMENTARIAS\n{alergias}\n\nPor clases:\n{clases}\n\nClases sin validar todavía:\n{pendientes}\n\nDietas y observaciones:\n{dietas}\n\nLa página del comedor se actualiza sola con los cambios:\n{enlace}", 'area-profesores'),
+                'cuerpo'  => __("Comedor del {fecha}\n\nTotal de comensales (alumnos): {total}\n\n⚠️ ALERGIAS ALIMENTARIAS\n{alergias}\n\n👩‍🏫 PROFESORES\n{profesores}\n\n🍽️ POR COMEDORES\n{comedores}\n\nPor clases:\n{clases}\n\nClases sin validar todavía:\n{pendientes}\n\nDietas y observaciones:\n{dietas}\n\nLa página del comedor se actualiza sola con los cambios:\n{enlace}", 'area-profesores'),
                 'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
-                'vars'    => array('fecha' => __('día', 'area-profesores'), 'total' => __('total de comensales', 'area-profesores'), 'clases' => __('comensales de cada clase', 'area-profesores'), 'pendientes' => __('clases sin validar', 'area-profesores'), 'dietas' => __('dietas y observaciones', 'area-profesores'), 'alergias' => __('alérgicos que no comen hoy (no preparar su menú) y alérgicos que comen', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
-                'ejemplo' => array('fecha' => 'martes 24 de noviembre', 'total' => '212', 'alergias' => "HOY NO COMEN (no preparar su menú especial):\n- 3º EP A · Pablo Ruiz: frutos secos\n\nComen hoy con alergia alimentaria:\n- 1º EP B · Marta Gil: huevo", 'clases' => "- 3 años A: 18 (1 extra)\n- 3º EP A: 21 (1 reservado por la familia)", 'pendientes' => '- 5º EP B', 'dietas' => '- 3º EP A · Lucía García: Dieta blanda (reserva de la familia)', 'enlace' => home_url('/')),
+                'vars'    => array('fecha' => __('día', 'area-profesores'), 'total' => __('total de comensales', 'area-profesores'), 'clases' => __('comensales de cada clase', 'area-profesores'), 'pendientes' => __('clases sin validar', 'area-profesores'), 'dietas' => __('dietas y observaciones', 'area-profesores'), 'alergias' => __('alérgicos que no comen hoy (no preparar su menú) y alérgicos que comen', 'area-profesores'), 'profesores' => __('número y nombre de los profesores que hoy no comen en el colegio', 'area-profesores'), 'comedores' => __('comensales de cada comedor y de cada curso', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('fecha' => 'martes 24 de noviembre', 'total' => '212', 'alergias' => "HOY NO COMEN (no preparar su menú especial):\n- 3º EP A · Pablo Ruiz: frutos secos\n\nComen hoy con alergia alimentaria:\n- 1º EP B · Marta Gil: huevo", 'clases' => "- 3 años A: 18 (1 extra)\n- 3º EP A: 21 (1 reservado por la familia)", 'pendientes' => '- 5º EP B', 'dietas' => '- 3º EP A · Lucía García: Dieta blanda (reserva de la familia)', 'profesores' => "2 profesores no comen hoy en el colegio:\n- Ana García\n- Luis Pérez", 'comedores' => "Comedor 1: 58 comensales\n   - 1 año: 12 (A 6 · B 6)\n   - 3 años: 30 (A 15 · B 15)\nComedor 2: 71 comensales\nComedor 3: 83 comensales", 'enlace' => home_url('/')),
             ),
             'comedor_cambio' => array(
                 'titulo'  => __('Cambio en el comedor después del resumen', 'area-profesores'),
@@ -111,6 +111,43 @@ class Area_Profesores_Correos {
                 'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
                 'vars'    => array('clase' => __('clase', 'area-profesores'), 'antes' => __('comensales antes', 'area-profesores'), 'ahora' => __('comensales ahora', 'area-profesores'), 'total' => __('total del día', 'area-profesores'), 'quien' => __('quién lo ha cambiado', 'area-profesores'), 'alergias' => __('alérgicos que ahora comen o dejan de comer', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
                 'ejemplo' => array('clase' => '3º EP A', 'antes' => '20', 'ahora' => '19', 'total' => '212', 'quien' => 'Ana García', 'alergias' => '- Pablo Ruiz (alergia: frutos secos) NO come hoy: no preparar su menú especial.', 'enlace' => home_url('/')),
+            ),
+            'comedor_extra' => array(
+                'titulo'  => __('Un profesor apunta alumnos extra al comedor', 'area-profesores'),
+                'cuando'  => __('Cuando, al validar el comedor, se apunta a un alumno que ese día no es comensal fijo ni tiene reserva de la familia (o se le quita). Se registra como un servicio de comedor extra de ese día.', 'area-profesores'),
+                'para'    => __('El profesor que lo ha apuntado (como confirmación) y las cuentas que elijas abajo (de serie, Administración).', 'area-profesores'),
+                'cuentas' => array('administracion'),
+                'grupo'   => __('Comedor', 'area-profesores'),
+                'asunto'  => __('Comedor extra {fecha}: {clase}', 'area-profesores'),
+                'cuerpo'  => __("{quien} ha apuntado al comedor del {fecha} ({clase}) como comensales extra a:\n{apuntados}\n\nQuitados del comedor extra:\n{quitados}\n\nSe ha registrado como un servicio de comedor extra de ese día (se ve en la pestaña Administración) y se ha enviado un correo a cada familia.\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver el comedor', 'area-profesores'),
+                'vars'    => array('quien' => __('profesor/a que lo apunta', 'area-profesores'), 'clase' => __('clase', 'area-profesores'), 'fecha' => __('día', 'area-profesores'), 'apuntados' => __('alumnos apuntados (y su familia)', 'area-profesores'), 'quitados' => __('alumnos quitados', 'area-profesores'), 'enlace' => __('comedor de la clase', 'area-profesores')),
+                'ejemplo' => array('quien' => 'Ana García', 'clase' => '3º EP A', 'fecha' => 'martes 24 de noviembre', 'apuntados' => '- Pablo Ruiz (familia Ruiz Gil)', 'quitados' => 'Ninguno.', 'enlace' => home_url('/')),
+            ),
+            'comedor_extra_familia' => array(
+                'remitente' => 'familias',
+                'titulo'  => __('Aviso a la familia: su hijo/a come hoy en el colegio', 'area-profesores'),
+                'cuando'  => __('Cuando un profesor apunta al comedor del día a un alumno que no es comensal fijo ese día (lo habitual: la familia lo ha pedido de palabra o por correo).', 'area-profesores'),
+                'para'    => __('Los correos de la familia del alumno.', 'area-profesores'),
+                'cuentas' => array(),
+                'grupo'   => __('Comedor', 'area-profesores'),
+                'asunto'  => __('{alumno} come hoy en el colegio', 'area-profesores'),
+                'cuerpo'  => __("Hola:\n\n{quien} ha apuntado a {alumno} ({clase}) al comedor del colegio el {fecha}. Queda registrado como un servicio de comedor extra de ese día.\n\nPrecio: {precio}\n\nSi no es correcto, responde a este correo o avisa al colegio cuanto antes.\n\nPuedes ver tus reservas en el Área de Familias.\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver mis reservas', 'area-profesores'),
+                'vars'    => array('alumno' => __('alumno', 'area-profesores'), 'clase' => __('clase', 'area-profesores'), 'fecha' => __('día', 'area-profesores'), 'quien' => __('profesor/a que lo apunta', 'area-profesores'), 'precio' => __('precio del comedor (Área Familias)', 'area-profesores'), 'enlace' => __('Área de Familias', 'area-profesores')),
+                'ejemplo' => array('alumno' => 'Pablo Ruiz', 'clase' => '3º EP A', 'fecha' => 'martes 24 de noviembre', 'quien' => 'Ana García', 'precio' => '6 €', 'enlace' => home_url('/')),
+            ),
+            'comedor_profesor' => array(
+                'titulo'  => __('Un profesor cambia su comida de hoy después del resumen', 'area-profesores'),
+                'cuando'  => __('Cuando, después de enviar el resumen a cocina, un profesor marca que hoy no come en el colegio (o lo desmarca).', 'area-profesores'),
+                'para'    => __('Las cuentas que elijas abajo (normalmente, Cocina).', 'area-profesores'),
+                'cuentas' => array('cocina'),
+                'grupo'   => __('Comedor', 'area-profesores'),
+                'asunto'  => __('Comedor: {profesor} {cambio}', 'area-profesores'),
+                'cuerpo'  => __("{profesor} {cambio}.\n\nHoy comen {comen} profesores.\n\nHan avisado de que no comen hoy ({numero}):\n{lista}\n\n{enlace}", 'area-profesores'),
+                'boton'   => __('Ver el comedor de hoy', 'area-profesores'),
+                'vars'    => array('profesor' => __('profesor/a', 'area-profesores'), 'cambio' => __('"NO come hoy" o "SÍ come hoy"', 'area-profesores'), 'comen' => __('número de profesores que comen hoy', 'area-profesores'), 'numero' => __('número de profesores que hoy no comen', 'area-profesores'), 'lista' => __('sus nombres', 'area-profesores'), 'enlace' => __('página del comedor', 'area-profesores')),
+                'ejemplo' => array('profesor' => 'Ana García', 'cambio' => 'NO come hoy en el colegio', 'comen' => '41', 'numero' => '3', 'lista' => "- Ana García\n- Luis Pérez\n- Marta Sanz", 'enlace' => home_url('/')),
             ),
             'profesor_datos' => array(
                 'titulo'  => __('Un profesor cambia datos de un alumno o su familia', 'area-profesores'),
@@ -151,6 +188,7 @@ Puedes ver las reservas de tus alumnos en la pestaña Reservas del Área de Prof
                 'cocina' => true,
             ),
             'reserva_familia' => array(
+                'remitente' => 'familias',
                 'titulo'  => __('Confirmación de la reserva a la familia', 'area-profesores'),
                 'cuando'  => __('Cuando una familia reserva un servicio.', 'area-profesores'),
                 'para'    => __('La cuenta de la familia que ha hecho la reserva.', 'area-profesores'),
@@ -199,6 +237,7 @@ Fechas: {fechas}
                 'cocina' => true,
             ),
             'reserva_anulada_familia' => array(
+                'remitente' => 'familias',
                 'titulo'  => __('Aviso a la familia de una reserva anulada', 'area-profesores'),
                 'cuando'  => __('Cuando la familia anula una reserva, o se anula desde "Reservas de familias".', 'area-profesores'),
                 'para'    => __('La cuenta de la familia que hizo la reserva.', 'area-profesores'),
@@ -359,7 +398,24 @@ Colegio Casa de la Virgen", 'area-profesores'),
         if ($reply_to !== '' && is_email($reply_to)) {
             $headers[] = 'Reply-To: ' . $reply_to;
         }
-        return wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, $headers);
+        // Sender name: "Área de Familias" for the e-mails to the families, "Área de Profesores" for the rest
+        // (instead of WordPress's default "WordPress").
+        $nombre = self::remitente($key);
+        $filtro = function () use ($nombre) {
+            return $nombre;
+        };
+        add_filter('wp_mail_from_name', $filtro, 99);
+        $ok = wp_mail($to, wp_specialchars_decode($asunto, ENT_QUOTES), $html, $headers);
+        remove_filter('wp_mail_from_name', $filtro, 99);
+        return $ok;
+    }
+
+    /** Sender name of an e-mail. */
+    public static function remitente($key) {
+        $defs = self::definiciones();
+        return isset($defs[$key]['remitente']) && $defs[$key]['remitente'] === 'familias'
+            ? __('Área de Familias', 'area-profesores')
+            : __('Área de Profesores', 'area-profesores');
     }
 
     private static function reemplazar($texto, $vars) {

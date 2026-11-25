@@ -1,6 +1,6 @@
 <?php
 /**
- * Teacher Portal: "Comunicados" tab (only for Dirección).
+ * Teacher Portal: "Comunicados" tab (Dirección and Comunicación).
  * Publish one announcement (text + optional image) in several Google Chat spaces
  * at once, now or at a scheduled date and time.
  *
@@ -26,7 +26,7 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 <div class="ap-form-card ap-comunicados">
     <div class="ap-form-header">
         <div>
-            <span class="ap-tag-primary"><?php esc_html_e('Dirección', 'area-profesores'); ?></span>
+            <span class="ap-tag-primary"><?php esc_html_e('Dirección y Comunicación', 'area-profesores'); ?></span>
             <h2 class="ap-form-title"><?php esc_html_e('Comunicado a las familias', 'area-profesores'); ?></h2>
             <p class="ap-form-subtitle"><?php esc_html_e('Se publicará en Google Chat, firmado como el colegio, en todos los espacios que marques. Puedes publicarlo ya o programarlo.', 'area-profesores'); ?></p>
         </div>
@@ -53,6 +53,22 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 
         <div class="ap-comunicado-layout">
             <div class="ap-comunicado-main">
+                <?php $ap_cuentas = class_exists('Area_Profesores_Google') ? Area_Profesores_Google::cuentas_para(get_current_user_id()) : array(); ?>
+                <?php if ($ap_cuentas) : ?>
+                    <!-- Cuenta con la que se publica (API de Google Chat) -->
+                    <div class="ap-form-group-card ap-com-cuenta">
+                        <label class="ap-label" for="ap-com-cuenta"><?php esc_html_e('Publicar como', 'area-profesores'); ?></label>
+                        <select id="ap-com-cuenta" name="cuenta" class="ap-textarea">
+                            <?php foreach ($ap_cuentas as $ap_email => $ap_label) : ?>
+                                <option value="<?php echo esc_attr($ap_email); ?>"><?php echo esc_html($ap_label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="ap-optional"><?php esc_html_e('El comunicado aparece en el chat enviado por esta cuenta. La imagen o el PDF se adjuntan y se guardan en Google, como cuando se publica a mano.', 'area-profesores'); ?></small>
+                    </div>
+                <?php else : ?>
+                    <div class="ap-com-sin-cuenta"><?php esc_html_e('Se publicará con el webhook de cada espacio (como "Colegio Casa de la Virgen · Aplicación" y con la imagen o el PDF guardados en esta web), porque no hay ninguna cuenta de Google conectada para publicar. Se conecta en Área Profesores › Aulas › Cuentas para publicar los comunicados.', 'area-profesores'); ?></div>
+                <?php endif; ?>
+
                 <!-- Título -->
                 <div class="ap-form-group-card">
                     <label class="ap-label" for="ap-com-titulo"><?php esc_html_e('Título', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(opcional, aparece en negrita)', 'area-profesores'); ?></span></label>
@@ -71,14 +87,15 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 
                 <!-- Imagen -->
                 <div class="ap-form-group-card">
-                    <span class="ap-label"><?php esc_html_e('Imagen', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(JPG, PNG o GIF, máx. 8 MB)', 'area-profesores'); ?></span></span>
+                    <span class="ap-label"><?php esc_html_e('Imagen o PDF', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(imagen JPG, PNG o GIF de hasta 8 MB, o PDF de hasta 20 MB, por ejemplo el menú)', 'area-profesores'); ?></span></span>
                     <label class="ap-com-dropzone" id="ap-com-dropzone">
-                        <input type="file" id="ap-com-imagen" name="imagen" accept="image/jpeg,image/png,image/gif">
-                        <span class="ap-com-dropzone-text">🖼️ <?php esc_html_e('Pulsa para elegir una imagen o arrástrala aquí', 'area-profesores'); ?></span>
+                        <input type="file" id="ap-com-imagen" name="imagen" accept="image/jpeg,image/png,image/gif,application/pdf,.pdf">
+                        <span class="ap-com-dropzone-text">🖼️ 📄 <?php esc_html_e('Pulsa para elegir una imagen o un PDF, o arrástralo aquí', 'area-profesores'); ?></span>
                     </label>
                     <div class="ap-com-image-preview" id="ap-com-image-preview" style="display:none;">
                         <img src="" alt="">
-                        <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar imagen', 'area-profesores'); ?></button>
+                        <span class="ap-com-pdf-nombre" id="ap-com-pdf-nombre" style="display:none;"></span>
+                        <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar', 'area-profesores'); ?></button>
                     </div>
                 </div>
 
@@ -159,8 +176,14 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     </div>
                     <div class="ap-chat-bubble-text" id="ap-com-preview-text"><em><?php esc_html_e('El texto aparecerá aquí…', 'area-profesores'); ?></em></div>
                     <img class="ap-chat-bubble-img" id="ap-com-preview-img" src="" alt="" style="display:none;">
+                    <div class="ap-chat-pdf" id="ap-com-preview-pdf" style="display:none;">
+                        <small><?php esc_html_e('Documento PDF', 'area-profesores'); ?></small>
+                        <span class="ap-chat-pdf-nombre"></span>
+                        <span class="ap-chat-pdf-btn"><?php esc_html_e('Abrir el PDF', 'area-profesores'); ?></span>
+                    </div>
                 </div>
-                <p class="ap-com-preview-note"><?php esc_html_e('El nombre y el icono son los del webhook configurado en cada espacio.', 'area-profesores'); ?></p>
+                <p class="ap-com-preview-note" id="ap-com-pdf-nota" style="display:none;"><?php esc_html_e('Google Chat no deja que la web adjunte archivos: el PDF se guarda en la web y en el espacio sale esta tarjeta (con la primera página si el servidor puede generarla) y el botón para abrirlo.', 'area-profesores'); ?></p>
+                <p class="ap-com-preview-note"><?php echo !empty($ap_cuentas) ? esc_html__('En el chat aparece el nombre de la cuenta elegida, junto al de la aplicación de Chat del colegio.', 'area-profesores') : esc_html__('El nombre y el icono son los del webhook configurado en cada espacio.', 'area-profesores'); ?></p>
             </aside>
         </div>
 

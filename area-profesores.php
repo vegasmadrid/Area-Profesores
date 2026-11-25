@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.13.0
+ * Version:     1.23.3
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.13.0');
+define('AREA_PROFESORES_VERSION', '1.23.3');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -101,10 +101,19 @@ class Area_Profesores_Plugin {
      * Run the table creation when the plugin version changes.
      */
     public function maybe_upgrade_db() {
-        if (get_option('area_profesores_db_version') === AREA_PROFESORES_VERSION) {
+        // The version plus the date of the files that define the tables: if a file is
+        // uploaded after the main one (updates by FTP), the tables are updated again.
+        $firma = AREA_PROFESORES_VERSION;
+        foreach (array('class-comedor', 'class-solicitudes', 'class-alumnos', 'class-reservas', 'class-comensales') as $f) {
+            $firma .= '|' . (int) @filemtime(AREA_PROFESORES_PLUGIN_DIR . 'includes/' . $f . '.php');
+        }
+        $firma = AREA_PROFESORES_VERSION . '-' . substr(md5($firma), 0, 8);
+        if (get_option('area_profesores_db_version') === $firma) {
             return;
         }
         $this->activate();
+        // Extras validated before they were registered as reservations (once per update, no e-mails).
+        Area_Profesores_Comensales::registrar_extras_pendientes();
 
         // "¿Es profesor?" no longer exists (every user is a teacher): remove the stored flag.
         delete_metadata('user', 0, '_ap_is_profesor', '', true);
@@ -124,7 +133,7 @@ class Area_Profesores_Plugin {
             update_option('ap_settings', $settings);
         }
 
-        update_option('area_profesores_db_version', AREA_PROFESORES_VERSION, true);
+        update_option('area_profesores_db_version', $firma, true);
     }
 
     /**
@@ -150,6 +159,14 @@ class Area_Profesores_Plugin {
             'area-profesores-frontend',
             AREA_PROFESORES_PLUGIN_URL . 'assets/js/frontend.js',
             array('jquery'),
+            AREA_PROFESORES_VERSION,
+            true
+        );
+
+        wp_register_script(
+            'area-profesores-reservas-porteria',
+            AREA_PROFESORES_PLUGIN_URL . 'assets/js/reservas-porteria.js',
+            array(),
             AREA_PROFESORES_VERSION,
             true
         );
@@ -191,7 +208,7 @@ class Area_Profesores_Plugin {
                 'com_confirm'       => __('Se va a publicar el comunicado en %d espacio(s) de Google Chat. Las familias lo recibirán al momento y no se puede deshacer desde aquí. ¿Continuar?', 'area-profesores'),
                 'com_sending'       => __('Publicando…', 'area-profesores'),
                 'com_empty'         => __('Escribe un mensaje o adjunta una imagen.', 'area-profesores'),
-                'com_bad_image'     => __('Formato no admitido. Usa una imagen JPG, PNG o GIF de menos de 8 MB.', 'area-profesores'),
+                'com_bad_image'     => __('Formato no admitido. Usa una imagen JPG, PNG o GIF de menos de 8 MB, o un PDF de menos de 20 MB.', 'area-profesores'),
                 'com_all_ok'        => __('Publicado en los %d espacios', 'area-profesores'),
                 'com_some_fail'     => __('Publicado en %1$d de %2$d espacios', 'area-profesores'),
                 'com_ok'            => __('Publicado', 'area-profesores'),

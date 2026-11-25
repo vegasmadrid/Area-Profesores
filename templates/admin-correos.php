@@ -53,7 +53,7 @@ if (!defined('ABSPATH')) {
     <?php foreach ($defs as $key => $d) : $c = Area_Profesores_Correos::get($key); ?>
         <div class="ap-settings-card ap-correo-card" id="correo-<?php echo esc_attr($key); ?>">
             <h2 class="ap-settings-section-title"><span class="dashicons dashicons-email-alt"></span> <?php echo esc_html($d['titulo']); ?> <span class="ap-status-pill"><?php echo esc_html($d['grupo']); ?></span></h2>
-            <p class="ap-correo-info"><strong><?php esc_html_e('Cuándo:', 'area-profesores'); ?></strong> <?php echo esc_html($d['cuando']); ?><br><strong><?php esc_html_e('Se envía siempre a:', 'area-profesores'); ?></strong> <?php echo esc_html($d['para']); ?></p>
+            <p class="ap-correo-info"><strong><?php esc_html_e('Cuándo:', 'area-profesores'); ?></strong> <?php echo esc_html($d['cuando']); ?><br><strong><?php esc_html_e('Se envía siempre a:', 'area-profesores'); ?></strong> <?php echo esc_html($d['para']); ?><br><strong><?php esc_html_e('Remitente:', 'area-profesores'); ?></strong> <?php echo esc_html(Area_Profesores_Correos::remitente($key)); ?></p>
 
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="ap_correos_guardar">

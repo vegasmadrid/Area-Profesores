@@ -9,6 +9,17 @@ if (!defined('ABSPATH')) {
 }
 
 $cd = $comedor;
+if (!empty($cd['solo_mi_comida'])) : // teachers of other stages: only "Mi comida" ?>
+    <div class="ap-records-card ap-cd" id="ap-comedor-diario">
+        <div class="ap-enlaces-header"><div>
+            <h2 class="ap-records-title"><?php esc_html_e('Comedor', 'area-profesores'); ?></h2>
+            <p class="ap-records-subtitle"><?php esc_html_e('Tu clase no usa el comedor diario, pero aquí puedes marcar los días que no comes en el colegio.', 'area-profesores'); ?></p>
+        </div></div>
+        <?php if ($cd['flash']) : ?><div class="ap-cd-msg is-<?php echo esc_attr($cd['flash']['type']); ?>" role="status"><?php echo esc_html($cd['flash']['text']); ?></div><?php endif; ?>
+        <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/partials/mi-comida.php'; ?>
+    </div>
+    <?php return;
+endif;
 $cd_curso = $cd['curso'] !== '' ? Area_Profesores_Cursos::get_curso($cd['curso']) : null;
 $cd_reg = $cd['registro'];
 $cd_dias = array(1 => 'L', 2 => 'M', 3 => 'X', 4 => 'J', 5 => 'V');
@@ -29,6 +40,8 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
     <?php if ($cd['flash']) : ?>
         <div class="ap-cd-msg is-<?php echo esc_attr($cd['flash']['type']); ?>" role="status"><?php echo esc_html($cd['flash']['text']); ?></div>
     <?php endif; ?>
+
+    <?php if (!empty($cd['profe'])) { include AREA_PROFESORES_PLUGIN_DIR . 'templates/partials/mi-comida.php'; } ?>
 
     <?php if (!$cd['lectivo']) : ?>
         <div class="ap-cd-aviso"><?php echo esc_html($cd['motivo'] !== '' ? sprintf(__('Hoy no hay clase (%s): no hace falta poner el comedor.', 'area-profesores'), $cd['motivo']) : __('Hoy no hay clase: no hace falta poner el comedor.', 'area-profesores')); ?></div>
@@ -76,8 +89,15 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
 
             <?php if (!$cd['lista']) : ?>
                 <p class="ap-ma-vacio"><?php esc_html_e('Todavía no hay alumnos en esta clase (se cargan en "Alumnos y familias").', 'area-profesores'); ?></p>
-            <?php else : ?>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-cd-form" id="ap-cd-form">
+            <?php else : $cd_sin_fijos = !array_filter(wp_list_pluck($cd['lista'], 'dias')); ?>
+                <?php if ($cd_sin_fijos) : ?>
+                    <div class="ap-cd-sinfijos" role="alert">
+                        <strong><?php esc_html_e('Atención: esta clase no tiene comensales fijos marcados.', 'area-profesores'); ?></strong>
+                        <?php esc_html_e('Es importante marcarlos: todos los alumnos que apuntes al comedor sin ser fijos cuentan como EXTRA, y cada extra se notifica a Administración para cobrar el servicio a la familia (que también recibe un correo).', 'area-profesores'); ?>
+                        <a href="#ap-cd-fijos" class="ap-btn ap-btn-sm ap-btn-primary" onclick="document.getElementById('ap-cd-fijos').open = true;"><?php esc_html_e('Marcar los comensales fijos', 'area-profesores'); ?></a>
+                    </div>
+                <?php endif; ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-cd-form" id="ap-cd-form" data-sin-fijos="<?php echo $cd_sin_fijos ? '1' : '0'; ?>">
                     <input type="hidden" name="action" value="ap_comedor_validar">
                     <input type="hidden" name="curso" value="<?php echo esc_attr($cd['curso']); ?>">
                     <?php wp_nonce_field('ap_comedor_validar_' . $cd['curso']); ?>
@@ -123,7 +143,7 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                     <button type="submit" class="ap-btn ap-btn-primary ap-cd-validar"><?php esc_html_e('Validar el comedor', 'area-profesores'); ?></button>
                 </form>
 
-                <details class="ap-cd-fijos"<?php echo array_filter(wp_list_pluck($cd['lista'], 'dias')) ? '' : ' open'; ?>>
+                <details class="ap-cd-fijos" id="ap-cd-fijos"<?php echo array_filter(wp_list_pluck($cd['lista'], 'dias')) ? '' : ' open'; ?>>
                     <summary><?php esc_html_e('Comensales fijos de la clase (los que se quedan siempre)', 'area-profesores'); ?></summary>
                     <p class="ap-records-subtitle"><?php esc_html_e('Marca los días que se queda cada alumno. Esos días aparecerá marcado solo; tú solo tendrás que marcar las excepciones y validar. Pulsa el nombre para marcar toda su semana o la letra del día para marcar toda la columna.', 'area-profesores'); ?></p>
                     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">

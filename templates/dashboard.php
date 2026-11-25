@@ -68,9 +68,9 @@ if (!defined('ABSPATH')) {
 
     <!-- Navigation / Tabs Menu -->
     <nav class="ap-nav-tabs">
-        <?php $ap_primera = $comedor !== null ? 'tab-comedor' : 'tab-enlaces'; ?>
+        <?php $ap_primera = ($comedor !== null && empty($comedor['solo_mi_comida'])) ? 'tab-comedor' : 'tab-enlaces'; ?>
         <?php if ($comedor !== null) : ?>
-            <button type="button" class="ap-tab-btn is-active" data-target="tab-comedor">
+            <button type="button" class="ap-tab-btn<?php echo $ap_primera === 'tab-comedor' ? ' is-active' : ''; ?>" data-target="tab-comedor">
                 <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -82,11 +82,11 @@ if (!defined('ABSPATH')) {
         <?php endif; ?>
 
         <?php if ($comensales_mes !== null) : ?>
-            <button type="button" class="ap-tab-btn" data-target="tab-comensales">
+            <button type="button" class="ap-tab-btn" data-target="tab-administracion">
                 <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
-                <span><?php esc_html_e('Comensales', 'area-profesores'); ?></span>
+                <span><?php esc_html_e('Administración', 'area-profesores'); ?></span>
             </button>
         <?php endif; ?>
 
@@ -140,21 +140,28 @@ if (!defined('ABSPATH')) {
                 <span><?php esc_html_e('Comunicados', 'area-profesores'); ?></span>
             </button>
         <?php endif; ?>
+
+        <button type="button" class="ap-tab-btn" data-target="tab-ayuda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="ap-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span><?php esc_html_e('Ayuda', 'area-profesores'); ?></span>
+        </button>
     </nav>
 
     <!-- Content Sections -->
     <main class="ap-portal-body">
         <?php if ($comedor !== null) : ?>
             <!-- Pestaña: Comedor de hoy (Primer Ciclo, Infantil y Primaria) -->
-            <section id="tab-comedor" class="ap-tab-content is-active">
+            <section id="tab-comedor" class="ap-tab-content<?php echo $ap_primera === 'tab-comedor' ? ' is-active' : ''; ?>">
                 <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comedor-diario.php'; ?>
             </section>
         <?php endif; ?>
 
         <?php if ($comensales_mes !== null) : ?>
-            <!-- Pestaña: Comensales del mes (Secretaría) -->
-            <section id="tab-comensales" class="ap-tab-content">
-                <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comensales-mes.php'; ?>
+            <!-- Pestaña: Administración (todo lo del mes para facturar) -->
+            <section id="tab-administracion" class="ap-tab-content">
+                <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/administracion.php'; ?>
             </section>
         <?php endif; ?>
 
@@ -183,10 +190,15 @@ if (!defined('ABSPATH')) {
         </section>
 
         <?php if ($is_direccion) : ?>
-            <!-- Pestaña 4: Comunicados a familias (Google Chat, solo Dirección) -->
+            <!-- Pestaña 4: Comunicados a familias (Google Chat, Dirección y Comunicación) -->
             <section id="tab-comunicados" class="ap-tab-content">
                 <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/comunicados.php'; ?>
             </section>
         <?php endif; ?>
+
+        <!-- Pestaña: Ayuda (manual del Área de Profesores) -->
+        <section id="tab-ayuda" class="ap-tab-content">
+            <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/ayuda.php'; ?>
+        </section>
     </main>
 </div>

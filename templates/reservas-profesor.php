@@ -4,7 +4,9 @@
  * Services reserved by the families for the pupils the teacher can see
  * (tutoría + assigned classes; every course for Dirección and Secretaría).
  *
- * Variables: $reservas { fecha, hoy, lista, proximos, todos }
+ * Portería also books services for the families ("Nueva reserva") and cancels them.
+ *
+ * Variables: $reservas { fecha, hoy, lista, proximos, todos, porteria }
  */
 
 if (!defined('ABSPATH')) {
@@ -12,6 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 $ap_r = $reservas;
+$ap_pt = isset($ap_r['porteria']) ? $ap_r['porteria'] : null;
 $ap_url = function ($fecha) {
     return add_query_arg('ap_res', $fecha, remove_query_arg('ap_res')) . '#reservas';
 };
@@ -41,6 +44,13 @@ foreach ($ap_r['lista'] as $r) {
             <button type="button" class="ap-btn ap-btn-sm ap-btn-outline" onclick="window.print()"><?php esc_html_e('Imprimir', 'area-profesores'); ?></button>
         </div>
     </div>
+
+    <?php if ($ap_pt) : ?>
+        <?php if ($ap_pt['flash']) : ?>
+            <div class="ap-cd-msg is-<?php echo esc_attr($ap_pt['flash']['type']); ?>" role="status"><?php echo esc_html($ap_pt['flash']['text']); ?></div>
+        <?php endif; ?>
+        <?php include AREA_PROFESORES_PLUGIN_DIR . 'templates/partials/reserva-porteria.php'; ?>
+    <?php endif; ?>
 
     <div class="ap-res-nav">
         <a class="ap-btn ap-btn-sm ap-btn-outline" href="<?php echo esc_url($ap_url($ap_mover($ap_r['fecha'], -1))); ?>">&larr;</a>
@@ -76,6 +86,7 @@ foreach ($ap_r['lista'] as $r) {
                     <th><?php esc_html_e('Curso', 'area-profesores'); ?></th>
                     <th><?php esc_html_e('Hora', 'area-profesores'); ?></th>
                     <th><?php esc_html_e('Detalles', 'area-profesores'); ?></th>
+                    <?php if ($ap_pt) : ?><th class="ap-ma-acc no-print"></th><?php endif; ?>
                 </tr></thead>
                 <tbody>
                     <?php foreach ($ap_lista as $r) : ?>
@@ -87,6 +98,18 @@ foreach ($ap_r['lista'] as $r) {
                                 <?php echo nl2br(esc_html(Area_Profesores_Reservas::detalles_texto($r))); ?>
                                 <?php if ($r['fecha_inicio'] !== $r['fecha_fin']) : ?><small><?php echo esc_html($r['fechas_texto']); ?></small><?php endif; ?>
                             </td>
+                            <?php if ($ap_pt) : ?>
+                                <td class="ap-ma-acc no-print">
+                                    <?php if (Area_Profesores_Reservas::puede_anular($ap_pt['uid'], $r)) : ?>
+                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(sprintf(__('¿Anular la reserva de %1$s de %2$s (%3$s)? Se avisará a la familia y al tutor/a.', 'area-profesores'), $r['servicio_nombre'], $r['alumno'], $r['fechas_texto'])); ?>');">
+                                        <input type="hidden" name="action" value="ap_reserva_anular_portal">
+                                        <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                        <?php wp_nonce_field('ap_reserva_anular_portal_' . $r['id']); ?>
+                                        <button type="submit" class="ap-btn ap-btn-sm ap-btn-outline ap-res-anular"><?php esc_html_e('Anular', 'area-profesores'); ?></button>
+                                    </form>
+                                    <?php endif; ?>
+                                </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

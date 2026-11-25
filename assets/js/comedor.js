@@ -41,8 +41,11 @@
                 actualizar();
             });
         });
-        form.addEventListener('submit', function () {
-            setTimeout(function () { boton.disabled = true; boton.textContent = 'Guardando…'; }, 0);
+        form.addEventListener('submit', function (e) {
+            setTimeout(function () {
+                if (e.defaultPrevented) { return; } // the teacher cancelled (e.g. the warning about regular diners)
+                boton.disabled = true; boton.textContent = 'Guardando…';
+            }, 0);
         });
         actualizar();
     }
@@ -83,6 +86,25 @@
             });
         });
     }
+
+    // ---- Sin comensales fijos: todo lo marcado es extra (se cobra) ----
+    var cdForm = document.getElementById('ap-cd-form');
+    if (cdForm && cdForm.getAttribute('data-sin-fijos') === '1') {
+        cdForm.addEventListener('submit', function (e) {
+            var n = cdForm.querySelectorAll('input[name="come[]"]:checked').length;
+            if (n && !window.confirm('Esta clase no tiene comensales fijos marcados, así que ' + (n === 1 ? 'el alumno marcado contará' : 'los ' + n + ' alumnos marcados contarán') + ' como EXTRA: se avisará a Administración para cobrárselo a las familias y cada familia recibirá un correo.\n\nSi alguno se queda siempre, cancela y márcalo primero en "Comensales fijos de la clase".\n\n¿Validar igualmente?')) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // ---- Mi comida: el texto del día cambia al marcarlo ----
+    document.querySelectorAll('.ap-cp-dia input[type="checkbox"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var t = cb.closest('.ap-cp-dia').querySelector('.ap-cp-txt');
+            if (t) { t.textContent = cb.checked ? 'No como' : 'Como'; }
+        });
+    });
 
     // ---- Página de cocina: se recarga sola cuando cambian los datos ----
     var cocina = document.querySelector('[data-ap-cocina-vivo]');
