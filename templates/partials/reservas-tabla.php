@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
 }
 $ap_con_servicio = !empty($ap_con_servicio);
 ?>
-<table class="widefat striped ap-reservas-tabla">
+<table class="widefat striped ap-reservas-tabla ap-sortable">
     <thead><tr>
-        <?php if ($ap_con_servicio) : ?><th><?php esc_html_e('Servicio', 'area-profesores'); ?></th><?php endif; ?>
-        <th><?php esc_html_e('Alumno', 'area-profesores'); ?></th>
-        <th><?php esc_html_e('Curso', 'area-profesores'); ?></th>
-        <th><?php esc_html_e('Fechas', 'area-profesores'); ?></th>
+        <?php if ($ap_con_servicio) : ?><th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Servicio', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th><?php endif; ?>
+        <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Alumno', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
+        <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Curso', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
+        <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Fechas', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
         <th><?php esc_html_e('Detalles', 'area-profesores'); ?></th>
-        <th><?php esc_html_e('Familia', 'area-profesores'); ?></th>
+        <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Familia', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
         <th class="no-print"></th>
     </tr></thead>
     <tbody>
@@ -24,8 +24,9 @@ $ap_con_servicio = !empty($ap_con_servicio);
             <tr class="<?php echo $r['estado'] === 'anulada' ? 'is-anulada' : ''; ?>">
                 <?php if ($ap_con_servicio) : ?><td><strong><?php echo esc_html($r['servicio_nombre']); ?></strong></td><?php endif; ?>
                 <td><strong><?php echo esc_html($r['alumno']); ?></strong></td>
-                <td><?php echo esc_html($r['curso_label']); ?></td>
-                <td><?php echo esc_html($r['fechas_texto']); ?></td>
+                <?php $ap_cc = Area_Profesores_Cursos::get_curso($r['curso']); ?>
+                <td data-sort="<?php echo esc_attr(sprintf('%03d', $ap_cc ? $ap_cc['orden'] : 999)); ?>"><?php echo esc_html($r['curso_label']); ?></td>
+                <td data-sort="<?php echo esc_attr($r['fecha_inicio'] . ' ' . $r['hora']); ?>"><?php echo esc_html($r['fechas_texto']); ?></td>
                 <td class="ap-reservas-detalles"><?php echo nl2br(esc_html(Area_Profesores_Reservas::detalles_texto($r))); ?></td>
                 <td><?php echo esc_html($r['familia']); ?><br><a href="mailto:<?php echo esc_attr($r['email']); ?>"><?php echo esc_html($r['email']); ?></a></td>
                 <td class="no-print">

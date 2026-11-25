@@ -751,3 +751,9 @@
 .ap-pestana-grupos legend { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: #64748b; margin-right: 6px; float: left; padding: 0; }
 .ap-pestana-grupos label { font-size: 13px; white-space: nowrap; }
 .ap-pestana-grupos label.is-todos { font-weight: 700; }
+.ap-sort-btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; }
+.ap-sort-btn:hover { text-decoration: underline; }
+.ap-sort-btn:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }
+.ap-sort-ind::after { content: '↕'; opacity: .35; }
+th[aria-sort="ascending"] .ap-sort-ind::after { content: '↑'; opacity: 1; }
+th[aria-sort="descending"] .ap-sort-ind::after { content: '↓'; opacity: 1; }

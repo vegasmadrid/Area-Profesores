@@ -381,3 +381,35 @@
     });
 
 })(jQuery);
+
+/* Tablas ordenables */
+(function () {
+    // Sortable tables (.ap-sortable): click a column header to sort by it; click again to reverse.
+    // A cell can give its own sort value in data-sort (e.g. the course order). Empty values go last.
+    (function () {
+        var valor = function (row, i) {
+            var td = row.children[i];
+            if (!td) { return ''; }
+            return td.hasAttribute('data-sort') ? td.getAttribute('data-sort') : td.textContent.replace(/\s+/g, ' ').trim();
+        };
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest ? e.target.closest('.ap-sortable .ap-sort-btn') : null;
+            if (!btn) { return; }
+            var th = btn.closest('th'), table = th.closest('table'), tbody = table.tBodies[0];
+            if (!tbody) { return; }
+            var i = Array.prototype.indexOf.call(th.parentNode.children, th);
+            var asc = th.getAttribute('aria-sort') !== 'ascending';
+            Array.prototype.forEach.call(th.parentNode.children, function (h) { if (h.hasAttribute('aria-sort')) { h.setAttribute('aria-sort', 'none'); } });
+            th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+            var filas = Array.prototype.slice.call(tbody.rows);
+            filas.sort(function (a, b) {
+                var x = valor(a, i), y = valor(b, i);
+                var vx = x === '' || x === '—', vy = y === '' || y === '—';
+                if (vx !== vy) { return vx ? 1 : -1; }
+                var c = x.localeCompare(y, 'es', { numeric: true, sensitivity: 'base' });
+                return asc ? c : -c;
+            });
+            filas.forEach(function (f) { tbody.appendChild(f); });
+        });
+    })();
+})();

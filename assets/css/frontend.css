@@ -3358,3 +3358,12 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-com-item-pdf { display: grid; place-items: center; background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 13px; text-decoration: none; }
 .ap-chat-pdf.is-adjunto { background: #f1f5f9; }
 .ap-com-sin-cuenta { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #f59e0b; border-radius: 12px; background: #fffbeb; color: #78350f; font-size: 14px; line-height: 1.45; }
+
+/* Tablas ordenables (Reservas) */
+.ap-sort-btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; }
+.ap-sort-btn:hover { text-decoration: underline; }
+.ap-sort-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
+.ap-sort-ind::after { content: '↕'; opacity: .35; font-size: .9em; }
+th[aria-sort="ascending"] .ap-sort-ind::after { content: '↑'; opacity: 1; }
+th[aria-sort="descending"] .ap-sort-ind::after { content: '↓'; opacity: 1; }
+@media print { .ap-sort-ind { display: none; } }
