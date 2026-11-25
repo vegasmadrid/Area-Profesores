@@ -35,7 +35,7 @@ if (!defined('ABSPATH')) {
                         <?php endif; ?>
                     </div>
                     <div class="ap-com-item-meta">
-                        <span><?php printf(esc_html__('Programado por %s', 'area-profesores'), esc_html($c['autor'])); ?></span>
+                        <span><?php printf(esc_html__('Programado por %s', 'area-profesores'), esc_html($c['autor'])); ?><?php if ($c['cuenta'] !== '') : ?> <?php printf(esc_html__('(se publicará como %s)', 'area-profesores'), esc_html($c['cuenta'])); ?><?php endif; ?></span>
                     </div>
                     <h4 class="ap-com-item-title"><?php echo esc_html($c['titulo_lista']); ?></h4>
                     <?php if ($c['mensaje'] !== '') : ?>

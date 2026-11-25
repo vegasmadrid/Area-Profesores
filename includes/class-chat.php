@@ -162,6 +162,15 @@ class Area_Profesores_Chat {
         );
     }
 
+    /** Is there any account connected to publish through the Google Chat API? */
+    public static function api_disponible() {
+        static $si = null;
+        if ($si === null) {
+            $si = class_exists('Area_Profesores_Google') && (bool) Area_Profesores_Google::cuentas();
+        }
+        return $si;
+    }
+
     /**
      * Add the computed fields (current course, etapa, display name, status).
      */
@@ -204,7 +213,8 @@ class Area_Profesores_Chat {
         }
         $e['egresada'] = false;
 
-        $e['conectado'] = $e['webhook'] !== '';
+        // Publishable with the webhook or, through the API, with its space ID.
+        $e['conectado'] = $e['webhook'] !== '' || ($e['space_id'] !== '' && self::api_disponible());
         $e['publicable'] = !$e['archivada'] && $e['activo'] && $e['conectado'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
         $e['chat_url'] = $e['space_id'] !== '' ? 'https://chat.google.com/room/' . rawurlencode($e['space_id']) : '';
 
@@ -252,6 +262,10 @@ class Area_Profesores_Chat {
     }
 
     private static function save_espacios($espacios) {
+        $antes = array();
+        foreach (self::get_raw_espacios() as $e) {
+            $antes[] = isset($e['space_id']) ? (string) $e['space_id'] : '';
+        }
         $clean = array();
         foreach ($espacios as $id => $e) {
             $e = self::normalize($e);
@@ -259,6 +273,15 @@ class Area_Profesores_Chat {
             $clean[$id] = $e;
         }
         update_option(self::OPTION, $clean, false);
+
+        // A new space (next year's courses…): the shared publishing account joins it.
+        if (class_exists('Area_Profesores_Google') && Area_Profesores_Google::puede_anadir_miembros() && ($cuenta = Area_Profesores_Google::cuenta_espacios()) !== '') {
+            foreach ($clean as $e) {
+                if ($e['space_id'] !== '' && !$e['archivada'] && !in_array($e['space_id'], $antes, true)) {
+                    Area_Profesores_Google::anadir_miembro($e['space_id'], $cuenta);
+                }
+            }
+        }
     }
 
     /**
@@ -523,22 +546,6 @@ class Area_Profesores_Chat {
 
         if ($pdf) {
             $widgets = array();
-            if (!empty($pdf['paginas'])) {
-                // The PDF converted to images (one per page, full resolution): it is read in the chat.
-                foreach ($pdf['paginas'] as $i => $url) {
-                    $widgets[] = array('image' => array(
-                        'imageUrl' => $url,
-                        'altText'  => sprintf(__('%1$s, página %2$d', 'area-profesores'), $pdf['nombre'], $i + 1),
-                        'onClick'  => array('openLink' => array('url' => $url)),
-                    ));
-                }
-                $widgets[] = array('buttonList' => array('buttons' => array(array(
-                    'text'    => __('Descargar el PDF', 'area-profesores'),
-                    'onClick' => array('openLink' => array('url' => $pdf['url'])),
-                ))));
-                $payload['cardsV2'] = array(array('cardId' => 'pdf', 'card' => array('sections' => array(array('widgets' => $widgets)))));
-                return $payload;
-            }
             if (!empty($pdf['preview'])) {
                 $widgets[] = array('image' => array(
                     'imageUrl' => $pdf['preview'],
@@ -636,9 +643,25 @@ class Area_Profesores_Chat {
         $post = get_post($post_id);
         $titulo = (string) get_post_meta($post_id, '_ap_titulo', true);
         $image_id = (int) get_post_meta($post_id, '_ap_image_id', true);
-        $payload = self::es_pdf($image_id)
-            ? self::build_payload($titulo, $post->post_content, '', self::datos_pdf($image_id))
-            : self::build_payload($titulo, $post->post_content, $image_id ? self::get_image_url($image_id) : '');
+        $cuenta = (string) get_post_meta($post_id, '_ap_cuenta', true);
+        if ($cuenta !== '' && !isset(Area_Profesores_Google::cuentas()[$cuenta])) {
+            $cuenta = ''; // the account was removed: webhook
+        }
+        $payload = null; // webhook message, built only if needed
+        $hacer_payload = function () use (&$payload, $titulo, $post, $image_id) {
+            if ($payload === null) {
+                $payload = self::es_pdf($image_id)
+                    ? self::build_payload($titulo, $post->post_content, '', self::datos_pdf($image_id))
+                    : self::build_payload($titulo, $post->post_content, $image_id ? self::get_image_url($image_id) : '');
+            }
+            return $payload;
+        };
+        // Through the API the image / PDF is uploaded to Google as an attachment.
+        $archivo = null;
+        if ($image_id && ($path = get_attached_file($image_id)) && is_readable($path)) {
+            $archivo = array('path' => $path, 'nombre' => wp_basename($path), 'mime' => (string) get_post_mime_type($image_id));
+        }
+        $texto = trim(($titulo !== '' ? '*' . $titulo . "*\n\n" : '') . $post->post_content);
 
         $espacios = self::get_espacios();
         $resultados = get_post_meta($post_id, '_ap_resultados', true);
@@ -652,15 +675,36 @@ class Area_Profesores_Chat {
                 continue;
             }
             $e = $espacios[$eid];
+            $via = '';
             if (!$e['publicable']) {
-                $r = array('ok' => false, 'error' => __('El espacio está desactivado o ya no tiene webhook.', 'area-profesores'));
+                $r = array('ok' => false, 'error' => __('El espacio está desactivado o no se puede publicar en él.', 'area-profesores'));
+            } elseif ($cuenta !== '' && $e['space_id'] !== '') {
+                $via = 'api';
+                $r = Area_Profesores_Google::publicar($cuenta, $e['space_id'], $texto, $archivo);
+                // The shared account is not in the space yet: add it and try again.
+                if (!$r['ok'] && in_array($r['codigo'], array(403, 404), true) && $cuenta === Area_Profesores_Google::cuenta_espacios()
+                    && !is_wp_error(Area_Profesores_Google::anadir_miembro($e['space_id'], $cuenta))) {
+                    $r = Area_Profesores_Google::publicar($cuenta, $e['space_id'], $texto, $archivo);
+                }
+                // Last resort: the space's webhook, if it still has one.
+                if (!$r['ok'] && $e['webhook'] !== '') {
+                    $w = self::send_to_webhook($e['webhook'], $hacer_payload());
+                    if ($w['ok']) {
+                        $r = $w;
+                        $via = 'webhook';
+                    }
+                }
+            } elseif ($e['webhook'] !== '') {
+                $via = 'webhook';
+                $r = self::send_to_webhook($e['webhook'], $hacer_payload());
             } else {
-                $r = self::send_to_webhook($e['webhook'], $payload);
+                $r = array('ok' => false, 'error' => __('Este espacio no tiene webhook: elige una cuenta para publicar.', 'area-profesores'));
             }
             $resultados[$eid] = array(
                 'nombre' => $e['titulo'],
                 'ok'     => $r['ok'],
                 'error'  => $r['error'],
+                'via'    => $via,
                 'fecha'  => current_time('mysql'),
             );
             $out[] = array('id' => $eid, 'nombre' => $e['titulo'], 'ok' => $r['ok'], 'error' => $r['error']);
@@ -671,8 +715,37 @@ class Area_Profesores_Chat {
         if (!get_post_meta($post_id, '_ap_enviado_gmt', true)) {
             update_post_meta($post_id, '_ap_enviado_gmt', time());
         }
+        self::liberar_archivo($post_id, $resultados);
 
         return $out;
+    }
+
+    /**
+     * Once every space has the message through the API, the file is already stored in
+     * Google: it is deleted from the website so that files do not pile up on the server.
+     * (If some space failed it is kept for the retry; if a webhook was used, the
+     * message shows it from the website, so it is kept too.)
+     */
+    private static function liberar_archivo($post_id, $resultados) {
+        $image_id = (int) get_post_meta($post_id, '_ap_image_id', true);
+        if (!$image_id || !$resultados) {
+            return;
+        }
+        foreach ($resultados as $r) {
+            if (empty($r['ok']) || (isset($r['via']) ? $r['via'] : 'webhook') !== 'api') {
+                return;
+            }
+        }
+        // Another pending announcement may still use the same file.
+        $otros = get_posts(array('post_type' => self::POST_TYPE, 'post_status' => 'any', 'fields' => 'ids', 'numberposts' => 1, 'exclude' => array($post_id),
+            'meta_query' => array(array('key' => '_ap_image_id', 'value' => $image_id), array('key' => '_ap_estado', 'value' => 'programado'))));
+        if ($otros) {
+            return;
+        }
+        $file = get_attached_file($image_id);
+        update_post_meta($post_id, '_ap_archivo', array('nombre' => $file ? wp_basename($file) : '', 'pdf' => self::es_pdf($image_id)));
+        wp_delete_attachment($image_id, true);
+        delete_post_meta($post_id, '_ap_image_id');
     }
 
     /* ---------------------------------------------------------------------
@@ -941,12 +1014,12 @@ class Area_Profesores_Chat {
             'autor'       => $author ? $author->display_name : '',
             'image_id'    => $image_id,
             'image_url'   => $image_id ? (string) wp_get_attachment_url($image_id) : '',
-            'thumb_url'   => $image_id ? (string) (self::paginas_pdf($image_id) ? wp_get_attachment_image_url(self::paginas_pdf($image_id)[0], 'thumbnail') : wp_get_attachment_image_url($image_id, 'thumbnail')) : '',
-            'paginas'     => self::es_pdf($image_id) ? array_map(function ($id) {
-                return (string) wp_get_attachment_image_url($id, 'medium_large');
-            }, self::paginas_pdf($image_id)) : array(),
+            'thumb_url'   => $image_id ? (string) wp_get_attachment_image_url($image_id, 'thumbnail') : '',
             'es_pdf'      => self::es_pdf($image_id),
             'archivo'     => self::es_pdf($image_id) ? self::datos_pdf($image_id)['nombre'] : '',
+            // File already uploaded to Google and deleted from the website.
+            'archivo_google' => is_array($ag = get_post_meta($p->ID, '_ap_archivo', true)) ? $ag : null,
+            'cuenta'      => (string) get_post_meta($p->ID, '_ap_cuenta', true),
             'espacios'    => $espacio_ids,
             'espacio_nombres' => $espacio_nombres,
             'resultados'  => is_array($resultados) ? $resultados : array(),
@@ -965,8 +1038,8 @@ class Area_Profesores_Chat {
             'image_url' => $c['image_url'],
             'es_pdf'    => $c['es_pdf'],
             'archivo'   => $c['archivo'],
-            'paginas'   => $c['paginas'],
             'thumb_url' => $c['thumb_url'],
+            'cuenta'    => $c['cuenta'],
         );
         if ($c['programado']) {
             $data['fecha'] = wp_date('Y-m-d', $c['programado']);
@@ -988,60 +1061,11 @@ class Area_Profesores_Chat {
         $url = (string) wp_get_attachment_url($attachment_id);
         $src = wp_get_attachment_image_src($attachment_id, 'large');
         $file = get_attached_file($attachment_id);
-        $paginas = array();
-        foreach (self::paginas_pdf($attachment_id) as $pid) {
-            $u = wp_get_attachment_url($pid);
-            if ($u) {
-                $paginas[] = set_url_scheme($u, 'https');
-            }
-        }
         return array(
             'url'     => $url ? set_url_scheme($url, 'https') : '',
             'nombre'  => $file ? wp_basename($file) : get_the_title($attachment_id) . '.pdf',
             'preview' => $src && !empty($src[0]) ? set_url_scheme($src[0], 'https') : '',
-            'paginas' => $paginas,
         );
-    }
-
-    /** Images (JPG) of the pages of a PDF, when it was sent "as an image". */
-    public static function paginas_pdf($attachment_id) {
-        $ids = get_post_meta($attachment_id, '_ap_pdf_paginas', true);
-        return is_array($ids) ? array_values(array_filter(array_map('intval', $ids), function ($id) {
-            return get_post_type($id) === 'attachment';
-        })) : array();
-    }
-
-    /**
-     * Store the pages of a PDF converted to JPG in the browser (field "paginas[]").
-     * Only JPG, at most 6 pages of 8 MB each.
-     */
-    private static function guardar_paginas($pdf_id) {
-        if (empty($_FILES['paginas']['name']) || !is_array($_FILES['paginas']['name'])) {
-            return;
-        }
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-        require_once ABSPATH . 'wp-admin/includes/image.php';
-        $base = sanitize_file_name(preg_replace('/\.pdf$/i', '', wp_basename((string) get_attached_file($pdf_id))));
-        $ids = array();
-        $f = $_FILES['paginas'];
-        foreach (array_slice(array_keys($f['name']), 0, 6) as $n => $k) {
-            if (!empty($f['error'][$k]) || $f['size'][$k] > self::MAX_IMAGE || !is_uploaded_file($f['tmp_name'][$k])) {
-                continue;
-            }
-            $tipo = wp_get_image_mime($f['tmp_name'][$k]);
-            if ($tipo !== 'image/jpeg') {
-                continue;
-            }
-            $file = array('name' => $base . '-pagina-' . ($n + 1) . '.jpg', 'type' => 'image/jpeg', 'tmp_name' => $f['tmp_name'][$k], 'error' => 0, 'size' => $f['size'][$k]);
-            $id = media_handle_sideload($file, $pdf_id, null, array('test_form' => false, 'mimes' => array('jpg|jpeg|jpe' => 'image/jpeg')));
-            if (!is_wp_error($id)) {
-                $ids[] = (int) $id;
-            }
-        }
-        if ($ids) {
-            update_post_meta($pdf_id, '_ap_pdf_paginas', $ids);
-        }
     }
 
     /**
@@ -1144,6 +1168,12 @@ class Area_Profesores_Chat {
             }
         }
 
+        // Account to publish with through the API (colegio@ or a personal one).
+        $cuenta = isset($_POST['cuenta']) ? strtolower(sanitize_email(wp_unslash($_POST['cuenta']))) : '';
+        if ($cuenta !== '' && !Area_Profesores_Google::puede_usar_cuenta($user_id, $cuenta)) {
+            wp_send_json_error(array('message' => __('No puedes publicar con esa cuenta.', 'area-profesores')));
+        }
+
         // Editing a scheduled announcement: it must still be pending.
         $replace_id = isset($_POST['replace_id']) ? absint($_POST['replace_id']) : 0;
         if ($replace_id) {
@@ -1158,9 +1188,6 @@ class Area_Profesores_Chat {
             $image_id = $this->handle_image_upload();
             if (is_wp_error($image_id)) {
                 wp_send_json_error(array('message' => $image_id->get_error_message()));
-            }
-            if (self::es_pdf($image_id)) {
-                self::guardar_paginas($image_id); // the PDF converted to images, if chosen
             }
         }
 
@@ -1178,6 +1205,9 @@ class Area_Profesores_Chat {
 
         update_post_meta($comunicado_id, '_ap_titulo', $titulo);
         update_post_meta($comunicado_id, '_ap_espacios', $espacio_ids);
+        if ($cuenta !== '') {
+            update_post_meta($comunicado_id, '_ap_cuenta', $cuenta);
+        }
         if ($image_id) {
             update_post_meta($comunicado_id, '_ap_image_id', $image_id);
             if ($has_file) {

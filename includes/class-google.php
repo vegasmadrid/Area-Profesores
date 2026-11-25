@@ -10,6 +10,14 @@
  *
  * Requires a Google Cloud project with the Google Chat API enabled, a Chat app
  * configured in that API and an OAuth client of type "Aplicación web".
+ *
+ * Publishing accounts: announcements can be published through the API as a user
+ * of the school (e.g. colegio@): the image or PDF is uploaded to Google as an
+ * attachment, as when posting by hand. An account connected as "compartida" can
+ * be used by everyone who publishes (Dirección / Comunicación) without logging in
+ * with it; a "personal" one only by the WordPress user who connected it.
+ * With admin access the connected administrator also adds the shared account to
+ * the spaces (chat.admin.memberships).
  */
 
 if (!defined('ABSPATH')) {
@@ -20,6 +28,8 @@ class Area_Profesores_Google {
 
     const OPTION = 'ap_google_chat';
     const API    = 'https://chat.googleapis.com/v1/';
+    const UPLOAD = 'https://chat.googleapis.com/upload/v1/';
+    const OPT_CUENTAS = 'ap_google_cuentas';
 
     private static $instance = null;
 
@@ -36,6 +46,9 @@ class Area_Profesores_Google {
         add_action('admin_post_ap_google_save', array($this, 'handle_save'));
         add_action('admin_post_ap_google_connect', array($this, 'handle_connect'));
         add_action('admin_post_ap_google_disconnect', array($this, 'handle_disconnect'));
+        add_action('admin_post_ap_google_cuenta', array($this, 'handle_connect_cuenta'));
+        add_action('admin_post_ap_google_cuenta_quitar', array($this, 'handle_quitar_cuenta'));
+        add_action('admin_post_ap_google_miembros', array($this, 'handle_miembros'));
     }
 
     /* ---------------------------------------------------------------------
@@ -53,6 +66,8 @@ class Area_Profesores_Google {
             'expires_at'      => 0,
             'email'           => '',
             'plantilla'       => '{curso} (PROMOCIÓN {promocion})',
+            'cuenta_espacios' => '', // shared account that is added to every space
+            'scopes'          => '', // permissions granted to the administrator connection
         ), is_array($s) ? $s : array());
     }
 
@@ -80,6 +95,8 @@ class Area_Profesores_Google {
             'openid',
             'email',
             $s['admin_access'] ? 'https://www.googleapis.com/auth/chat.admin.spaces' : 'https://www.googleapis.com/auth/chat.spaces',
+            // To add the publishing account to the spaces.
+            $s['admin_access'] ? 'https://www.googleapis.com/auth/chat.admin.memberships' : 'https://www.googleapis.com/auth/chat.memberships',
         );
     }
 
@@ -135,22 +152,31 @@ class Area_Profesores_Google {
             self::back(__('Primero guarda el ID de cliente y el secreto.', 'area-profesores'), 'error');
         }
 
+        self::ir_a_google(self::get_scopes(), array('modo' => 'admin'));
+    }
+
+    /**
+     * Send the browser to Google's consent screen.
+     */
+    private static function ir_a_google($scopes, $datos, $login_hint = '') {
         $s = self::get_settings();
         $state = wp_generate_password(24, false, false);
-        set_transient('ap_google_state_' . get_current_user_id(), $state, 15 * MINUTE_IN_SECONDS);
+        set_transient('ap_google_state_' . get_current_user_id(), array_merge($datos, array('state' => $state)), 15 * MINUTE_IN_SECONDS);
 
-        $url = add_query_arg(array(
+        $args = array(
             'client_id'     => rawurlencode($s['client_id']),
             'redirect_uri'  => rawurlencode(self::get_redirect_uri()),
             'response_type' => 'code',
-            'scope'         => rawurlencode(implode(' ', self::get_scopes())),
+            'scope'         => rawurlencode(implode(' ', $scopes)),
             'access_type'   => 'offline',
-            'prompt'        => 'consent',
+            'prompt'        => rawurlencode('consent select_account'),
             'include_granted_scopes' => 'true',
             'state'         => rawurlencode($state),
-        ), 'https://accounts.google.com/o/oauth2/v2/auth');
-
-        wp_redirect($url);
+        );
+        if ($login_hint !== '') {
+            $args['login_hint'] = rawurlencode($login_hint);
+        }
+        wp_redirect(add_query_arg($args, 'https://accounts.google.com/o/oauth2/v2/auth'));
         exit;
     }
 
@@ -162,9 +188,11 @@ class Area_Profesores_Google {
             wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
         }
 
-        $expected = get_transient('ap_google_state_' . get_current_user_id());
+        $guardado = get_transient('ap_google_state_' . get_current_user_id());
         delete_transient('ap_google_state_' . get_current_user_id());
-        if (!$expected || !hash_equals($expected, (string) wp_unslash($_GET['state']))) {
+        $expected = is_array($guardado) ? $guardado['state'] : $guardado;
+        $modo = is_array($guardado) && isset($guardado['modo']) ? $guardado['modo'] : 'admin';
+        if (!$expected || !hash_equals((string) $expected, (string) wp_unslash($_GET['state']))) {
             self::back(__('La conexión con Google ha caducado. Vuelve a intentarlo.', 'area-profesores'), 'error');
         }
 
@@ -190,12 +218,17 @@ class Area_Profesores_Google {
             self::back(sprintf(__('No se pudo completar la conexión con Google: %s', 'area-profesores'), $err), 'error');
         }
 
+        if ($modo === 'cuenta') {
+            self::guardar_cuenta($data, !empty($guardado['compartida']));
+        }
+
         $s['access_token'] = $data['access_token'];
         $s['expires_at'] = time() + (isset($data['expires_in']) ? (int) $data['expires_in'] : 3500) - 60;
         if (!empty($data['refresh_token'])) {
             $s['refresh_token'] = $data['refresh_token'];
         }
         $s['email'] = self::email_from_id_token(isset($data['id_token']) ? $data['id_token'] : '');
+        $s['scopes'] = isset($data['scope']) ? (string) $data['scope'] : '';
         self::save_settings($s);
 
         if ($s['refresh_token'] === '') {
@@ -337,6 +370,287 @@ class Area_Profesores_Google {
         }
         $r = self::request('PATCH', 'spaces/' . rawurlencode($space_id), array('updateMask' => 'displayName'), array('displayName' => $name));
         return is_wp_error($r) ? $r : true;
+    }
+
+    /* ---------------------------------------------------------------------
+     * Cuentas para publicar comunicados (colegio@, personales…)
+     * ------------------------------------------------------------------- */
+
+    /** Has the administrator connection the permission to add members to the spaces? */
+    public static function puede_anadir_miembros() {
+        $s = self::get_settings();
+        return self::is_connected() && strpos($s['scopes'], 'memberships') !== false;
+    }
+
+    /** Scopes of a publishing account: send messages with attachments. */
+    private static function scopes_cuenta() {
+        return array('openid', 'email', 'https://www.googleapis.com/auth/chat.messages.create');
+    }
+
+    /** @return array email => { email, refresh_token, access_token, expires_at, compartida, propietario, conectado } */
+    public static function cuentas() {
+        $c = get_option(self::OPT_CUENTAS, array());
+        return is_array($c) ? $c : array();
+    }
+
+    private static function guardar_cuentas($c) {
+        update_option(self::OPT_CUENTAS, $c, false);
+    }
+
+    /**
+     * Accounts a user can publish with: the shared ones and their own personal ones.
+     *
+     * @return array email => label
+     */
+    public static function cuentas_para($user_id) {
+        $out = array();
+        foreach (self::cuentas() as $email => $c) {
+            if ($c['refresh_token'] !== '' && (!empty($c['compartida']) || (int) $c['propietario'] === (int) $user_id)) {
+                $out[$email] = $email . (!empty($c['compartida']) ? '' : ' ' . __('(solo tú)', 'area-profesores'));
+            }
+        }
+        // The shared ones first.
+        uksort($out, function ($a, $b) {
+            $c = self::cuentas();
+            return array(empty($c[$a]['compartida']), $a) <=> array(empty($c[$b]['compartida']), $b);
+        });
+        return $out;
+    }
+
+    public static function puede_usar_cuenta($user_id, $email) {
+        return isset(self::cuentas_para($user_id)[$email]);
+    }
+
+    /** Shared account added to every space (the one chosen, or the first shared one). */
+    public static function cuenta_espacios() {
+        $s = self::get_settings();
+        $c = self::cuentas();
+        if ($s['cuenta_espacios'] !== '' && isset($c[$s['cuenta_espacios']])) {
+            return $s['cuenta_espacios'];
+        }
+        foreach ($c as $email => $x) {
+            if (!empty($x['compartida'])) {
+                return $email;
+            }
+        }
+        return '';
+    }
+
+    public function handle_connect_cuenta() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_cuenta');
+        if (!self::is_configured()) {
+            self::back(__('Primero guarda el ID de cliente y el secreto.', 'area-profesores'), 'error');
+        }
+        $hint = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+        self::ir_a_google(self::scopes_cuenta(), array('modo' => 'cuenta', 'compartida' => !empty($_POST['compartida'])), $hint);
+    }
+
+    /** OAuth callback of a publishing account. */
+    private static function guardar_cuenta($data, $compartida) {
+        $email = strtolower(self::email_from_id_token(isset($data['id_token']) ? $data['id_token'] : ''));
+        if ($email === '') {
+            self::back(__('Google no ha indicado el correo de la cuenta. Vuelve a intentarlo.', 'area-profesores'), 'error');
+        }
+        $c = self::cuentas();
+        $old = isset($c[$email]) ? $c[$email] : array();
+        $refresh = !empty($data['refresh_token']) ? $data['refresh_token'] : (isset($old['refresh_token']) ? $old['refresh_token'] : '');
+        if ($refresh === '') {
+            self::back(__('Google no ha devuelto un permiso permanente. Quita la cuenta y vuelve a conectarla.', 'area-profesores'), 'error');
+        }
+        $c[$email] = array(
+            'email'         => $email,
+            'refresh_token' => $refresh,
+            'access_token'  => $data['access_token'],
+            'expires_at'    => time() + (isset($data['expires_in']) ? (int) $data['expires_in'] : 3500) - 60,
+            'compartida'    => (bool) $compartida,
+            'propietario'   => $compartida ? 0 : get_current_user_id(),
+            'conectado'     => current_time('mysql'),
+        );
+        self::guardar_cuentas($c);
+        self::back($compartida
+            ? sprintf(__('%s conectada: Dirección y Comunicación ya pueden publicar los comunicados con esta cuenta. Pulsa "Añadir a todos los espacios" para que entre en ellos.', 'area-profesores'), $email)
+            : sprintf(__('%s conectada: solo tú puedes publicar con esta cuenta.', 'area-profesores'), $email));
+    }
+
+    public function handle_quitar_cuenta() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_cuenta_quitar');
+        $email = isset($_POST['email']) ? strtolower(sanitize_email(wp_unslash($_POST['email']))) : '';
+        $c = self::cuentas();
+        if (isset($c[$email])) {
+            if (!empty($c[$email]['refresh_token'])) {
+                wp_remote_post('https://oauth2.googleapis.com/revoke', array('timeout' => 10, 'body' => array('token' => $c[$email]['refresh_token'])));
+            }
+            unset($c[$email]);
+            self::guardar_cuentas($c);
+        }
+        self::back(sprintf(__('Cuenta %s quitada.', 'area-profesores'), $email));
+    }
+
+    /**
+     * Valid access token of a publishing account.
+     *
+     * @return string|WP_Error
+     */
+    private static function token_cuenta($email) {
+        $c = self::cuentas();
+        if (empty($c[$email]['refresh_token'])) {
+            return new WP_Error('google', sprintf(__('La cuenta %s no está conectada.', 'area-profesores'), $email));
+        }
+        if (!empty($c[$email]['access_token']) && (int) $c[$email]['expires_at'] > time()) {
+            return $c[$email]['access_token'];
+        }
+        $s = self::get_settings();
+        $response = wp_remote_post('https://oauth2.googleapis.com/token', array(
+            'timeout' => 20,
+            'body'    => array(
+                'client_id'     => $s['client_id'],
+                'client_secret' => $s['client_secret'],
+                'refresh_token' => $c[$email]['refresh_token'],
+                'grant_type'    => 'refresh_token',
+            ),
+        ));
+        $data = is_wp_error($response) ? array() : json_decode(wp_remote_retrieve_body($response), true);
+        if (empty($data['access_token'])) {
+            $err = is_wp_error($response) ? $response->get_error_message() : (isset($data['error_description']) ? $data['error_description'] : __('permiso revocado o caducado', 'area-profesores'));
+            return new WP_Error('google', sprintf(__('No se pudo usar la cuenta %1$s: %2$s. Vuelve a conectarla en Área Profesores › Aulas.', 'area-profesores'), $email, $err));
+        }
+        $c[$email]['access_token'] = $data['access_token'];
+        $c[$email]['expires_at'] = time() + (isset($data['expires_in']) ? (int) $data['expires_in'] : 3500) - 60;
+        self::guardar_cuentas($c);
+        return $data['access_token'];
+    }
+
+    /** Error text of a Chat API response. */
+    private static function error_api($response, $contexto) {
+        if (is_wp_error($response)) {
+            return $response->get_error_message();
+        }
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $msg = isset($data['error']['message']) ? $data['error']['message'] : wp_remote_retrieve_response_message($response);
+        if ($code === 403 || $code === 404) {
+            $msg = sprintf(__('La cuenta %s no es miembro de este espacio o no puede publicar en él.', 'area-profesores'), $contexto) . ' (' . $msg . ')';
+        } elseif ($code === 429) {
+            $msg = __('Demasiados envíos seguidos. Inténtalo de nuevo en un minuto.', 'area-profesores');
+        }
+        return sprintf('HTTP %d: %s', $code, $msg);
+    }
+
+    /**
+     * Publish a message in a space as a publishing account, with an optional file
+     * (image or PDF) uploaded to Google as an attachment.
+     *
+     * @param array|null $archivo { path, nombre, mime }
+     * @return array { ok, error, codigo }
+     */
+    public static function publicar($email, $space_id, $texto, $archivo = null) {
+        $token = self::token_cuenta($email);
+        if (is_wp_error($token)) {
+            return array('ok' => false, 'error' => $token->get_error_message(), 'codigo' => 0);
+        }
+        $parent = 'spaces/' . rawurlencode($space_id);
+        $body = array('text' => $texto);
+
+        if ($archivo && is_readable($archivo['path'])) {
+            $limite = '====' . wp_generate_password(24, false, false);
+            $datos = "--$limite\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" . wp_json_encode(array('filename' => $archivo['nombre'])) . "\r\n"
+                . "--$limite\r\nContent-Type: " . $archivo['mime'] . "\r\n\r\n" . file_get_contents($archivo['path']) . "\r\n--$limite--";
+            $r = wp_remote_post(self::UPLOAD . $parent . '/attachments:upload?uploadType=multipart', array(
+                'timeout' => 60,
+                'headers' => array('Authorization' => 'Bearer ' . $token, 'Content-Type' => 'multipart/related; boundary=' . $limite),
+                'body'    => $datos,
+            ));
+            $code = is_wp_error($r) ? 0 : (int) wp_remote_retrieve_response_code($r);
+            $up = is_wp_error($r) ? array() : json_decode(wp_remote_retrieve_body($r), true);
+            if ($code < 200 || $code >= 300 || empty($up['attachmentDataRef'])) {
+                return array('ok' => false, 'error' => __('No se pudo subir el archivo a Google:', 'area-profesores') . ' ' . self::error_api($r, $email), 'codigo' => $code);
+            }
+            $body['attachment'] = array(array('attachmentDataRef' => $up['attachmentDataRef']));
+        }
+
+        $r = wp_remote_post(self::API . $parent . '/messages', array(
+            'timeout' => 30,
+            'headers' => array('Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json; charset=UTF-8'),
+            'body'    => wp_json_encode($body),
+        ));
+        $code = is_wp_error($r) ? 0 : (int) wp_remote_retrieve_response_code($r);
+        if ($code >= 200 && $code < 300) {
+            return array('ok' => true, 'error' => '', 'codigo' => $code);
+        }
+        return array('ok' => false, 'error' => self::error_api($r, $email), 'codigo' => $code);
+    }
+
+    /**
+     * Add a person of the school to a space (with admin access the connected
+     * administrator does not need to be a member). Already a member = ok.
+     *
+     * @return true|WP_Error
+     */
+    public static function anadir_miembro($space_id, $email) {
+        if (!self::is_connected()) {
+            return new WP_Error('google', __('Conecta primero la cuenta de administrador (arriba).', 'area-profesores'));
+        }
+        $r = self::request('POST', 'spaces/' . rawurlencode($space_id) . '/members', array(), array(
+            'member' => array('name' => 'users/' . $email, 'type' => 'HUMAN'),
+        ));
+        if (is_wp_error($r) && strpos($r->get_error_message(), 'HTTP 409') !== 0) {
+            return $r;
+        }
+        return true;
+    }
+
+    /**
+     * Add the shared account to every active space with an ID.
+     *
+     * @return array { ok, errores: [titulo => mensaje] }
+     */
+    public static function anadir_a_espacios($email = '') {
+        $email = $email !== '' ? $email : self::cuenta_espacios();
+        $out = array('ok' => 0, 'errores' => array());
+        if ($email === '') {
+            $out['errores'][''] = __('No hay ninguna cuenta compartida conectada.', 'area-profesores');
+            return $out;
+        }
+        foreach (Area_Profesores_Chat::get_espacios() as $e) {
+            if ($e['space_id'] === '' || $e['archivada'] || !$e['activo']) {
+                continue;
+            }
+            $r = self::anadir_miembro($e['space_id'], $email);
+            if (is_wp_error($r)) {
+                $out['errores'][$e['titulo']] = $r->get_error_message();
+            } else {
+                $out['ok']++;
+            }
+        }
+        return $out;
+    }
+
+    public function handle_miembros() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_miembros');
+        $s = self::get_settings();
+        if (isset($_POST['cuenta_espacios'])) {
+            $s['cuenta_espacios'] = strtolower(sanitize_email(wp_unslash($_POST['cuenta_espacios'])));
+            self::save_settings($s);
+        }
+        $r = self::anadir_a_espacios();
+        $txt = sprintf(__('%1$s está en %2$d espacios.', 'area-profesores'), self::cuenta_espacios(), $r['ok']);
+        if ($r['errores']) {
+            $l = array();
+            foreach (array_slice($r['errores'], 0, 5, true) as $t => $m) {
+                $l[] = ($t !== '' ? $t . ': ' : '') . $m;
+            }
+            $txt .= ' ' . sprintf(__('No se ha podido en %d:', 'area-profesores'), count($r['errores'])) . ' ' . implode(' · ', $l);
+        }
+        self::back($txt, $r['errores'] ? 'error' : 'success');
     }
 
     /**

@@ -53,6 +53,20 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
 
         <div class="ap-comunicado-layout">
             <div class="ap-comunicado-main">
+                <?php $ap_cuentas = class_exists('Area_Profesores_Google') ? Area_Profesores_Google::cuentas_para(get_current_user_id()) : array(); ?>
+                <?php if ($ap_cuentas) : ?>
+                    <!-- Cuenta con la que se publica (API de Google Chat) -->
+                    <div class="ap-form-group-card ap-com-cuenta">
+                        <label class="ap-label" for="ap-com-cuenta"><?php esc_html_e('Publicar como', 'area-profesores'); ?></label>
+                        <select id="ap-com-cuenta" name="cuenta" class="ap-textarea">
+                            <?php foreach ($ap_cuentas as $ap_email => $ap_label) : ?>
+                                <option value="<?php echo esc_attr($ap_email); ?>"><?php echo esc_html($ap_label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="ap-optional"><?php esc_html_e('El comunicado aparece en el chat enviado por esta cuenta. La imagen o el PDF se adjuntan y se guardan en Google, como cuando se publica a mano.', 'area-profesores'); ?></small>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Título -->
                 <div class="ap-form-group-card">
                     <label class="ap-label" for="ap-com-titulo"><?php esc_html_e('Título', 'area-profesores'); ?> <span class="ap-optional"><?php esc_html_e('(opcional, aparece en negrita)', 'area-profesores'); ?></span></label>
@@ -79,12 +93,6 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     <div class="ap-com-image-preview" id="ap-com-image-preview" style="display:none;">
                         <img src="" alt="">
                         <span class="ap-com-pdf-nombre" id="ap-com-pdf-nombre" style="display:none;"></span>
-                        <div class="ap-com-pdf-modo" id="ap-com-pdf-modo" style="display:none;">
-                            <label><input type="radio" name="pdf_modo" value="imagen" checked> <strong><?php esc_html_e('Enviar como imagen', 'area-profesores'); ?></strong> <small><?php esc_html_e('(recomendado: se lee directamente en el chat; cada página se convierte en una imagen de alta resolución y debajo va el botón para descargar el PDF)', 'area-profesores'); ?></small></label>
-                            <label><input type="radio" name="pdf_modo" value="pdf"> <strong><?php esc_html_e('Enviar como PDF', 'area-profesores'); ?></strong> <small><?php esc_html_e('(solo una tarjeta con el botón para abrirlo)', 'area-profesores'); ?></small></label>
-                            <p class="ap-com-pdf-estado" id="ap-com-pdf-estado"></p>
-                            <div class="ap-com-pdf-paginas" id="ap-com-pdf-paginas"></div>
-                        </div>
                         <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar', 'area-profesores'); ?></button>
                     </div>
                 </div>
@@ -166,7 +174,6 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     </div>
                     <div class="ap-chat-bubble-text" id="ap-com-preview-text"><em><?php esc_html_e('El texto aparecerá aquí…', 'area-profesores'); ?></em></div>
                     <img class="ap-chat-bubble-img" id="ap-com-preview-img" src="" alt="" style="display:none;">
-                    <div class="ap-chat-pdf-paginas" id="ap-com-preview-paginas" style="display:none;"></div>
                     <div class="ap-chat-pdf" id="ap-com-preview-pdf" style="display:none;">
                         <small><?php esc_html_e('Documento PDF', 'area-profesores'); ?></small>
                         <span class="ap-chat-pdf-nombre"></span>
@@ -174,7 +181,7 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     </div>
                 </div>
                 <p class="ap-com-preview-note" id="ap-com-pdf-nota" style="display:none;"><?php esc_html_e('Google Chat no deja que la web adjunte archivos: el PDF se guarda en la web y en el espacio sale esta tarjeta (con la primera página si el servidor puede generarla) y el botón para abrirlo.', 'area-profesores'); ?></p>
-                <p class="ap-com-preview-note"><?php esc_html_e('El nombre y el icono son los del webhook configurado en cada espacio.', 'area-profesores'); ?></p>
+                <p class="ap-com-preview-note"><?php echo !empty($ap_cuentas) ? esc_html__('En el chat aparece el nombre de la cuenta elegida, junto al de la aplicación de Chat del colegio.', 'area-profesores') : esc_html__('El nombre y el icono son los del webhook configurado en cada espacio.', 'area-profesores'); ?></p>
             </aside>
         </div>
 

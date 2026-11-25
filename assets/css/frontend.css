@@ -3356,12 +3356,4 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 .ap-chat-pdf-nombre { font-size: 14px; color: #0f172a; overflow-wrap: anywhere; }
 .ap-chat-pdf-btn { justify-self: start; margin-top: 4px; padding: 4px 12px; border-radius: 6px; background: #1a73e8; color: #fff; font-size: 13px; font-weight: 600; }
 .ap-com-item-pdf { display: grid; place-items: center; background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 13px; text-decoration: none; }
-.ap-com-pdf-modo { margin: 8px 0 10px; display: grid; gap: 6px; }
-.ap-com-pdf-modo label { display: block; font-size: 14px; line-height: 1.4; cursor: pointer; }
-.ap-com-pdf-modo small { color: #64748b; }
-.ap-com-pdf-estado { margin: 2px 0 0; font-size: 13px; color: #065f46; }
-.ap-com-pdf-estado.is-error { color: #9a2c1c; }
-.ap-com-pdf-paginas { display: flex; flex-wrap: wrap; gap: 6px; }
-.ap-com-pdf-paginas img { width: 90px; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; }
-.ap-chat-pdf-paginas { display: grid; gap: 6px; margin-top: 10px; }
-.ap-chat-pdf-paginas img { width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
+.ap-chat-pdf.is-adjunto { background: #f1f5f9; }

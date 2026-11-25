@@ -196,8 +196,9 @@ $m_secciones = array(
     <h3><span><?php echo (int) $m_i; ?></span> <?php echo esc_html($m_secciones['comunicados']); ?> <em class="ap-manual-solo"><?php esc_html_e('Solo Dirección y Comunicación', 'area-profesores'); ?></em></h3>
     <p><?php esc_html_e('Publica un comunicado a las familias en sus espacios de Google Chat, firmado como el colegio, en varios espacios a la vez.', 'area-profesores'); ?></p>
     <ol>
+        <li><?php esc_html_e('En "Publicar como" elige la cuenta con la que sale el comunicado (normalmente, la del colegio).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Escribe un título (opcional, sale en negrita) y el texto. Para dar formato: *negrita*, _cursiva_, ~tachado~. Los enlaces se activan solos.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Si quieres, añade una imagen (JPG, PNG o GIF, hasta 8 MB) o un PDF (hasta 20 MB, por ejemplo el menú). Con "Enviar como imagen" (recomendado) cada página del PDF se convierte en una imagen de alta resolución que se lee directamente en el chat, con el botón "Descargar el PDF" debajo; con "Enviar como PDF" sale solo una tarjeta con el botón para abrirlo.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si quieres, añade una imagen (JPG, PNG o GIF, hasta 8 MB) o un PDF (hasta 20 MB, por ejemplo el menú). Se adjuntan en el chat como cuando se publica a mano.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Marca los espacios: uno a uno, por etapa o "Todo el colegio". En la vista previa ves cómo quedará.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Elige "Publicar ahora" o "Programar" (con fecha y hora, o el atajo "Mañana 8:00").', 'area-profesores'); ?></li>
     </ol>
