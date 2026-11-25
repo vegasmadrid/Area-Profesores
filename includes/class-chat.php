@@ -213,6 +213,10 @@ class Area_Profesores_Chat {
         }
         $e['egresada'] = false;
 
+        // Spaces registered only with their webhook: the space ID is inside its URL.
+        if ($e['space_id'] === '' && $e['webhook'] !== '') {
+            $e['space_id'] = self::get_space_id_from_webhook($e['webhook']);
+        }
         // Publishable with the webhook or, through the API, with its space ID.
         $e['conectado'] = $e['webhook'] !== '' || ($e['space_id'] !== '' && self::api_disponible());
         $e['publicable'] = !$e['archivada'] && $e['activo'] && $e['conectado'] && ($e['tipo'] === 'otro' || $e['curso'] !== '');
@@ -698,6 +702,9 @@ class Area_Profesores_Chat {
             } elseif ($e['webhook'] !== '') {
                 $via = 'webhook';
                 $r = self::send_to_webhook($e['webhook'], $hacer_payload());
+                if ($r['ok'] && $cuenta !== '') {
+                    $r['aviso'] = sprintf(__('Publicado con el webhook y no como %s porque este espacio no tiene guardado su ID de Google Chat (añádelo en Espacios de Chat).', 'area-profesores'), $cuenta);
+                }
             } else {
                 $r = array('ok' => false, 'error' => __('Este espacio no tiene webhook: elige una cuenta para publicar.', 'area-profesores'));
             }
