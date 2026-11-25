@@ -523,6 +523,22 @@ class Area_Profesores_Chat {
 
         if ($pdf) {
             $widgets = array();
+            if (!empty($pdf['paginas'])) {
+                // The PDF converted to images (one per page, full resolution): it is read in the chat.
+                foreach ($pdf['paginas'] as $i => $url) {
+                    $widgets[] = array('image' => array(
+                        'imageUrl' => $url,
+                        'altText'  => sprintf(__('%1$s, página %2$d', 'area-profesores'), $pdf['nombre'], $i + 1),
+                        'onClick'  => array('openLink' => array('url' => $url)),
+                    ));
+                }
+                $widgets[] = array('buttonList' => array('buttons' => array(array(
+                    'text'    => __('Descargar el PDF', 'area-profesores'),
+                    'onClick' => array('openLink' => array('url' => $pdf['url'])),
+                ))));
+                $payload['cardsV2'] = array(array('cardId' => 'pdf', 'card' => array('sections' => array(array('widgets' => $widgets)))));
+                return $payload;
+            }
             if (!empty($pdf['preview'])) {
                 $widgets[] = array('image' => array(
                     'imageUrl' => $pdf['preview'],
@@ -925,7 +941,10 @@ class Area_Profesores_Chat {
             'autor'       => $author ? $author->display_name : '',
             'image_id'    => $image_id,
             'image_url'   => $image_id ? (string) wp_get_attachment_url($image_id) : '',
-            'thumb_url'   => $image_id ? (string) wp_get_attachment_image_url($image_id, 'thumbnail') : '',
+            'thumb_url'   => $image_id ? (string) (self::paginas_pdf($image_id) ? wp_get_attachment_image_url(self::paginas_pdf($image_id)[0], 'thumbnail') : wp_get_attachment_image_url($image_id, 'thumbnail')) : '',
+            'paginas'     => self::es_pdf($image_id) ? array_map(function ($id) {
+                return (string) wp_get_attachment_image_url($id, 'medium_large');
+            }, self::paginas_pdf($image_id)) : array(),
             'es_pdf'      => self::es_pdf($image_id),
             'archivo'     => self::es_pdf($image_id) ? self::datos_pdf($image_id)['nombre'] : '',
             'espacios'    => $espacio_ids,
@@ -946,6 +965,7 @@ class Area_Profesores_Chat {
             'image_url' => $c['image_url'],
             'es_pdf'    => $c['es_pdf'],
             'archivo'   => $c['archivo'],
+            'paginas'   => $c['paginas'],
             'thumb_url' => $c['thumb_url'],
         );
         if ($c['programado']) {
@@ -968,11 +988,60 @@ class Area_Profesores_Chat {
         $url = (string) wp_get_attachment_url($attachment_id);
         $src = wp_get_attachment_image_src($attachment_id, 'large');
         $file = get_attached_file($attachment_id);
+        $paginas = array();
+        foreach (self::paginas_pdf($attachment_id) as $pid) {
+            $u = wp_get_attachment_url($pid);
+            if ($u) {
+                $paginas[] = set_url_scheme($u, 'https');
+            }
+        }
         return array(
             'url'     => $url ? set_url_scheme($url, 'https') : '',
             'nombre'  => $file ? wp_basename($file) : get_the_title($attachment_id) . '.pdf',
             'preview' => $src && !empty($src[0]) ? set_url_scheme($src[0], 'https') : '',
+            'paginas' => $paginas,
         );
+    }
+
+    /** Images (JPG) of the pages of a PDF, when it was sent "as an image". */
+    public static function paginas_pdf($attachment_id) {
+        $ids = get_post_meta($attachment_id, '_ap_pdf_paginas', true);
+        return is_array($ids) ? array_values(array_filter(array_map('intval', $ids), function ($id) {
+            return get_post_type($id) === 'attachment';
+        })) : array();
+    }
+
+    /**
+     * Store the pages of a PDF converted to JPG in the browser (field "paginas[]").
+     * Only JPG, at most 6 pages of 8 MB each.
+     */
+    private static function guardar_paginas($pdf_id) {
+        if (empty($_FILES['paginas']['name']) || !is_array($_FILES['paginas']['name'])) {
+            return;
+        }
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $base = sanitize_file_name(preg_replace('/\.pdf$/i', '', wp_basename((string) get_attached_file($pdf_id))));
+        $ids = array();
+        $f = $_FILES['paginas'];
+        foreach (array_slice(array_keys($f['name']), 0, 6) as $n => $k) {
+            if (!empty($f['error'][$k]) || $f['size'][$k] > self::MAX_IMAGE || !is_uploaded_file($f['tmp_name'][$k])) {
+                continue;
+            }
+            $tipo = wp_get_image_mime($f['tmp_name'][$k]);
+            if ($tipo !== 'image/jpeg') {
+                continue;
+            }
+            $file = array('name' => $base . '-pagina-' . ($n + 1) . '.jpg', 'type' => 'image/jpeg', 'tmp_name' => $f['tmp_name'][$k], 'error' => 0, 'size' => $f['size'][$k]);
+            $id = media_handle_sideload($file, $pdf_id, null, array('test_form' => false, 'mimes' => array('jpg|jpeg|jpe' => 'image/jpeg')));
+            if (!is_wp_error($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+        if ($ids) {
+            update_post_meta($pdf_id, '_ap_pdf_paginas', $ids);
+        }
     }
 
     /**
@@ -1089,6 +1158,9 @@ class Area_Profesores_Chat {
             $image_id = $this->handle_image_upload();
             if (is_wp_error($image_id)) {
                 wp_send_json_error(array('message' => $image_id->get_error_message()));
+            }
+            if (self::es_pdf($image_id)) {
+                self::guardar_paginas($image_id); // the PDF converted to images, if chosen
             }
         }
 

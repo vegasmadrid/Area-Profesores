@@ -79,6 +79,12 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     <div class="ap-com-image-preview" id="ap-com-image-preview" style="display:none;">
                         <img src="" alt="">
                         <span class="ap-com-pdf-nombre" id="ap-com-pdf-nombre" style="display:none;"></span>
+                        <div class="ap-com-pdf-modo" id="ap-com-pdf-modo" style="display:none;">
+                            <label><input type="radio" name="pdf_modo" value="imagen" checked> <strong><?php esc_html_e('Enviar como imagen', 'area-profesores'); ?></strong> <small><?php esc_html_e('(recomendado: se lee directamente en el chat; cada página se convierte en una imagen de alta resolución y debajo va el botón para descargar el PDF)', 'area-profesores'); ?></small></label>
+                            <label><input type="radio" name="pdf_modo" value="pdf"> <strong><?php esc_html_e('Enviar como PDF', 'area-profesores'); ?></strong> <small><?php esc_html_e('(solo una tarjeta con el botón para abrirlo)', 'area-profesores'); ?></small></label>
+                            <p class="ap-com-pdf-estado" id="ap-com-pdf-estado"></p>
+                            <div class="ap-com-pdf-paginas" id="ap-com-pdf-paginas"></div>
+                        </div>
                         <button type="button" class="ap-btn ap-btn-sm ap-btn-subtle-danger" id="ap-com-image-remove"><?php esc_html_e('Quitar', 'area-profesores'); ?></button>
                     </div>
                 </div>
@@ -160,6 +166,7 @@ $ap_max = wp_date('Y-m-d', time() + Area_Profesores_Chat::MAX_DIAS_PROGRAMACION 
                     </div>
                     <div class="ap-chat-bubble-text" id="ap-com-preview-text"><em><?php esc_html_e('El texto aparecerá aquí…', 'area-profesores'); ?></em></div>
                     <img class="ap-chat-bubble-img" id="ap-com-preview-img" src="" alt="" style="display:none;">
+                    <div class="ap-chat-pdf-paginas" id="ap-com-preview-paginas" style="display:none;"></div>
                     <div class="ap-chat-pdf" id="ap-com-preview-pdf" style="display:none;">
                         <small><?php esc_html_e('Documento PDF', 'area-profesores'); ?></small>
                         <span class="ap-chat-pdf-nombre"></span>

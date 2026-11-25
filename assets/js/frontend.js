@@ -697,10 +697,112 @@
                 updateSchedule();
             });
 
+            // PDF -> JPG in the browser (PDF.js), so that the menu can be read in the chat.
+            var PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+            var pdfjsCarga = null, pdfFile = null, pdfPaginas = [], pdfUrls = [], pdfConvirtiendo = false, pdfTurno = 0, pdfReusado = false;
+            var cargarPdfjs = function() {
+                if (pdfjsCarga) { return pdfjsCarga; }
+                pdfjsCarga = new Promise(function(resolve, reject) {
+                    var lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+                    if (lib) { resolve(lib); return; }
+                    var s = document.createElement('script');
+                    s.src = PDFJS_URL + 'pdf.min.js';
+                    s.onload = function() {
+                        var l = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+                        if (!l) { pdfjsCarga = null; reject(new Error('pdfjs')); return; }
+                        l.GlobalWorkerOptions.workerSrc = PDFJS_URL + 'pdf.worker.min.js';
+                        resolve(l);
+                    };
+                    s.onerror = function() { pdfjsCarga = null; reject(new Error('pdfjs')); };
+                    document.head.appendChild(s);
+                });
+                return pdfjsCarga;
+            };
+            var pdfModo = function() { return $comForm.find('input[name="pdf_modo"]:checked').val() || 'imagen'; };
+            var limpiarPaginas = function() {
+                $.each(pdfUrls, function(_, u) { URL.revokeObjectURL(u); });
+                pdfPaginas = []; pdfUrls = [];
+            };
+            // Chat preview: pages as images (+ "Descargar el PDF") or the PDF card.
+            var pintarPdf = function(nombre, urls) {
+                var $pag = $('#ap-com-pdf-paginas').empty(), $chat = $('#ap-com-preview-paginas').empty();
+                var comoImagen = urls.length > 0;
+                $.each(urls, function(_, u) {
+                    $('<img alt="">').attr('src', u).appendTo($pag);
+                    $('<img alt="">').attr('src', u).appendTo($chat);
+                });
+                $chat.toggle(comoImagen);
+                var $card = $('#ap-com-preview-pdf').show();
+                $card.find('small, .ap-chat-pdf-nombre').toggle(!comoImagen);
+                $card.find('.ap-chat-pdf-nombre').text('📄 ' + nombre);
+                $card.find('.ap-chat-pdf-btn').text(comoImagen ? i18n.com_pdf_descargar : i18n.com_pdf_abrir);
+                $('#ap-com-pdf-nota').toggle(!comoImagen);
+            };
+            var convertirPdf = function(file) {
+                var turno = ++pdfTurno;
+                limpiarPaginas();
+                pdfConvirtiendo = true;
+                var $estado = $('#ap-com-pdf-estado').removeClass('is-error').text(i18n.com_pdf_cargando);
+                pintarPdf(file.name, []);
+                cargarPdfjs().then(function(lib) {
+                    return file.arrayBuffer().then(function(buf) { return lib.getDocument({ data: buf }).promise; });
+                }).then(function(doc) {
+                    var total = Math.min(doc.numPages, 6), blobs = [];
+                    var paso = function(i) {
+                        if (turno !== pdfTurno) { return Promise.resolve(null); }
+                        if (i > total) { return Promise.resolve(blobs); }
+                        $estado.text(fmt(i18n.com_pdf_pagina, i, total));
+                        return doc.getPage(i).then(function(page) {
+                            var base = page.getViewport({ scale: 1 });
+                            // 1800 px wide: sharp enough to read the menu when zooming in.
+                            var scale = Math.min(4, 1800 / base.width);
+                            var vp = page.getViewport({ scale: scale });
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+                            var ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+                                return new Promise(function(r) { canvas.toBlob(r, 'image/jpeg', 0.88); });
+                            });
+                        }).then(function(blob) {
+                            if (blob) { blobs.push(blob); }
+                            return paso(i + 1);
+                        });
+                    };
+                    return paso(1).then(function(res) {
+                        if (res && doc.numPages > 6) { $estado.text(fmt(i18n.com_pdf_max, doc.numPages)); }
+                        return res;
+                    });
+                }).then(function(blobs) {
+                    if (turno !== pdfTurno || !blobs) { return; }
+                    pdfConvirtiendo = false;
+                    pdfPaginas = blobs;
+                    pdfUrls = blobs.map(function(b) { return URL.createObjectURL(b); });
+                    if (!$estado.text() || $estado.text().indexOf('…') > -1) { $estado.text(fmt(i18n.com_pdf_listo, blobs.length)); }
+                    pintarPdf(file.name, pdfUrls);
+                }).catch(function() {
+                    if (turno !== pdfTurno) { return; }
+                    pdfConvirtiendo = false;
+                    limpiarPaginas();
+                    $estado.addClass('is-error').text(i18n.com_pdf_error);
+                    $comForm.find('input[name="pdf_modo"][value="pdf"]').prop('checked', true);
+                    pintarPdf(file.name, []);
+                });
+            };
+            $comForm.on('change', 'input[name="pdf_modo"]', function() {
+                if (!pdfFile) { return; }
+                if (pdfModo() === 'imagen') {
+                    if (pdfPaginas.length) { pintarPdf(pdfFile.name, pdfUrls); } else if (!pdfConvirtiendo) { convertirPdf(pdfFile); }
+                } else {
+                    $('#ap-com-pdf-estado').text('');
+                    pintarPdf(pdfFile.name, []);
+                }
+            });
+
             // Image selection + preview
             var setImagePreview = function(url) {
                 $('#ap-com-image-preview').show().find('img').attr('src', url).show();
-                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota, #ap-com-pdf-modo, #ap-com-preview-paginas').hide();
                 $('#ap-com-dropzone').hide();
                 $('#ap-com-preview-img').attr('src', url).show();
             };
@@ -719,7 +821,9 @@
                 $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
                 $('#ap-com-image-preview').hide();
-                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota').hide();
+                $('#ap-com-pdf-nombre, #ap-com-preview-pdf, #ap-com-pdf-nota, #ap-com-pdf-modo, #ap-com-preview-paginas').hide();
+                pdfTurno++; pdfFile = null; pdfConvirtiendo = false; pdfReusado = false; limpiarPaginas();
+                $('#ap-com-pdf-estado').text('');
                 $('#ap-com-dropzone').show();
                 $('#ap-com-preview-img').hide().attr('src', '');
             };
@@ -735,7 +839,11 @@
                 $reuseImage.val('');
                 if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
                 if (esPdf) {
+                    pdfTurno++; limpiarPaginas();
+                    pdfFile = file; pdfReusado = false;
                     setPdfPreview(file.name, '');
+                    $('#ap-com-pdf-modo').show().find('label').show();
+                    if (pdfModo() === 'imagen') { convertirPdf(file); }
                     return;
                 }
                 previewUrl = URL.createObjectURL(file);
@@ -857,7 +965,16 @@
                 });
                 if (data.image_id && data.image_url) {
                     $reuseImage.val(data.image_id);
-                    if (data.es_pdf) { setPdfPreview(data.archivo, data.thumb_url || ''); } else { setImagePreview(data.image_url); }
+                    if (data.es_pdf) {
+                        setPdfPreview(data.archivo, '');
+                        pdfReusado = true;
+                        $('#ap-com-image-preview img').first().hide();
+                        if (data.paginas && data.paginas.length) {
+                            $('#ap-com-pdf-modo').show().find('label').hide();
+                            $('#ap-com-pdf-estado').text(fmt(i18n.com_pdf_listo, data.paginas.length));
+                            pintarPdf(data.archivo, data.paginas);
+                        }
+                    } else { setImagePreview(data.image_url); }
                 }
                 if (editId) {
                     $replaceId.val(editId);
@@ -896,8 +1013,15 @@
                 }
                 if (!window.confirm(confirmText)) { return; }
 
+                if (pdfFile && pdfModo() === 'imagen' && pdfConvirtiendo) {
+                    showComAlert('error', i18n.com_pdf_espera);
+                    return;
+                }
                 var fd = new FormData(this);
                 fd.append('action', 'ap_chat_publicar');
+                if (pdfFile && pdfModo() === 'imagen') {
+                    $.each(pdfPaginas, function(i, blob) { fd.append('paginas[]', blob, 'pagina-' + (i + 1) + '.jpg'); });
+                }
                 ajaxCall(fd, $comSubmit, function(data) {
                     $replaceId.val('');
                     $('#ap-com-editing').hide();

@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.22.0
+ * Version:     1.23.0
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.22.0');
+define('AREA_PROFESORES_VERSION', '1.23.0');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -208,6 +208,14 @@ class Area_Profesores_Plugin {
                 'com_confirm'       => __('Se va a publicar el comunicado en %d espacio(s) de Google Chat. Las familias lo recibirán al momento y no se puede deshacer desde aquí. ¿Continuar?', 'area-profesores'),
                 'com_sending'       => __('Publicando…', 'area-profesores'),
                 'com_empty'         => __('Escribe un mensaje o adjunta una imagen.', 'area-profesores'),
+                'com_pdf_cargando'  => __('Preparando el PDF para enviarlo como imagen…', 'area-profesores'),
+                'com_pdf_pagina'    => __('Convirtiendo la página %1$d de %2$d…', 'area-profesores'),
+                'com_pdf_listo'     => __('Listo: %d página(s) convertidas en imagen de alta resolución. Así se verá en el chat (pulsando se abre a tamaño completo).', 'area-profesores'),
+                'com_pdf_max'       => __('El PDF tiene %d páginas: se envían como imagen las 6 primeras (el PDF completo va en el botón "Descargar el PDF").', 'area-profesores'),
+                'com_pdf_error'     => __('No se ha podido convertir el PDF en imagen (revisa la conexión o el archivo). Se enviará como PDF con el botón para abrirlo.', 'area-profesores'),
+                'com_pdf_espera'    => __('Espera un momento: todavía se está convirtiendo el PDF en imagen.', 'area-profesores'),
+                'com_pdf_descargar' => __('Descargar el PDF', 'area-profesores'),
+                'com_pdf_abrir'     => __('Abrir el PDF', 'area-profesores'),
                 'com_bad_image'     => __('Formato no admitido. Usa una imagen JPG, PNG o GIF de menos de 8 MB, o un PDF de menos de 20 MB.', 'area-profesores'),
                 'com_all_ok'        => __('Publicado en los %d espacios', 'area-profesores'),
                 'com_some_fail'     => __('Publicado en %1$d de %2$d espacios', 'area-profesores'),
