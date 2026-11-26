@@ -141,6 +141,10 @@ class Area_Profesores_Shortcode {
         // Get teacher's existing submissions for today
         $today_records = Area_Profesores_Comedor::get_records_by_user_and_date($user_id, $today);
 
+        // Which tabs this person sees (Área Profesores › Pestañas).
+        $P = 'Area_Profesores_Pestanas';
+        $pestanas = $P::config();
+
         // Useful links, notice for teachers and logout URL
         $enlaces = Area_Profesores_Enlaces::get_for_user($user_id);
         $aviso = trim((string) Area_Profesores_Admin::get_setting('aviso_profesores', ''));
@@ -155,11 +159,11 @@ class Area_Profesores_Shortcode {
         $espacios_aula = Area_Profesores_Aulas::get_espacios_para_profesores($user_id);
 
         // Mis alumnos (tutoría, assigned classes, or all for Dirección/Secretaría)
-        $mis_alumnos = Area_Profesores_Alumnos::datos_mis_alumnos($user_id);
+        $mis_alumnos = $P::ve($user_id, 'alumnos') ? Area_Profesores_Alumnos::datos_mis_alumnos($user_id) : array('cursos' => array(), 'total' => 0);
         $mi_curso = (string) get_user_meta($user_id, Area_Profesores_Cursos::META_CURSO, true);
 
         // Comedor diario (Primer Ciclo, Infantil y Primaria) and, for Secretaría and Administración, the monthly count.
-        $comedor = Area_Profesores_Comensales::datos_portal($user_id);
+        $comedor = $P::ve($user_id, 'comedor') ? Area_Profesores_Comensales::datos_portal($user_id) : null;
         $comensales_mes = null;
         if (Area_Profesores_Comensales::puede_ver_mes($user_id)) {
             $mes = isset($_GET['ap_mes']) ? sanitize_text_field(wp_unslash($_GET['ap_mes'])) : '';
@@ -172,9 +176,13 @@ class Area_Profesores_Shortcode {
 
         // Reservas de las familias (services) of the visible courses; Portería sees every course.
         $reservas = null;
-        $es_porteria = Area_Profesores_Cuentas::tiene($user_id, 'porteria');
-        if (!empty($mis_alumnos['cursos']) || $es_porteria) {
+        if ($P::ve($user_id, 'reservas')) {
+            // Teachers: their pupils; whoever has no pupils (Portería…): every course.
+            $es_porteria = Area_Profesores_Cuentas::tiene($user_id, 'porteria');
             $visibles = $es_porteria ? true : Area_Profesores_Alumnos::cursos_visibles($user_id);
+            if ($visibles !== true && empty($visibles)) {
+                $visibles = true;
+            }
             $hoy = current_time('Y-m-d');
             $f = isset($_GET['ap_res']) ? sanitize_text_field(wp_unslash($_GET['ap_res'])) : '';
             $f = preg_match('/^\d{4}-\d{2}-\d{2}$/', $f) ? $f : $hoy;
@@ -204,6 +212,8 @@ class Area_Profesores_Shortcode {
                 'reservas'    => $reservas !== null,
                 'comensales'  => $comensales_mes !== null,
                 'comunicados' => $is_direccion,
+                'enlaces'     => $P::ve($user_id, 'enlaces'),
+                'espacios'    => $P::ve($user_id, 'espacios'),
             ),
             'completo_url' => admin_url('admin-post.php?action=ap_manual'),
         );

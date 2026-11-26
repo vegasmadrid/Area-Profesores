@@ -80,11 +80,11 @@ foreach ($ap_r['lista'] as $r) {
     <?php foreach ($ap_grupos as $ap_serv => $ap_lista) : ?>
         <div class="ap-res-grupo">
             <h4><?php echo esc_html($ap_serv); ?> <span><?php echo count($ap_lista); ?></span></h4>
-            <table class="ap-ma-tabla">
+            <table class="ap-ma-tabla ap-sortable">
                 <thead><tr>
-                    <th><?php esc_html_e('Alumno', 'area-profesores'); ?></th>
-                    <th><?php esc_html_e('Curso', 'area-profesores'); ?></th>
-                    <th><?php esc_html_e('Hora', 'area-profesores'); ?></th>
+                    <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Alumno', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
+                    <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Curso', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
+                    <th aria-sort="none"><button type="button" class="ap-sort-btn"><?php esc_html_e('Hora', 'area-profesores'); ?><span class="ap-sort-ind" aria-hidden="true"></span></button></th>
                     <th><?php esc_html_e('Detalles', 'area-profesores'); ?></th>
                     <?php if ($ap_pt) : ?><th class="ap-ma-acc no-print"></th><?php endif; ?>
                 </tr></thead>
@@ -92,8 +92,9 @@ foreach ($ap_r['lista'] as $r) {
                     <?php foreach ($ap_lista as $r) : ?>
                         <tr>
                             <td class="ap-ma-alumno"><?php echo esc_html($r['alumno']); ?></td>
-                            <td><?php echo esc_html($r['curso_label']); ?></td>
-                            <td><?php echo esc_html($r['hora'] !== '' ? $r['hora'] : '—'); ?></td>
+                            <?php $ap_cc = Area_Profesores_Cursos::get_curso($r['curso']); ?>
+                            <td data-sort="<?php echo esc_attr(sprintf('%03d', $ap_cc ? $ap_cc['orden'] : 999)); ?>"><?php echo esc_html($r['curso_label']); ?></td>
+                            <td data-sort="<?php echo esc_attr($r['hora']); ?>"><?php echo esc_html($r['hora'] !== '' ? $r['hora'] : '—'); ?></td>
                             <td class="ap-res-detalles">
                                 <?php echo nl2br(esc_html(Area_Profesores_Reservas::detalles_texto($r))); ?>
                                 <?php if ($r['fecha_inicio'] !== $r['fecha_fin']) : ?><small><?php echo esc_html($r['fechas_texto']); ?></small><?php endif; ?>
