@@ -42,7 +42,7 @@ if (!$ap_tipos) {
         <input type="hidden" name="familia_id" value="">
         <?php wp_nonce_field('ap_reserva_porteria'); ?>
         <p class="ap-records-subtitle"><?php esc_html_e('Para cuando una familia pide un servicio de palabra, por teléfono o por correo. Se avisa al tutor/a (y a quien reciba el aviso en "Avisos"), igual que si lo reservara la familia, y la reserva aparece en su Área de Familias. No hay plazos: puedes reservar para hoy a cualquier hora.', 'area-profesores'); ?>
-            <?php if (empty($ap_pt['porteria'])) : ?> <?php esc_html_e('Solo salen los alumnos de tus clases. Puedes anular las reservas que hagas tú.', 'area-profesores'); ?><?php endif; ?></p>
+            <?php if (empty($ap_pt['porteria'])) : ?> <?php esc_html_e('Puedes reservar para cualquier alumno del colegio (por ejemplo, si su tutor/a no está); su tutor/a recibe el aviso. Puedes anular las reservas que hagas tú.', 'area-profesores'); ?><?php endif; ?></p>
 
         <fieldset class="ap-rp-paso">
             <legend>1. <?php esc_html_e('Alumno', 'area-profesores'); ?></legend>

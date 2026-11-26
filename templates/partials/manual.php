@@ -144,8 +144,8 @@ $m_secciones = array(
         <li><?php esc_html_e('Portería ve las reservas de todos los cursos.', 'area-profesores'); ?></li>
     </ul>
     <?php $m_fig('reservas', __('Reservas del día por servicio, con los próximos días arriba.', 'area-profesores')); ?>
-    <h4><?php esc_html_e('Reservar un servicio para una familia (tutores y Portería)', 'area-profesores'); ?></h4>
-    <p><?php esc_html_e('Cuando un padre o una madre pide un servicio de palabra, por teléfono o por correo, el tutor/a (para los alumnos de sus clases) o Portería (para cualquier alumno) lo reserva desde esta misma pestaña:', 'area-profesores'); ?></p>
+    <h4><?php esc_html_e('Reservar un servicio para una familia (profesores y Portería)', 'area-profesores'); ?></h4>
+    <p><?php esc_html_e('Cuando un padre o una madre pide un servicio de palabra, por teléfono o por correo, cualquier profesor (por ejemplo, si el tutor/a no está) o Portería lo reserva para cualquier alumno desde esta misma pestaña; su tutor/a recibe el aviso:', 'area-profesores'); ?></p>
     <ol>
         <li><?php esc_html_e('Pulsa "+ Nueva reserva para una familia" y escribe el nombre del alumno (o de la familia). Elige al alumno en la lista; si quieres, marca también a sus hermanos.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Elige el servicio, el día (o varios días con los días de la semana) y rellena lo que pida: hora, desayuno, dieta, quién le recoge, motivo…', 'area-profesores'); ?></li>

@@ -800,8 +800,8 @@ class Area_Profesores_Reservas {
     }
 
     /**
-     * Courses a user can book for: every course for Portería (and Dirección / Secretaría),
-     * the tutoría and assigned classes for a teacher (the pupils of "Mis alumnos").
+     * Courses a user can book for: every course, for Portería and for any teacher
+     * (when the tutor is not there, a colleague books it; the tutor is told by e-mail).
      *
      * @return true|string[]
      */
@@ -809,14 +809,13 @@ class Area_Profesores_Reservas {
         if (!$user_id) {
             return array();
         }
-        if (self::es_porteria($user_id)) {
+        if (self::es_porteria($user_id) || Area_Profesores_Admin::is_user_profesor($user_id)) {
             return true;
         }
-        $v = Area_Profesores_Alumnos::cursos_visibles($user_id);
-        return $v === true ? true : array_values((array) $v);
+        return array();
     }
 
-    /** Portería and teachers (for their pupils) can book services for the families. */
+    /** Portería and every teacher can book services for any pupil. */
     public static function puede_reservar($user_id) {
         return self::cursos_reserva($user_id) !== array();
     }
