@@ -275,19 +275,12 @@ class Area_Profesores_Shortcode {
         wp_enqueue_script('area-profesores-comedor');
         $vivo_url = add_query_arg(array('action' => 'ap_comedor_estado', 'fecha' => $fecha), admin_url('admin-ajax.php'));
 
-        // Extract diet and allergy notice lists for instant kitchen overview
-        $dietas_list = array();
+        // Diets to cook (always from the current reservations of the pupils who eat).
+        $dietas_dia = Area_Profesores_Comensales::dietas_dia($fecha);
         $alergicos_faltan_list = array();
 
         if (!empty($records)) {
             foreach ($records as $r) {
-                if (!empty(trim($r->dietas))) {
-                    $dietas_list[] = array(
-                        'clase' => $r->clase,
-                        'etapa' => $r->etapa,
-                        'texto' => $r->dietas,
-                    );
-                }
                 if (!empty(trim($r->alergicos_faltan))) {
                     $alergicos_faltan_list[] = array(
                         'clase' => $r->clase,

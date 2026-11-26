@@ -50,6 +50,52 @@
         actualizar();
     }
 
+    // ---- Reservar dieta desde la lista de la clase ----
+    var dlg = document.getElementById('ap-cd-dieta');
+    if (dlg && typeof dlg.showModal === 'function') {
+        var df = dlg.querySelector('form');
+        var modo = function () {
+            var m = (df.querySelector('[name="modo"]:checked') || df.querySelector('[name="modo"]') || {}).value || 'dia';
+            dlg.querySelector('[data-modo="dia"]').hidden = m !== 'dia';
+            dlg.querySelector('[data-modo="varios"]').hidden = m !== 'varios';
+        };
+        document.querySelectorAll('[data-cd-dieta]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var li = b.closest('.ap-cd-alumno');
+                var marcado = li ? li.querySelector('input[name="come[]"]').checked : true;
+                var emails = b.getAttribute('data-emails') || '';
+                df.reset();
+                df.alumno_id.value = b.getAttribute('data-cd-dieta');
+                dlg.querySelector('.ap-cd-dieta-nombre').textContent = b.getAttribute('data-nombre');
+                // Not a diner of today (saved) or unmarked now without validating.
+                dlg.querySelector('.is-no-come').hidden = b.getAttribute('data-come') === '1' && marcado;
+                dlg.querySelector('.ap-cd-dieta-correo').textContent = 'Al reservar la dieta se avisará a la familia por correo (' + emails + '), igual que si la hubiera reservado ella, y aparecerá en su Área de Familias. También se avisa a cocina.';
+                dlg.querySelector('.is-correo').hidden = !emails;
+                dlg.querySelector('.is-sin-correo').hidden = !!emails;
+                dlg.querySelector('.ap-rp-error').hidden = true;
+                modo();
+                dlg.showModal();
+            });
+        });
+        df.addEventListener('change', modo);
+        dlg.querySelector('[data-cd-dieta-cerrar]').addEventListener('click', function () { dlg.close(); });
+        df.addEventListener('submit', function (e) {
+            var err = '';
+            if (!df.tipo_dieta.value && !df.instrucciones.value.trim()) {
+                err = 'Indica qué dieta necesita (el tipo o las instrucciones).';
+            } else if ((df.querySelector('[name="modo"]:checked') || {}).value === 'varios' && (!df.hasta.value || !df.querySelector('[name="dias[]"]:checked'))) {
+                err = 'Indica el último día y marca al menos un día de la semana.';
+            }
+            var box = dlg.querySelector('.ap-rp-error');
+            box.textContent = err; box.hidden = !err;
+            if (err) { e.preventDefault(); return; }
+            df.querySelector('[type="submit"]').disabled = true;
+        });
+    } else if (dlg) {
+        dlg.hidden = true;
+        document.querySelectorAll('[data-cd-dieta]').forEach(function (b) { b.hidden = true; });
+    }
+
     // Change of class ("Poner el comedor de un compañero").
     var sel = document.querySelector('.ap-cd-select');
     if (sel) {

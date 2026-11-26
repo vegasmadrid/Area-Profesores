@@ -201,9 +201,15 @@ if (!defined('ABSPATH')) {
                 🥗
             </div>
             <div class="ap-metric-data">
-                <span class="ap-metric-big-number ap-text-orange"><?php echo intval($summary->clases_con_dietas); ?></span>
-                <span class="ap-metric-title"><?php esc_html_e('Clases con Dietas', 'area-profesores'); ?></span>
-                <span class="ap-metric-subtext"><?php esc_html_e('Alergias / menús específicos', 'area-profesores'); ?></span>
+                <span class="ap-metric-big-number ap-text-orange"><?php echo intval($dietas_dia['total']); ?></span>
+                <span class="ap-metric-title"><?php echo esc_html(_n('Dieta a preparar', 'Dietas a preparar', $dietas_dia['total'], 'area-profesores')); ?></span>
+                <span class="ap-metric-subtext"><?php
+                    $ap_dt = array();
+                    foreach ($dietas_dia['tipos'] as $ap_t => $ap_n) {
+                        $ap_dt[] = $ap_t . ': ' . $ap_n;
+                    }
+                    echo esc_html($ap_dt ? implode(' · ', $ap_dt) : __('Ninguna reservada', 'area-profesores'));
+                ?></span>
             </div>
         </div>
 
@@ -231,6 +237,43 @@ if (!defined('ABSPATH')) {
             </div>
         </div>
     </div>
+
+    <!-- DIETAS A PREPARAR HOY (de las reservas de Dieta y de Comedor con dieta) -->
+    <?php if ($dietas_dia['total']) : ?>
+        <section class="ap-cocina-dietas-section">
+            <div class="ap-section-header">
+                <span class="ap-section-icon">🥗</span>
+                <div>
+                    <h2 class="ap-section-title"><?php printf(esc_html(_n('%d dieta a preparar hoy', '%d dietas a preparar hoy', $dietas_dia['total'], 'area-profesores')), (int) $dietas_dia['total']); ?></h2>
+                    <p class="ap-section-subtitle"><?php esc_html_e('Alumnos que comen hoy con una dieta reservada (por la familia o por el colegio). Están incluidos en el total de comensales.', 'area-profesores'); ?></p>
+                </div>
+            </div>
+            <?php
+            $ap_por_tipo = array();
+            foreach ($dietas_dia['lineas'] as $ap_l) {
+                $ap_por_tipo[$ap_l['tipo']][] = $ap_l;
+            }
+            ?>
+            <div class="ap-dietas-cards-grid">
+                <?php foreach ($dietas_dia['tipos'] as $ap_t => $ap_n) : ?>
+                    <div class="ap-dieta-card">
+                        <div class="ap-dieta-card-header">
+                            <span class="ap-dieta-class-badge"><?php echo esc_html($ap_t); ?></span>
+                            <span class="ap-dieta-stage-badge"><?php echo (int) $ap_n; ?></span>
+                        </div>
+                        <div class="ap-dieta-content">
+                            <?php foreach ($ap_por_tipo[$ap_t] as $ap_l) : ?>
+                                <div><strong><?php echo esc_html($ap_l['nombre']); ?></strong> · <?php echo esc_html($ap_l['clase']); ?>
+                                    <?php if ($ap_l['texto'] !== $ap_l['tipo']) : ?><br><small><?php echo esc_html($ap_l['texto']); ?></small><?php endif; ?>
+                                    <?php if (!$ap_l['validado']) : ?><br><small><em><?php esc_html_e('Clase sin validar todavía', 'area-profesores'); ?></em></small><?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <?php if (empty($records)) : ?>
         <!-- Estado Vacío -->
@@ -273,33 +316,6 @@ if (!defined('ABSPATH')) {
                             <span class="ap-alert-class-badge"><?php echo esc_html($item['clase']); ?> (<?php echo esc_html($item['etapa']); ?>)</span>
                             <div class="ap-alert-item-text">
                                 <?php echo nl2br(esc_html($item['texto'])); ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-        <?php endif; ?>
-
-        <!-- SECCIÓN 2: RESUMEN DE DIETAS ESPECIALES PARA COCINA -->
-        <?php if (!empty($dietas_list)) : ?>
-            <section class="ap-cocina-dietas-section">
-                <div class="ap-section-header">
-                    <span class="ap-section-icon">🥗</span>
-                    <div>
-                        <h2 class="ap-section-title"><?php esc_html_e('Dietas Especiales a Preparar Hoy', 'area-profesores'); ?></h2>
-                        <p class="ap-section-subtitle"><?php esc_html_e('Comprueba los nombres, cursos y necesidades alimentarias indicadas por los tutores:', 'area-profesores'); ?></p>
-                    </div>
-                </div>
-
-                <div class="ap-dietas-cards-grid">
-                    <?php foreach ($dietas_list as $dieta) : ?>
-                        <div class="ap-dieta-card">
-                            <div class="ap-dieta-card-header">
-                                <span class="ap-dieta-class-badge"><?php echo esc_html($dieta['clase']); ?></span>
-                                <span class="ap-dieta-stage-badge"><?php echo esc_html($dieta['etapa']); ?></span>
-                            </div>
-                            <div class="ap-dieta-content">
-                                <?php echo nl2br(esc_html($dieta['texto'])); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -394,10 +410,11 @@ if (!defined('ABSPATH')) {
 
     <?php
     // Comedor, dietas y desayunos reservados por las familias desde el Área Familias.
-    $ap_fam = array('comedor' => array(), 'dieta' => array(), 'desayuno' => array());
+    // Las dietas ya salen arriba, en "Dietas a preparar hoy".
+    $ap_fam = array('comedor' => array(), 'desayuno' => array());
     if (class_exists('Area_Profesores_Reservas')) {
         foreach (Area_Profesores_Reservas::del_dia($fecha) as $ap_rr) {
-            if ($ap_rr['servicio'] === 'comedor' || $ap_rr['servicio'] === 'dieta') {
+            if ($ap_rr['servicio'] === 'comedor') {
                 $ap_fam[$ap_rr['servicio']][] = $ap_rr;
             } elseif ($ap_rr['servicio'] === 'ampliacion') {
                 foreach ($ap_rr['detalles'] as $ap_d) {
@@ -409,8 +426,7 @@ if (!defined('ABSPATH')) {
         }
     }
     $ap_fam_titulos = array(
-        'comedor'  => __('Comedor reservado por las familias', 'area-profesores'),
-        'dieta'    => __('Dietas pedidas por las familias', 'area-profesores'),
+        'comedor'  => __('Comedor reservado', 'area-profesores'),
         'desayuno' => __('Desayunos de la ampliación de horario', 'area-profesores'),
     );
     ?>
@@ -419,8 +435,8 @@ if (!defined('ABSPATH')) {
             <div class="ap-section-header">
                 <span class="ap-section-icon">👪</span>
                 <div>
-                    <h2 class="ap-section-title"><?php esc_html_e('Reservas de las familias', 'area-profesores'); ?></h2>
-                    <p class="ap-section-subtitle"><?php esc_html_e('Servicios reservados por las familias desde el Área Familias para este día. En Primer Ciclo, Infantil y Primaria, el comedor reservado ya está sumado en su clase.', 'area-profesores'); ?></p>
+                    <h2 class="ap-section-title"><?php esc_html_e('Reservas de servicios', 'area-profesores'); ?></h2>
+                    <p class="ap-section-subtitle"><?php esc_html_e('Servicios reservados para este día por las familias o por el colegio. En Primer Ciclo, Infantil y Primaria, el comedor reservado ya está sumado en su clase; las dietas salen arriba.', 'area-profesores'); ?></p>
                 </div>
             </div>
             <?php foreach ($ap_fam as $ap_tipo => $ap_lista) : if (!$ap_lista) { continue; } ?>

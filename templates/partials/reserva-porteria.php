@@ -96,6 +96,7 @@ if (!$ap_tipos) {
                 <label><input type="radio" name="desayuno" value="si"> <?php esc_html_e('Sí', 'area-profesores'); ?></label>
                 <label><input type="radio" name="desayuno" value="no"> <?php esc_html_e('No', 'area-profesores'); ?></label>
             </div>
+            <p class="ap-rp-fila ap-rp-nota-dieta" data-si="dieta_aviso" hidden><?php esc_html_e('🥗 Solo se puede reservar una dieta los días que el alumno se queda a comer (comensal fijo o con el comedor reservado). Si no se queda, elige el servicio Comedor y marca ahí que necesita dieta.', 'area-profesores'); ?></p>
             <div class="ap-rp-fila" data-si="dieta_sn" hidden>
                 <span><?php esc_html_e('¿Necesita dieta?', 'area-profesores'); ?></span>
                 <label><input type="radio" name="dieta" value="no" checked> <?php esc_html_e('No', 'area-profesores'); ?></label>

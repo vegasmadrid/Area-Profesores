@@ -71,6 +71,7 @@
         form.querySelector('.ap-rp-hora-txt').textContent = k === 'retraso' ? T.t4 : T.t5;
         mostrar('[data-si="desayuno"]', k === 'ampliacion' && s && s.desayuno);
         mostrar('[data-si="dieta_sn"]', k === 'comedor' && s && s.dieta);
+        mostrar('[data-si="dieta_aviso"]', k === 'dieta');
         var dieta = k === 'dieta' || (k === 'comedor' && s && s.dieta && (form.querySelector('[name="dieta"]:checked') || {}).value === 'si');
         mostrar('[data-si="dieta"]', dieta);
         mostrar('[data-si="recoge"]', k === 'salida' && s && s.recoge);
