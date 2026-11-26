@@ -89,7 +89,7 @@ class Area_Profesores_Admin {
      * access requests and the corporate Google login control who can register).
      */
     public static function is_user_profesor($user_id) {
-        return $user_id && get_userdata($user_id) !== false;
+        return $user_id && get_userdata($user_id) !== false && !Area_Profesores_Solicitudes::is_user_pending($user_id);
     }
 
     /**
