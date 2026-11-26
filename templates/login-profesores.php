@@ -61,6 +61,21 @@ if (!defined('ABSPATH')) {
                 </div>
 
             <?php else : ?>
+                <?php if (!empty($acceso_aviso) && in_array($acceso_aviso, array('pendiente', 'rechazada', 'dominio'), true)) : ?>
+                    <div class="ap-alert ap-alert-error" style="display: block; text-align: left; margin-bottom: 18px;">
+                        <?php if ($acceso_aviso === 'dominio') : ?>
+                            <h4 style="margin: 0 0 6px 0; font-size: 15px; color: #991b1b;"><?php esc_html_e('Cuenta no permitida', 'area-profesores'); ?></h4>
+                            <p style="margin: 0; font-size: 13.5px; line-height: 1.5;"><?php printf(esc_html__('Solo se puede entrar con la cuenta del colegio (@%s).', 'area-profesores'), esc_html($allowed_domain)); ?></p>
+                        <?php elseif ($acceso_aviso === 'rechazada') : ?>
+                            <h4 style="margin: 0 0 6px 0; font-size: 15px; color: #991b1b;"><?php esc_html_e('Acceso no autorizado', 'area-profesores'); ?></h4>
+                            <p style="margin: 0; font-size: 13.5px; line-height: 1.5;"><?php esc_html_e('La dirección del centro no ha aprobado el acceso de esta cuenta. Si crees que es un error, habla con la dirección.', 'area-profesores'); ?></p>
+                        <?php else : ?>
+                            <h4 style="margin: 0 0 6px 0; font-size: 15px; color: #991b1b;"><?php esc_html_e('Cuenta pendiente de aprobación', 'area-profesores'); ?></h4>
+                            <p style="margin: 0; font-size: 13.5px; line-height: 1.5;"><?php esc_html_e('Tu cuenta todavía no está validada. Hemos enviado tu solicitud a la dirección del centro y te avisaremos por correo en cuanto esté aprobada.', 'area-profesores'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Estado: No conectado -> Selector de Pestañas (Acceso / Solicitud) -->
                 <nav class="ap-login-tabs-nav">
                     <button type="button" class="ap-login-tab-btn is-active" data-login-target="tab-entrar">

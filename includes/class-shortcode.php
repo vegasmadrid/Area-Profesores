@@ -330,6 +330,9 @@ class Area_Profesores_Shortcode {
         $redirect_target = Area_Profesores_Access::resolve_login_redirect($requested);
         $google_login_url = Area_Profesores_Solicitudes::get_nextend_google_login_url($redirect_target);
 
+        // Aviso tras un intento de entrada bloqueado (sin validar, rechazado u otro dominio).
+        $acceso_aviso = isset($_GET['ap_acceso']) ? sanitize_key(wp_unslash($_GET['ap_acceso'])) : '';
+
         ob_start();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/login-profesores.php';
         return ob_get_clean();
