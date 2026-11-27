@@ -117,6 +117,16 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 34. **Publicar con la API de Google Chat** (*Área Profesores › Aulas › Cuentas para publicar los comunicados*): se conecta una cuenta del colegio **compartida** (p. ej. colegio@, la usan Dirección y Comunicación sin conocer su contraseña) y cuentas **personales** (solo las ve quien las conecta). En *Comunicados* se elige *Publicar como*; el mensaje sale enviado por esa cuenta y la imagen o el PDF van **adjuntos y guardados en Google**; después se borran de la web. La cuenta compartida se añade sola a los espacios nuevos como **administradora** (para poder publicar también en los espacios de anuncios), y con el botón *Añadir a todos los espacios*, usando la conexión de administrador con el permiso `chat.admin.memberships`. Sin cuenta conectada se sigue usando el webhook de cada espacio, que también es el último recurso si la API falla en un espacio.
 35. **Pestañas** (*Área Profesores › Pestañas*): para cada pestaña del Área (Comedor, Administración, Enlaces Útiles, Mis alumnos, Reservas, Espacios de aula, Comunicados, Ayuda) se puede cambiar el **nombre**, el **orden** (↑ ↓), **activarla o desactivarla** y elegir **qué grupos la ven**: todo el profesorado, tutores, especialistas, profesores con alumnos, profesores de cada etapa y las cuentas especiales (Dirección, Secretaría, Cocina, Portería, Administración, Comunicación). Basta con pertenecer a uno de los grupos; los administradores de la web ven todas las activas. Los permisos de Administración y Comunicados siguen esta configuración. *Restablecer todo* vuelve a la configuración de siempre.
 
+36. **Nuevas familias** (solicitudes de matrícula online; pestaña *Nuevas familias*, de serie para Secretaría, Dirección y Administración):
+   - Las familias sin cuenta rellenan en el **Área Familias** (botón en su pantalla de acceso) los datos de las tres hojas de papel: **ficha de matrícula**, **reserva de plaza** del Primer Ciclo y **hoja de datos económicos SEPA** (o pago por ventanilla). Confirman su correo con un **código de 6 números** y la solicitud llega aquí por la API (`POST /area-profesores/v1/matriculas`, cabecera `X-Area-Key`).
+   - Todo lo que escribe la familia (DNI/NIE, IBAN…) se guarda **cifrado** (sodium) en la tabla `wp_ap_matriculas`; en claro solo queda un resumen para la lista (apellidos, alumnos, curso, contacto). La clave es la constante `AP_MATRICULAS_KEY` de `wp-config.php` o, si no existe, una derivada de las claves de WordPress. **Recomendado:** definir `AP_MATRICULAS_KEY` (una frase larga aleatoria) antes de abrir el plazo: si cambian las claves de `wp-config.php` sin ella, las solicitudes guardadas no se podrían leer.
+   - Estados: *Nueva → En revisión → Aprobada · pendiente de firma → Completada*, o *Rechazada / lista de espera*. Al aprobar se puede enviar a la familia el correo para venir a firmar y traer los originales.
+   - **Imprimir la ficha para firmar**: las mismas hojas que en papel, ya rellenas (una ficha y una orden SEPA por alumno; la reserva de plaza solo en 1 y 2 años), con el nº de matrícula, NIA, fecha de ingreso y grupo que pone Secretaría.
+   - Casillas de la **documentación entregada en papel** (libro de familia, DNI/NIE, ficha y SEPA firmadas, matrícula pagada), notas internas e historial de cada solicitud.
+   - **Cuenta de la familia propuesta** con la regla del colegio: `primerapellido.segundoapellido.cvm@` del alumno (sin tildes, ñ → n, apellidos compuestos juntos: `delafuente`); padres separados: segunda cuenta con un `1` antes de `.cvm`; alumnos con un solo apellido: `apellido.nombre.cvm@`. Si otra familia ya la usa (o otra solicitud en curso), se añade la inicial del nombre del alumno mayor (`garcia.lopez.m.cvm@`, luego `.ma.`…). Si la cuenta normal ya es de una familia del colegio, avisa de posibles **hermanos** para usar su cuenta. Se puede corregir a mano.
+   - Avisos nuevos (grupo *Nuevas familias* en *Avisos*): *Nueva solicitud de matrícula* (de serie a Secretaría, Dirección y Administración), *solicitud recibida* y *venir a firmar* (a la familia).
+   - Ayuda: nueva sección en el manual.
+
 13. **Envío automático (cron)**: el plugin revisa cada 5 minutos si hay comunicados programados. En *Espacios de Chat* se ve si el cron funciona y el comando para crearlo en cPanel:
    `wget -q -O /dev/null "https://TU-WEB/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`
 
@@ -130,6 +140,7 @@ Plugin a medida para WordPress desarrollado para el **Colegio Casa de la Virgen*
 3. El plugin creará automáticamente las tablas necesarias en la base de datos:
    - `wp_ap_comedor_registros`
    - `wp_ap_solicitudes_acceso`
+   - `wp_ap_matriculas` (solicitudes de matrícula de las familias nuevas, cifradas)
 
 ---
 

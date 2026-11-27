@@ -119,6 +119,35 @@ class Area_Profesores_Cursos {
     }
 
     /**
+     * Course levels without the group (for the enrolment requests): nivel => array(label, etapa).
+     * E.g. 'I3' => array('label' => '3 años', 'etapa' => 'infantil').
+     */
+    public static function get_niveles_publicos() {
+        $out = array();
+        foreach (self::get_niveles() as $k => $n) {
+            $out[$k] = array('label' => $n['label'], 'etapa' => $n['etapa']);
+        }
+        return $out;
+    }
+
+    public static function get_nivel_label($nivel) {
+        $n = self::get_niveles_publicos();
+        return isset($n[$nivel]) ? $n[$nivel]['label'] : (string) $nivel;
+    }
+
+    /**
+     * Course key of a level and a group ('I3' + 'A' → 'I3A'; Bachillerato has no group).
+     */
+    public static function curso_de_nivel($nivel, $grupo = '') {
+        foreach (self::get_cursos() as $key => $c) {
+            if ($c['nivel'] === $nivel && ($c['grupo'] === $grupo || $c['grupo'] === '')) {
+                return $key;
+            }
+        }
+        return '';
+    }
+
+    /**
      * Flat list key => label (for legacy callers).
      */
     public static function get_cursos_options() {

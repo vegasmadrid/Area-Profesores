@@ -18,6 +18,9 @@
  *      Secretaría are notified by e-mail (to update Alexia).
  * GET|POST /area-profesores/v1/familia/reservas, POST …/familia/reservas/anular
  *      Reservations of services (see Area_Profesores_Reservas).
+ * POST /area-profesores/v1/matriculas
+ *      Enrolment request of a new family, after it confirmed its e-mail
+ *      (see Area_Profesores_Matriculas). Stored encrypted.
  */
 
 if (!defined('ABSPATH')) {

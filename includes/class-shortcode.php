@@ -232,6 +232,9 @@ class Area_Profesores_Shortcode {
             );
         }
 
+        // Nuevas familias: enrolment requests (Secretaría, Dirección and Administración by default).
+        $matriculas = Area_Profesores_Matriculas::datos_portal($user_id);
+
         // Ayuda: manual of the tabs this teacher can see.
         $ayuda = array(
             'mv' => array(
@@ -240,6 +243,7 @@ class Area_Profesores_Shortcode {
                 'alumnos'     => !empty($mis_alumnos['cursos']),
                 'reservas'    => $reservas !== null,
                 'comensales'  => $comensales_mes !== null,
+                'matriculas'  => $matriculas !== null,
                 'comunicados' => $is_direccion,
                 'enlaces'     => $P::ve($user_id, 'enlaces'),
                 'espacios'    => $P::ve($user_id, 'espacios'),

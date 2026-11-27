@@ -51,6 +51,12 @@ class Area_Profesores_Pestanas {
                 'descripcion' => __('Comidas para cotejar con cocina y cobros a las familias. Contiene datos de todas las familias.', 'area-profesores'),
                 'icono'       => 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z',
             ),
+            'matriculas' => array(
+                'nombre'      => __('Nuevas familias', 'area-profesores'),
+                'grupos'      => array('direccion', 'secretaria', 'administracion'),
+                'descripcion' => __('Solicitudes de matrícula que envían las familias nuevas desde el Área Familias: revisarlas, imprimir la ficha para firmar y seguir su estado. Contiene datos personales y bancarios.', 'area-profesores'),
+                'icono'       => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+            ),
             'enlaces' => array(
                 'nombre'      => __('Enlaces Útiles', 'area-profesores'),
                 'grupos'      => array('todos'),
