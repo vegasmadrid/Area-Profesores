@@ -39,6 +39,27 @@ class Area_Profesores_Shortcode {
 
         // Printable manual (every section), for any logged-in teacher.
         add_action('admin_post_ap_manual', array($this, 'render_manual'));
+
+        // The Área and the kitchen page show personal and live data: never cached.
+        add_action('template_redirect', array($this, 'no_cache_pages'), 1);
+    }
+
+    /**
+     * The pages of the Área (login, teachers' area, kitchen) must not be stored by the
+     * browser, the hosting or a cache plugin: otherwise a teacher can see an old
+     * version (e.g. an old form) after an update or the data of the day before.
+     */
+    public function no_cache_pages() {
+        $id = get_queried_object_id();
+        if (!$id || !is_singular() || !isset($this->get_injected_pages()[$id])) {
+            return;
+        }
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true); // WP Super Cache, W3 Total Cache, WP Rocket…
+        }
+        do_action('litespeed_control_set_nocache', 'Área Profesores'); // LiteSpeed Cache
+        nocache_headers(); // browser and proxies (no-store, must-revalidate)
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0, private', true);
     }
 
     public function render_manual() {
