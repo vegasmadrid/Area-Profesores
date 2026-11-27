@@ -6,7 +6,9 @@
  * emergency phone of their parents. A reason is required and an e-mail is sent
  * with the changes and the reason. There are two e-mails (recipients chosen in "Avisos"):
  * - Food allergies: "profesor_alergias" (Cocina and the tutors by default, not Secretaría).
- * - Everything else: "profesor_datos" (Secretaría by default).
+ * - Other allergies: "profesor_alergias_otras" (only the tutors by default).
+ * - Parents' names and phones: "profesor_datos" (Secretaría by default).
+ * When an allergy changes, the family receives a confirmation ("alergias_familia").
  */
 
 if (!defined('ABSPATH')) {
@@ -76,6 +78,11 @@ class Area_Profesores_Alumnos_Portal {
         return $v === '' ? __('(vacío)', 'area-profesores') : $v;
     }
 
+    private static function txt_familia($v) {
+        $v = trim((string) $v);
+        return $v === '' ? __('ninguna', 'area-profesores') : $v;
+    }
+
     public function handle_editar() {
         global $wpdb;
         $uid = get_current_user_id();
@@ -93,8 +100,10 @@ class Area_Profesores_Alumnos_Portal {
             self::volver('error', __('Escribe el motivo del cambio: se envía por correo junto con los datos nuevos.', 'area-profesores'), $curso);
         }
 
-        $cambios = array();      // lines for the e-mail to Secretaría
-        $cambios_alim = array(); // lines for the e-mail to Cocina and the tutors (food allergies)
+        $cambios = array();       // lines for the e-mail to Secretaría (parents)
+        $cambios_alim = array();  // food allergies: Cocina and the tutors
+        $cambios_otras = array(); // other allergies: the tutors
+        $cambios_fam = array();   // allergies, for the family's confirmation
         $log_alumno = array();
 
         // 1. Allergies of the pupil.
@@ -112,8 +121,9 @@ class Area_Profesores_Alumnos_Portal {
                 if ($k === 'alergias_alimentarias') {
                     $cambios_alim[] = $linea;
                 } else {
-                    $cambios[] = $linea;
+                    $cambios_otras[] = $linea;
                 }
+                $cambios_fam[] = '- ' . $label . ': ' . self::txt_familia($old) . ' → ' . self::txt_familia($v);
             }
         }
 
@@ -169,7 +179,7 @@ class Area_Profesores_Alumnos_Portal {
             }
         }
 
-        if (!$cambios && !$cambios_alim) {
+        if (!$cambios && !$cambios_alim && !$cambios_otras) {
             self::volver('info', __('No has cambiado ningún dato.', 'area-profesores'), $curso);
         }
 
@@ -211,7 +221,7 @@ class Area_Profesores_Alumnos_Portal {
             'enlace'   => admin_url('admin.php?page=' . Area_Profesores_Alumnos_Admin::SLUG . '&tab=alumnos&editar=' . $id),
         );
         $enviado = false;
-        foreach (array('profesor_alergias' => $cambios_alim, 'profesor_datos' => $cambios) as $key => $lineas) {
+        foreach (array('profesor_alergias' => $cambios_alim, 'profesor_alergias_otras' => $cambios_otras, 'profesor_datos' => $cambios) as $key => $lineas) {
             if (!$lineas) {
                 continue;
             }
@@ -219,6 +229,25 @@ class Area_Profesores_Alumnos_Portal {
             $para = $conf['tutores'] ? $A::emails_tutores($curso) : array(); // + the accounts chosen in "Avisos"
             if (Area_Profesores_Correos::enviar($key, $para, $vars + array('cambios' => implode("\n", $lineas)), false, $u->user_email)) {
                 $enviado = true;
+            }
+        }
+
+        // Confirmation to the family (each family of the pupil separately).
+        if ($cambios_fam) {
+            $ahora = array_merge($alumno, $nuevo);
+            $fam_vars = array(
+                'alumno'   => $alumno['nombre'],
+                'curso'    => $vars['curso'],
+                'cambios'  => implode("\n", $cambios_fam),
+                'alergias' => '- ' . __('Alimentarias', 'area-profesores') . ': ' . self::txt_familia($ahora['alergias_alimentarias'])
+                    . "\n- " . __('No alimentarias', 'area-profesores') . ': ' . self::txt_familia($ahora['alergias_otras']),
+                'profesor' => $u->display_name,
+            );
+            foreach ($familias as $f) {
+                $emails = $A::emails_array($f['emails']);
+                if ($emails) {
+                    Area_Profesores_Correos::enviar('alergias_familia', $emails, $fam_vars, false, $u->user_email);
+                }
             }
         }
 

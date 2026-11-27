@@ -126,7 +126,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Pulsa "Editar" en la fila del alumno.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Cambia sus alergias o el nombre y el teléfono de sus padres. También puedes añadir otro padre, madre o tutor.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Escribe el motivo del cambio (es obligatorio). Por ejemplo: "La madre me lo ha comunicado hoy en la entrada".', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Pulsa "Guardar y avisar". El cambio se ve al momento y se envía un correo con los datos anteriores, los nuevos y el motivo: los cambios de nombres y teléfonos le llegan a Secretaría y los de alergias alimentarias, a Cocina y a los tutores (no a Secretaría).', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Pulsa "Guardar y avisar". El cambio se ve al momento y se envía un correo con los datos anteriores, los nuevos y el motivo: los cambios de nombres y teléfonos le llegan a Secretaría; los de alergias alimentarias, a Cocina y a los tutores; y los de alergias no alimentarias, solo a los tutores (las alergias no le llegan a Secretaría). Además, si cambias una alergia, la familia recibe un correo confirmando cómo quedan registradas.', 'area-profesores'); ?></li>
     </ol>
     <?php $m_fig('mis-alumnos-editar', __('Al editar hay que escribir el motivo, que se envía con el aviso.', 'area-profesores')); ?>
     <div class="ap-manual-nota"><?php esc_html_e('Los datos de los padres son de la familia: si el alumno tiene hermanos en el colegio, el cambio también se ve en sus fichas.', 'area-profesores'); ?></div>
@@ -224,7 +224,7 @@ $m_secciones = array(
         <dt><?php esc_html_e('Un alumno sale como fijo pero ya no se queda nunca.', 'area-profesores'); ?></dt>
         <dd><?php esc_html_e('Quita sus días en "Comensales fijos de la clase" y guarda.', 'area-profesores'); ?></dd>
         <dt><?php esc_html_e('Un teléfono o una alergia no es correcto.', 'area-profesores'); ?></dt>
-        <dd><?php esc_html_e('Corrígelo desde "Mis alumnos" › "Editar", indicando el motivo. Secretaría recibe el aviso (si son alergias alimentarias, Cocina y los tutores).', 'area-profesores'); ?></dd>
+        <dd><?php esc_html_e('Corrígelo desde "Mis alumnos" › "Editar", indicando el motivo. Secretaría recibe el aviso (si son alergias: las alimentarias, Cocina y los tutores; las demás, los tutores; y la familia recibe la confirmación).', 'area-profesores'); ?></dd>
         <dt><?php printf(esc_html__('Hoy no como en el colegio y ya son más de las %s.', 'area-profesores'), esc_html($m_coc)); ?></dt>
         <dd><?php esc_html_e('Márcalo igualmente en "Mi comida en el colegio": cocina recibe un aviso al momento.', 'area-profesores'); ?></dd>
     </dl>
