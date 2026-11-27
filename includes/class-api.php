@@ -10,7 +10,8 @@
  *      spaces) with the tutor of each course. Never the webhooks.
  * GET  /area-profesores/v1/familia?email=<correo>
  *      Only for the family that is logged in on the Área Familias: its
- *      children (course, tutor, class space) and its own details (parents,
+ *      children (course, tutor, class space; "pendiente" + "incorporacion" for
+ *      the ones who have not started yet) and its own details (parents,
  *      address, emergency phone).
  * POST /area-profesores/v1/familia/datos
  *      The family updates the emergency phone and address of each parent; the
@@ -98,7 +99,14 @@ class Area_Profesores_API {
         }
 
         $ids = wp_list_pluck($familias, 'id');
-        $hijos_por_familia = $A::alumnos_de_familias($ids, true);
+        // Pupils "de alta" and "pendientes de incorporación" (new families: they see
+        // their children with the date they start; they cannot book services yet).
+        $hijos_por_familia = array();
+        foreach ($A::alumnos_de_familias($ids) as $fid => $lista) {
+            $hijos_por_familia[$fid] = array_values(array_filter($lista, function ($a) {
+                return in_array($a['estado'], array('alta', 'pendiente'), true);
+            }));
+        }
         $tutores = Area_Profesores_Aulas::get_tutores_por_curso();
 
         // Class space of each course.
@@ -116,6 +124,7 @@ class Area_Profesores_API {
                     continue;
                 }
                 $c = Area_Profesores_Cursos::get_curso($a['curso']);
+                $pend = $a['estado'] === 'pendiente';
                 $hijos[$a['id']] = array(
                     'id'          => (int) $a['id'],
                     'nombre'      => $a['nombre'],
@@ -123,8 +132,10 @@ class Area_Profesores_API {
                     'curso_label' => $c ? $c['label'] : '',
                     'etapa'       => $c ? Area_Profesores_Cursos::get_etapa_label($c['etapa']) : '',
                     'etapa_key'   => $c ? $c['etapa'] : '',
-                    'tutor'       => ($c && !empty($tutores[$a['curso']])) ? Area_Profesores_Aulas::get_tutor_card($tutores[$a['curso']]) : null,
-                    'espacio'     => isset($espacios[$a['curso']]) ? $espacios[$a['curso']] : null,
+                    'tutor'       => (!$pend && $c && !empty($tutores[$a['curso']])) ? Area_Profesores_Aulas::get_tutor_card($tutores[$a['curso']]) : null,
+                    'espacio'     => (!$pend && isset($espacios[$a['curso']])) ? $espacios[$a['curso']] : null,
+                    'pendiente'   => $pend,
+                    'incorporacion' => $pend && !empty($a['fecha_alta']) ? $a['fecha_alta'] : '',
                 );
             }
         }

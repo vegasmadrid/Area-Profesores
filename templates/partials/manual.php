@@ -204,7 +204,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Revisa los datos. Si hay que aclarar algo con la familia, pásala a "En revisión" y escríbeles (el correo de contacto está confirmado).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pásala a "Aprobada · pendiente de firma": la familia recibe un correo para venir a firmar y traer los originales.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pulsa "Imprimir la ficha para firmar": salen la ficha de matrícula, la información del centro con las manifestaciones de los padres, la hoja de protección de datos, la reserva de plaza (solo Primer Ciclo) y la orden SEPA, ya rellenas con lo que contestó la familia. Antes, rellena el nº de matrícula, el NIA, la fecha de ingreso y el grupo para que salgan impresos.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Cuando firmen y comprobéis los originales, marca los documentos entregados y pásala a "Completada".', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Cuando firmen y comprobéis los originales, marca los documentos entregados y pásala a "Completada": la familia y los alumnos se dan de alta solos en Alumnos y familias, en su curso (antes elige el grupo A o B y la fecha de ingreso). Si empiezan más adelante, quedan "pendientes de incorporación" hasta ese día.', 'area-profesores'); ?></li>
     </ol>
     <ul>
         <li><?php esc_html_e('La cuenta de la familia se propone sola con la regla del colegio: primerapellido.segundoapellido.cvm del alumno (padres separados: un 1 antes de .cvm). Si otra familia ya la tiene, se añade la inicial del nombre del alumno. Puedes cambiarla.', 'area-profesores'); ?></li>

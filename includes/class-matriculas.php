@@ -40,6 +40,8 @@ class Area_Profesores_Matriculas {
         add_action('rest_api_init', array($this, 'register_routes'));
         add_action('admin_post_ap_matricula', array($this, 'handle_accion'));
         add_action('admin_post_ap_matricula_imprimir', array($this, 'render_imprimir'));
+        // Pupils "pendientes de incorporación" whose date has arrived go to "alta" (once a day).
+        add_action('init', array('Area_Profesores_Alumnos', 'activar_pendientes'), 20);
     }
 
     public static function t() {
@@ -731,6 +733,10 @@ class Area_Profesores_Matriculas {
             if (!isset(self::estados()[$nuevo]) || $nuevo === $row['estado']) {
                 self::volver($id, 'error', __('Elige un estado distinto.', 'area-profesores'));
             }
+            $alta_ahora = $nuevo === 'completada' && !empty($p['dar_alta']) && !self::alta_hecha($row);
+            if ($alta_ahora && ($faltan = self::faltan_para_alta($row))) {
+                self::volver($id, 'error', __('No se ha cambiado el estado. Para completarla y darla de alta en Alumnos y familias:', 'area-profesores') . ' ' . implode(' ', $faltan));
+            }
             $antes = $row['estado'];
             $row['estado'] = $nuevo;
             $motivo = isset($p['motivo']) ? mb_substr(sanitize_text_field($p['motivo']), 0, 300) : '';
@@ -748,6 +754,10 @@ class Area_Profesores_Matriculas {
                 self::anotar($row, $ok ? __('Correo a la familia: venir a firmar y traer los documentos', 'area-profesores') : __('No se pudo enviar el correo a la familia', 'area-profesores'));
             }
             self::guardar_fila($row);
+            if ($alta_ahora) {
+                $r = self::dar_de_alta($id);
+                $aviso .= is_wp_error($r) ? ' ' . $r->get_error_message() : ' ' . __('Familia y alumnos dados de alta en Alumnos y familias.', 'area-profesores');
+            }
             self::volver($id, 'success', sprintf(__('Estado cambiado a «%s».', 'area-profesores'), self::estado_label($nuevo)) . $aviso);
         }
 
@@ -808,6 +818,14 @@ class Area_Profesores_Matriculas {
             self::volver($id, 'success', __('Se ha vuelto a calcular la cuenta propuesta.', 'area-profesores'));
         }
 
+        if ($op === 'alta') {
+            $r = self::dar_de_alta($id);
+            if (is_wp_error($r)) {
+                self::volver($id, 'error', $r->get_error_message());
+            }
+            self::volver($id, 'success', __('Familia y alumnos dados de alta en Alumnos y familias.', 'area-profesores') . ' ' . implode('; ', $r['resumen']));
+        }
+
         if ($op === 'borrar' && current_user_can('manage_options')) {
             global $wpdb;
             $wpdb->delete(self::t(), array('id' => $id));
@@ -826,6 +844,160 @@ class Area_Profesores_Matriculas {
             'sepa'          => __('Orden SEPA firmada (o pago por ventanilla)', 'area-profesores'),
             'pago'          => __('Matrícula pagada', 'area-profesores'),
         );
+    }
+
+    /* ---------------------------------------------------------------------
+     * Alta en «Alumnos y familias» (fase 2)
+     * ------------------------------------------------------------------- */
+
+    /** First day by default: 1 September of the school year of the request ("2027/2028" → 2027-09-01). */
+    public static function fecha_inicio_curso($curso_escolar) {
+        if (preg_match('/^(\d{4})/', (string) $curso_escolar, $m)) {
+            $f = $m[1] . '-09-01';
+            return $f > current_time('Y-m-d') ? $f : current_time('Y-m-d');
+        }
+        return current_time('Y-m-d');
+    }
+
+    /** Incorporation date of a pupil of the request (Secretaría's date or the default). */
+    public static function fecha_ingreso($m, $i) {
+        $f = isset($m['oficina']['alumnos'][$i]['fecha_ingreso']) ? $m['oficina']['alumnos'][$i]['fecha_ingreso'] : '';
+        return $f !== '' ? $f : self::fecha_inicio_curso($m['curso_escolar']);
+    }
+
+    public static function alta_hecha($m) {
+        return !empty($m['oficina']['alta']['alumnos']);
+    }
+
+    /**
+     * What is missing before registering the family (empty = ready).
+     *
+     * @return string[]
+     */
+    public static function faltan_para_alta($m) {
+        $faltan = array();
+        if (!$m['datos']) {
+            return array(__('No se pueden leer los datos de la solicitud.', 'area-profesores'));
+        }
+        $cuentas = isset($m['oficina']['cuentas']) ? array_filter((array) $m['oficina']['cuentas']) : array();
+        if (!$cuentas) {
+            $faltan[] = __('Escribe la cuenta de la familia en «Cuenta de la familia en Google».', 'area-profesores');
+        }
+        foreach ($m['datos']['alumnos'] as $i => $a) {
+            $grupo = isset($m['oficina']['alumnos'][$i]['grupo']) ? $m['oficina']['alumnos'][$i]['grupo'] : '';
+            if (Area_Profesores_Cursos::curso_de_nivel($a['nivel'], $grupo) === '') {
+                $faltan[] = sprintf(__('Elige el grupo (A o B) de %s.', 'area-profesores'), self::nombre_alumno($a));
+            }
+        }
+        return $faltan;
+    }
+
+    /** "Calle de Alcalá 200, 3º B · 28028 Madrid (Madrid)" */
+    private static function direccion_txt($dom) {
+        $l1 = trim($dom['calle'] . ' ' . $dom['numero'] . ($dom['piso'] !== '' || $dom['puerta'] !== '' ? ', ' . trim($dom['piso'] . ' ' . $dom['puerta']) : ''));
+        $l2 = trim($dom['cp'] . ' ' . $dom['localidad'] . ($dom['provincia'] !== '' && $dom['provincia'] !== $dom['localidad'] ? ' (' . $dom['provincia'] . ')' : ''));
+        return trim($l1 . ($l2 !== '' ? ' · ' . $l2 : ''), ' ·');
+    }
+
+    /**
+     * Registers the family and its pupils in "Alumnos y familias":
+     * - one family per account (separated parents: two families, each with its
+     *   parent); if the account already belongs to a family of the school
+     *   (siblings), the pupils are linked to it and its details are not changed;
+     * - the pupils, in their course (level + group), "pendiente de incorporación"
+     *   until their incorporation date (then "alta" by themselves), with their
+     *   allergies and, if the family does not authorise them, a note about images.
+     *
+     * @return array|WP_Error summary
+     */
+    public static function dar_de_alta($id) {
+        $m = self::get($id);
+        if (!$m) {
+            return new WP_Error('ap_matricula', __('Esa solicitud ya no existe.', 'area-profesores'));
+        }
+        if (self::alta_hecha($m)) {
+            return new WP_Error('ap_matricula', __('Esta familia ya está dada de alta.', 'area-profesores'));
+        }
+        $faltan = self::faltan_para_alta($m);
+        if ($faltan) {
+            return new WP_Error('ap_matricula', __('Antes de dar de alta:', 'area-profesores') . ' ' . implode(' ', $faltan));
+        }
+        $A = 'Area_Profesores_Alumnos';
+        $d = $m['datos'];
+        $hoy = current_time('Y-m-d');
+        $dir = self::direccion_txt($d['domicilio']);
+        $contacto = function ($t) use ($dir) {
+            return array('nombre' => trim($t['nombre'] . ' ' . $t['apellidos']), 'telefono' => $t['movil'], 'direccion' => $dir);
+        };
+        $cuentas = array_values(array_filter((array) $m['oficina']['cuentas']));
+        $nombre_familia = $m['familia'];
+
+        // Families: separated parents → one per account, each with its parent.
+        $grupos = array();
+        if (!empty($d['separados']) && count($cuentas) >= 2 && count($d['tutores']) >= 2) {
+            $grupos[] = array($cuentas[0], array($contacto($d['tutores'][0])));
+            $grupos[] = array($cuentas[1], array($contacto($d['tutores'][1])));
+        } else {
+            $grupos[] = array($cuentas[0], array_map($contacto, $d['tutores']));
+        }
+        $familias = array();
+        $existentes = array();
+        foreach ($grupos as $g) {
+            $ya = $A::familias_por_email($g[0]);
+            if ($ya) {
+                $familias[] = (int) $ya[0]['id'];
+                $existentes[] = (int) $ya[0]['id'];
+                continue;
+            }
+            $fid = $A::guardar_familia(array('nombre' => $nombre_familia, 'emails' => $g[0], 'telefono' => '', 'contactos' => $g[1]), 0, 'matricula');
+            if (!$fid) {
+                return new WP_Error('ap_matricula', __('No se ha podido crear la familia.', 'area-profesores'));
+            }
+            $familias[] = (int) $fid;
+        }
+
+        // Pupils
+        $sin_imagen = (isset($d['aceptaciones']['manifestaciones']['m4']) && $d['aceptaciones']['manifestaciones']['m4'] === 'no')
+            || (isset($d['aceptaciones']['rgpd']['rgpd_imagenes']) && $d['aceptaciones']['rgpd']['rgpd_imagenes'] === 'no');
+        $alumnos = array();
+        $resumen = array();
+        foreach ($d['alumnos'] as $i => $a) {
+            $grupo = isset($m['oficina']['alumnos'][$i]['grupo']) ? $m['oficina']['alumnos'][$i]['grupo'] : '';
+            $curso = Area_Profesores_Cursos::curso_de_nivel($a['nivel'], $grupo);
+            $fecha = self::fecha_ingreso($m, $i);
+            $notas = array(sprintf(__('Alta desde la matrícula online %s.', 'area-profesores'), $m['referencia']));
+            if ($sin_imagen) {
+                $notas[] = __('La familia NO autoriza el uso de su imagen (ver la solicitud de matrícula).', 'area-profesores');
+            }
+            $aid = $A::guardar_alumno(array(
+                'nombre'                => self::nombre_alumno($a),
+                'email'                 => '',
+                'curso'                 => $curso,
+                'estado'                => $fecha > $hoy ? 'pendiente' : 'alta',
+                'fecha_alta'            => $fecha,
+                'notas'                 => implode("\n", $notas),
+                'alergias_alimentarias' => $a['alergias_alimentarias'],
+                'alergias_otras'        => $a['alergias_otras'],
+            ), 0, 'matricula');
+            foreach ($familias as $fid) {
+                $A::vincular($aid, $fid, 'matricula');
+            }
+            $alumnos[] = (int) $aid;
+            $c = Area_Profesores_Cursos::get_curso($curso);
+            $resumen[] = self::nombre_alumno($a) . ' → ' . ($c ? $c['label'] : $curso) . ($fecha > $hoy ? ' · ' . sprintf(__('se incorpora el %s', 'area-profesores'), self::f($fecha)) : '');
+        }
+
+        $m['oficina']['alta'] = array(
+            'fecha'      => Area_Profesores_Alumnos::now(),
+            'quien'      => wp_get_current_user()->display_name,
+            'familias'   => $familias,
+            'existentes' => $existentes,
+            'alumnos'    => $alumnos,
+            'resumen'    => $resumen,
+        );
+        self::anotar($m, __('Dada de alta en Alumnos y familias', 'area-profesores') . ': ' . implode('; ', $resumen) . ($existentes ? ' · ' . __('vinculados a una familia que ya estaba en el colegio', 'area-profesores') : ''));
+        self::guardar_fila($m);
+        return $m['oficina']['alta'];
     }
 
     /* ---------------------------------------------------------------------

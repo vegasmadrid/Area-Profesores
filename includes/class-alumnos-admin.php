@@ -84,7 +84,7 @@ class Area_Profesores_Alumnos_Admin {
             $data['filtros'] = compact('f_curso', 'f_estado', 'f_q');
             if (isset($_GET['editar'])) {
                 $id = absint($_GET['editar']);
-                $data['editar'] = $id ? Area_Profesores_Alumnos::get_alumno($id) : array('id' => 0, 'nombre' => '', 'email' => '', 'curso' => '', 'estado' => 'alta', 'notas' => '', 'alergias_alimentarias' => '', 'alergias_otras' => '');
+                $data['editar'] = $id ? Area_Profesores_Alumnos::get_alumno($id) : array('id' => 0, 'nombre' => '', 'email' => '', 'curso' => '', 'estado' => 'alta', 'fecha_alta' => '', 'notas' => '', 'alergias_alimentarias' => '', 'alergias_otras' => '');
                 $data['editar_familias'] = $id ? (Area_Profesores_Alumnos::familias_de_alumnos(array($id))[$id] ?? array()) : array();
                 $data['todas_familias'] = Area_Profesores_Alumnos::buscar_familias();
             }
@@ -130,6 +130,7 @@ class Area_Profesores_Alumnos_Admin {
             'email'  => isset($_POST['email']) ? wp_unslash($_POST['email']) : '',
             'curso'  => isset($_POST['curso']) ? sanitize_text_field(wp_unslash($_POST['curso'])) : '',
             'estado' => isset($_POST['estado']) ? sanitize_key($_POST['estado']) : 'alta',
+            'fecha_alta' => isset($_POST['fecha_alta']) ? sanitize_text_field(wp_unslash($_POST['fecha_alta'])) : '',
             'notas'  => isset($_POST['notas']) ? wp_unslash($_POST['notas']) : '',
             'alergias_alimentarias' => isset($_POST['alergias_alimentarias']) ? wp_unslash($_POST['alergias_alimentarias']) : '',
             'alergias_otras'        => isset($_POST['alergias_otras']) ? wp_unslash($_POST['alergias_otras']) : '',

@@ -70,8 +70,11 @@ $tabs = array(
                         <p><label><strong><?php esc_html_e('Estado', 'area-profesores'); ?></strong><br>
                             <select name="estado" class="widefat">
                                 <option value="alta" <?php selected($al['estado'], 'alta'); ?>><?php esc_html_e('De alta', 'area-profesores'); ?></option>
+                                <option value="pendiente" <?php selected($al['estado'], 'pendiente'); ?>><?php esc_html_e('Pendiente de incorporación', 'area-profesores'); ?></option>
                                 <option value="baja" <?php selected($al['estado'], 'baja'); ?>><?php esc_html_e('De baja', 'area-profesores'); ?></option>
                             </select></label>
+                            <label><span class="description"><?php esc_html_e('Fecha de incorporación (si está pendiente, ese día pasa sola a «De alta»):', 'area-profesores'); ?></span><br>
+                                <input type="date" name="fecha_alta" value="<?php echo esc_attr(isset($al['fecha_alta']) ? (string) $al['fecha_alta'] : ''); ?>"></label>
                             <?php if (!empty($al['fecha_baja'])) : ?><span class="description"><?php printf(esc_html__('Baja desde %s', 'area-profesores'), esc_html(date_i18n(get_option('date_format'), strtotime($al['fecha_baja'])))); ?></span><?php endif; ?>
                         </p>
                     </div>
@@ -124,6 +127,7 @@ $tabs = array(
             <select name="curso" onchange="this.form.submit()"><option value=""><?php esc_html_e('Todos los cursos', 'area-profesores'); ?></option><?php $ap_curso_options($fl['f_curso'], true); ?></select>
             <select name="estado" onchange="this.form.submit()">
                 <option value="alta" <?php selected($fl['f_estado'], 'alta'); ?>><?php esc_html_e('De alta', 'area-profesores'); ?></option>
+                <option value="pendiente" <?php selected($fl['f_estado'], 'pendiente'); ?>><?php printf(esc_html__('Pendientes de incorporación (%d)', 'area-profesores'), (int) $totales['pendientes']); ?></option>
                 <option value="baja" <?php selected($fl['f_estado'], 'baja'); ?>><?php printf(esc_html__('De baja (%d)', 'area-profesores'), (int) $totales['bajas']); ?></option>
                 <option value="todos" <?php selected($fl['f_estado'], 'todos'); ?>><?php esc_html_e('Todos', 'area-profesores'); ?></option>
             </select>
@@ -147,7 +151,7 @@ $tabs = array(
                     <?php endif; ?>
                     <?php foreach ($data['alumnos'] as $a) : $fams = $data['familias_de'][$a['id']] ?? array(); ?>
                         <tr<?php echo $a['estado'] === 'baja' ? ' class="ap-row-baja"' : ''; ?>>
-                            <td><strong><?php echo esc_html($a['nombre']); ?></strong><?php if ($a['estado'] === 'baja') : ?> <span class="ap-status-pill ap-status-danger"><?php esc_html_e('Baja', 'area-profesores'); ?></span><?php endif; ?><br><span class="ap-mini"><?php echo esc_html((string) $a['email']); ?></span>
+                            <td><strong><?php echo esc_html($a['nombre']); ?></strong><?php if ($a['estado'] === 'baja') : ?> <span class="ap-status-pill ap-status-danger"><?php esc_html_e('Baja', 'area-profesores'); ?></span><?php endif; ?><?php if ($a['estado'] === 'pendiente') : ?> <span class="ap-status-pill"><?php echo esc_html(!empty($a['fecha_alta']) ? sprintf(__('Se incorpora el %s', 'area-profesores'), date_i18n('j/m/Y', strtotime($a['fecha_alta']))) : __('Pendiente de incorporación', 'area-profesores')); ?></span><?php endif; ?><br><span class="ap-mini"><?php echo esc_html((string) $a['email']); ?></span>
                                 <?php if (!empty($a['alergias_alimentarias'])) : ?><br><span class="ap-alergia-pill is-alimentaria" title="<?php esc_attr_e('Alergia alimentaria', 'area-profesores'); ?>">⚠️ <?php echo esc_html($a['alergias_alimentarias']); ?></span><?php endif; ?>
                                 <?php if (!empty($a['alergias_otras'])) : ?><br><span class="ap-alergia-pill" title="<?php esc_attr_e('Alergia no alimentaria', 'area-profesores'); ?>"><?php echo esc_html($a['alergias_otras']); ?></span><?php endif; ?></td>
                             <td><?php echo esc_html($ap_curso_label($a['curso'])); ?></td>

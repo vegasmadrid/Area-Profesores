@@ -123,10 +123,13 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
         </label>
         <input type="text" name="motivo" maxlength="300" placeholder="<?php esc_attr_e('Nota (opcional): por qué cambia', 'area-profesores'); ?>">
         <label class="ap-nf-check"><input type="checkbox" name="avisar" value="1" checked> <?php esc_html_e('Si pasa a «Aprobada», enviar a la familia el correo para venir a firmar', 'area-profesores'); ?></label>
+        <?php if (!$M::alta_hecha($m)) : ?>
+            <label class="ap-nf-check"><input type="checkbox" name="dar_alta" value="1" checked> <?php esc_html_e('Si pasa a «Completada», dar de alta a la familia y a los alumnos en Alumnos y familias', 'area-profesores'); ?></label>
+        <?php endif; ?>
         <button type="submit" class="ap-btn ap-btn-sm ap-btn-primary"><?php esc_html_e('Guardar estado', 'area-profesores'); ?></button>
     </form>
 
-    <?php if ($ap_m['coinciden']) : ?>
+    <?php if ($ap_m['coinciden'] && !$M::alta_hecha($m)) : ?>
         <div class="ap-cd-msg is-warning" role="note">
             <strong><?php esc_html_e('¿Hermanos de una familia del colegio?', 'area-profesores'); ?></strong>
             <?php foreach ($ap_m['coinciden'] as $email => $c) : ?>
@@ -135,6 +138,44 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
             <br><?php esc_html_e('Si es la misma familia, usad su cuenta (escríbela abajo en «Cuenta de la familia»). Si es otra familia con los mismos apellidos, se propone otra cuenta.', 'area-profesores'); ?>
         </div>
     <?php endif; ?>
+
+    <!-- Alta en Alumnos y familias -->
+    <?php $ap_alta = $M::alta_hecha($m) ? $m['oficina']['alta'] : null; ?>
+    <section class="ap-nf-box ap-nf-alta<?php echo $ap_alta ? ' is-hecha' : ''; ?>">
+        <h4><?php esc_html_e('Alta en Alumnos y familias', 'area-profesores'); ?></h4>
+        <?php if ($ap_alta) : ?>
+            <p>✅ <?php printf(esc_html__('Dada de alta el %1$s por %2$s.', 'area-profesores'), esc_html(date_i18n('j/m/Y H:i', strtotime($ap_alta['fecha']))), esc_html($ap_alta['quien'])); ?></p>
+            <ul class="ap-nf-lista">
+                <?php foreach ($ap_alta['resumen'] as $l) : ?><li><?php echo esc_html($l); ?></li><?php endforeach; ?>
+            </ul>
+            <?php if (!empty($ap_alta['existentes'])) : ?>
+                <p class="ap-nf-ayuda"><?php esc_html_e('Los alumnos se han vinculado a la familia que ya estaba en el colegio con esa cuenta (sus datos no se han cambiado).', 'area-profesores'); ?></p>
+            <?php endif; ?>
+            <p class="ap-nf-ayuda"><?php esc_html_e('Los alumnos que todavía no han empezado están como «Pendientes de incorporación»: no salen en las listas de clase, comedor ni reservas, y su familia los ve en el Área Familias con la fecha en que empiezan. Ese día pasan solos a «De alta».', 'area-profesores'); ?></p>
+            <?php if (current_user_can('manage_options')) : ?>
+                <p><a href="<?php echo esc_url(admin_url('admin.php?page=' . Area_Profesores_Alumnos_Admin::SLUG . '&tab=alumnos&estado=todos&q=' . rawurlencode($m['familia']))); ?>"><?php esc_html_e('Ver en Alumnos y familias', 'area-profesores'); ?></a></p>
+            <?php endif; ?>
+        <?php else : $ap_faltan = $M::faltan_para_alta($m); ?>
+            <p><?php esc_html_e('Crea la familia (con su cuenta y los teléfonos y la dirección de los padres) y los alumnos en su curso, con sus alergias. Si la cuenta ya es de una familia del colegio (hermanos), los alumnos se vinculan a ella.', 'area-profesores'); ?></p>
+            <ul class="ap-nf-lista">
+                <?php foreach ($d['alumnos'] as $i => $a) : $f = $M::fecha_ingreso($m, $i); ?>
+                    <li><?php echo esc_html($M::nombre_alumno($a) . ' · ' . Area_Profesores_Cursos::get_nivel_label($a['nivel']) . (!empty($of['alumnos'][$i]['grupo']) ? ' ' . $of['alumnos'][$i]['grupo'] : '') . ' · ' . ($f > current_time('Y-m-d') ? sprintf(__('pendiente de incorporación hasta el %s', 'area-profesores'), $M::f($f)) : __('de alta desde hoy', 'area-profesores'))); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php if ($ap_faltan) : ?>
+                <div class="ap-cd-msg is-info"><?php echo esc_html(__('Falta:', 'area-profesores') . ' ' . implode(' ', $ap_faltan)); ?></div>
+            <?php else : ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="no-print" onsubmit="return confirm('<?php echo esc_js(__('¿Dar de alta ahora a esta familia y sus alumnos en Alumnos y familias?', 'area-profesores')); ?>');">
+                    <?php echo $ap_nonce; // phpcs:ignore ?>
+                    <input type="hidden" name="action" value="ap_matricula">
+                    <input type="hidden" name="op" value="alta">
+                    <input type="hidden" name="id" value="<?php echo (int) $m['id']; ?>">
+                    <button type="submit" class="ap-btn ap-btn-sm ap-btn-outline"><?php esc_html_e('Dar de alta ahora', 'area-profesores'); ?></button>
+                    <span class="ap-nf-ayuda"><?php esc_html_e('Se hace solo al pasar la solicitud a «Completada».', 'area-profesores'); ?></span>
+                </form>
+            <?php endif; ?>
+        <?php endif; ?>
+    </section>
 
     <!-- Datos de Secretaría -->
     <form class="ap-nf-box no-print" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -150,7 +191,7 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
                     <legend><?php echo esc_html($M::nombre_alumno($a) . ' · ' . Area_Profesores_Cursos::get_nivel_label($a['nivel'])); ?></legend>
                     <label><?php esc_html_e('Nº de matrícula', 'area-profesores'); ?> <input type="text" name="al[<?php echo (int) $i; ?>][numero_matricula]" value="<?php echo esc_attr(isset($x['numero_matricula']) ? $x['numero_matricula'] : ''); ?>"></label>
                     <label><?php esc_html_e('NIA', 'area-profesores'); ?> <input type="text" name="al[<?php echo (int) $i; ?>][nia]" value="<?php echo esc_attr(isset($x['nia']) ? $x['nia'] : ''); ?>"></label>
-                    <label><?php esc_html_e('Fecha de ingreso', 'area-profesores'); ?> <input type="date" name="al[<?php echo (int) $i; ?>][fecha_ingreso]" value="<?php echo esc_attr(isset($x['fecha_ingreso']) ? $x['fecha_ingreso'] : ''); ?>"></label>
+                    <label><?php esc_html_e('Fecha de ingreso', 'area-profesores'); ?> <input type="date" name="al[<?php echo (int) $i; ?>][fecha_ingreso]" value="<?php echo esc_attr(isset($x['fecha_ingreso']) ? $x['fecha_ingreso'] : ''); ?>"><small class="ap-nf-gris"><?php printf(esc_html__('Si la dejas vacía: %s', 'area-profesores'), esc_html($M::f($M::fecha_inicio_curso($m['curso_escolar'])))); ?></small></label>
                     <?php if ($con_grupo) : ?>
                         <label><?php esc_html_e('Grupo', 'area-profesores'); ?>
                             <select name="al[<?php echo (int) $i; ?>][grupo]">

@@ -197,7 +197,7 @@ class Area_Profesores_Importador {
         $vistos = array();
         foreach ($familias as $f) {
             foreach ($f['hijos'] as $h) {
-                $key = Area_Profesores_Alumnos::norm_nombre($h['nombre']) . '|' . $h['email'];
+                $key = Area_Profesores_Alumnos::clave_nombre($h['nombre']) . '|' . $h['email'];
                 if ($h['curso'] === '' || isset($vistos[$key])) {
                     continue;
                 }
@@ -255,7 +255,7 @@ class Area_Profesores_Importador {
         foreach ($alumnos as $a) {
             if ($a['email']) {
                 $por_email[strtolower($a['email'])][] = $a;
-                $por_clave[$A::norm_nombre($a['nombre']) . '|' . strtolower($a['email'])] = $a;
+                $por_clave[$A::clave_nombre($a['nombre']) . '|' . strtolower($a['email'])] = $a;
             }
         }
         $fams = $wpdb->get_results('SELECT * FROM ' . $A::t('familias'), ARRAY_A);
@@ -289,7 +289,7 @@ class Area_Profesores_Importador {
         $por_nombre = array();
         foreach ($alumnos as $a) {
             $alumno_por_id[(int) $a['id']] = $a;
-            $por_nombre[$A::norm_nombre($a['nombre'])][] = $a;
+            $por_nombre[$A::clave_nombre($a['nombre'])][] = $a;
         }
 
         // How alike a family of the database is to a family of the file:
@@ -298,12 +298,12 @@ class Area_Profesores_Importador {
             $nombres = array();
             foreach (isset($links[$fid]) ? $links[$fid] : array() as $aid) {
                 if (isset($alumno_por_id[$aid])) {
-                    $nombres[$A::norm_nombre($alumno_por_id[$aid]['nombre'])] = true;
+                    $nombres[$A::clave_nombre($alumno_por_id[$aid]['nombre'])] = true;
                 }
             }
             $score = 0;
             foreach ($pf['hijos'] as $h) {
-                if ($h['curso'] !== '' && isset($nombres[$A::norm_nombre($h['nombre'])])) {
+                if ($h['curso'] !== '' && isset($nombres[$A::clave_nombre($h['nombre'])])) {
                     $score += 3;
                 }
             }
@@ -344,7 +344,7 @@ class Area_Profesores_Importador {
                     }
                 }
                 foreach ($pf['hijos'] as $h) {
-                    foreach (isset($por_nombre[$A::norm_nombre($h['nombre'])]) ? $por_nombre[$A::norm_nombre($h['nombre'])] : array() as $a) {
+                    foreach (isset($por_nombre[$A::clave_nombre($h['nombre'])]) ? $por_nombre[$A::clave_nombre($h['nombre'])] : array() as $a) {
                         foreach (isset($fam_de_alumno[(int) $a['id']]) ? $fam_de_alumno[(int) $a['id']] : array() as $cid) {
                             $candidatas[$cid] = true;
                         }
@@ -441,7 +441,7 @@ class Area_Profesores_Importador {
                 if ($h['email'] === '') {
                     $res['sin_email']++;
                 }
-                $nn = $A::norm_nombre($h['nombre']);
+                $nn = $A::clave_nombre($h['nombre']);
                 $key = $h['email'] !== '' ? $nn . '|' . $h['email'] : 'n:' . $nn . ':' . $fid;
                 $ex = null;
                 if ($h['email'] !== '' && isset($por_clave[$key])) {
@@ -451,7 +451,7 @@ class Area_Profesores_Importador {
                 if (!$ex && $existente) {
                     // 2) Same name in the same family.
                     foreach (isset($links[$fid]) ? $links[$fid] : array() as $lid) {
-                        if (isset($alumno_por_id[$lid]) && $A::norm_nombre($alumno_por_id[$lid]['nombre']) === $nn) {
+                        if (isset($alumno_por_id[$lid]) && $A::clave_nombre($alumno_por_id[$lid]['nombre']) === $nn) {
                             $ex = $alumno_por_id[$lid];
                             break;
                         }
@@ -483,7 +483,9 @@ class Area_Profesores_Importador {
                         if ($ex['curso'] !== $h['curso']) {
                             $c[] = sprintf(__('curso %1$s → %2$s', 'area-profesores'), $ex['curso'] ? Area_Profesores_Cursos::get_curso($ex['curso'])['label'] : '—', Area_Profesores_Cursos::get_curso($h['curso'])['label']);
                         }
-                        if ($ex['estado'] !== 'alta') {
+                        if ($ex['estado'] === 'pendiente') {
+                            $c[] = __('se incorpora (estaba pendiente: matrícula online)', 'area-profesores');
+                        } elseif ($ex['estado'] !== 'alta') {
                             $c[] = __('vuelve a estar de alta', 'area-profesores');
                         }
                         if ($ex['nombre'] !== $h['nombre']) {
