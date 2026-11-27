@@ -3,8 +3,10 @@
  * Teacher Portal: changes to a pupil's data from "Mis alumnos".
  *
  * A teacher who can see a pupil can change their allergies and the name and
- * emergency phone of their parents. A reason is required and the accounts chosen
- * in "Avisos" (Secretaría by default) receive an e-mail with the changes and the reason.
+ * emergency phone of their parents. A reason is required and an e-mail is sent
+ * with the changes and the reason. There are two e-mails (recipients chosen in "Avisos"):
+ * - Food allergies: "profesor_alergias" (Cocina and the tutors by default, not Secretaría).
+ * - Everything else: "profesor_datos" (Secretaría by default).
  */
 
 if (!defined('ABSPATH')) {
@@ -91,7 +93,8 @@ class Area_Profesores_Alumnos_Portal {
             self::volver('error', __('Escribe el motivo del cambio: se envía por correo junto con los datos nuevos.', 'area-profesores'), $curso);
         }
 
-        $cambios = array();      // lines for the e-mail
+        $cambios = array();      // lines for the e-mail to Secretaría
+        $cambios_alim = array(); // lines for the e-mail to Cocina and the tutors (food allergies)
         $log_alumno = array();
 
         // 1. Allergies of the pupil.
@@ -105,7 +108,12 @@ class Area_Profesores_Alumnos_Portal {
             if ($v !== $old) {
                 $nuevo[$k] = $v;
                 $log_alumno[$k] = array($old, $v);
-                $cambios[] = '- ' . $label . ': ' . self::txt($old) . ' → ' . self::txt($v);
+                $linea = '- ' . $label . ': ' . self::txt($old) . ' → ' . self::txt($v);
+                if ($k === 'alergias_alimentarias') {
+                    $cambios_alim[] = $linea;
+                } else {
+                    $cambios[] = $linea;
+                }
             }
         }
 
@@ -161,7 +169,7 @@ class Area_Profesores_Alumnos_Portal {
             }
         }
 
-        if (!$cambios) {
+        if (!$cambios && !$cambios_alim) {
             self::volver('info', __('No has cambiado ningún dato.', 'area-profesores'), $curso);
         }
 
@@ -191,19 +199,28 @@ class Area_Profesores_Alumnos_Portal {
             ), 'alumno' => $alumno['nombre'], 'motivo' => $motivo));
         }
 
-        // Notice to Secretaría (and the tutors, if chosen in "Avisos").
-        $conf = Area_Profesores_Correos::get('profesor_datos');
-        $para = $conf['tutores'] ? $A::emails_tutores($curso) : array(); // + the accounts chosen in "Avisos"
+        // Notices: food allergies to Cocina and the tutors; the rest to Secretaría
+        // (recipients chosen in "Avisos").
         $u = wp_get_current_user();
         $c = Area_Profesores_Cursos::get_curso($curso);
-        $enviado = Area_Profesores_Correos::enviar('profesor_datos', $para, array(
+        $vars = array(
             'profesor' => $u->display_name,
             'alumno'   => $alumno['nombre'],
             'curso'    => $c ? $c['label'] : $curso,
-            'cambios'  => implode("\n", $cambios),
             'motivo'   => $motivo,
             'enlace'   => admin_url('admin.php?page=' . Area_Profesores_Alumnos_Admin::SLUG . '&tab=alumnos&editar=' . $id),
-        ), false, $u->user_email);
+        );
+        $enviado = false;
+        foreach (array('profesor_alergias' => $cambios_alim, 'profesor_datos' => $cambios) as $key => $lineas) {
+            if (!$lineas) {
+                continue;
+            }
+            $conf = Area_Profesores_Correos::get($key);
+            $para = $conf['tutores'] ? $A::emails_tutores($curso) : array(); // + the accounts chosen in "Avisos"
+            if (Area_Profesores_Correos::enviar($key, $para, $vars + array('cambios' => implode("\n", $lineas)), false, $u->user_email)) {
+                $enviado = true;
+            }
+        }
 
         self::volver('success', $enviado
             ? sprintf(__('Datos de %s guardados. Se ha enviado el aviso por correo.', 'area-profesores'), $alumno['nombre'])
