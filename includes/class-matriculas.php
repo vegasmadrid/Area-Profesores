@@ -410,7 +410,8 @@ class Area_Profesores_Matriculas {
         };
         foreach (preg_split('/\r\n|\r|\n/', (string) $texto) as $l) {
             $l = trim($l);
-            $es_item = strpos($l, '- ') === 0;
+            $es_sub = strpos($l, '-- ') === 0;
+            $es_item = $es_sub || strpos($l, '- ') === 0;
             if ($lista && !$es_item) {
                 $out .= '</ul>';
                 $lista = false;
@@ -427,7 +428,7 @@ class Area_Profesores_Matriculas {
                     $out .= '<ul>';
                     $lista = true;
                 }
-                $out .= '<li>' . $inline(substr($l, 2)) . '</li>';
+                $out .= $es_sub ? '<li class="sub">– ' . $inline(substr($l, 3)) . '</li>' : '<li>' . $inline(substr($l, 2)) . '</li>';
             } else {
                 $out .= '<p>' . $inline($l) . '</p>';
             }

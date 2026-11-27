@@ -123,6 +123,7 @@ $datos_tutor = function ($titulo, $t) use ($campo, $M) {
     .legal p { margin: 0 0 4px; }
     .legal ul { margin: 0 0 4px; padding-left: 10px; list-style: none; }
     .legal li { margin: 0 0 2px; }
+    .legal li.sub { padding-left: 14px; }
     .legal.peq { font-size: 8.2pt; line-height: 1.3; }
     .manif { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 6px; }
     .manif .n { font-weight: 700; color: #313280; min-width: 22px; }
