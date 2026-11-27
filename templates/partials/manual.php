@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 $mv = array_merge(array(
     'entrar' => true, 'comedor' => true, 'mi_comida' => true, 'alumnos' => true, 'reservas' => true,
-    'enlaces' => true, 'espacios' => true, 'comensales' => true, 'comunicados' => true, 'dudas' => true,
+    'enlaces' => true, 'espacios' => true, 'comensales' => true, 'matriculas' => true, 'comunicados' => true, 'dudas' => true,
 ), isset($mv) ? (array) $mv : array());
 $maj = isset($maj) ? $maj : Area_Profesores_Comensales::ajustes();
 $m_rec = $maj['hora_recordatorio'];
@@ -32,6 +32,7 @@ $m_secciones = array(
     'enlaces'     => __('Enlaces útiles', 'area-profesores'),
     'espacios'    => __('Espacios de aula', 'area-profesores'),
     'comensales'  => __('Administración (cocina y cobros del mes)', 'area-profesores'),
+    'matriculas'  => __('Nuevas familias (solicitudes de matrícula)', 'area-profesores'),
     'comunicados' => __('Comunicados (Dirección y Comunicación)', 'area-profesores'),
     'dudas'       => __('Preguntas frecuentes', 'area-profesores'),
 );
@@ -191,6 +192,25 @@ $m_secciones = array(
     </ul>
     <?php $m_fig('administracion', __('Bloque 1: comidas de cada día por comedor, para cotejar con cocina.', 'area-profesores')); ?>
     <?php $m_fig('administracion-servicios', __('Bloque 2: lo que hay que cobrar a cada familia, con sus días.', 'area-profesores')); ?>
+</section>
+<?php endif; ?>
+
+<?php if ($mv['matriculas']) : $m_i++; ?>
+<section class="ap-manual-sec" id="ayuda-matriculas">
+    <h3><span><?php echo (int) $m_i; ?></span> <?php echo esc_html($m_secciones['matriculas']); ?> <em class="ap-manual-solo"><?php esc_html_e('Secretaría, Dirección y Administración', 'area-profesores'); ?></em></h3>
+    <p><?php esc_html_e('Las familias nuevas rellenan la matrícula en la web del Área Familias (botón de la pantalla de acceso). Confirman su correo con un código y la solicitud llega aquí, con un aviso por correo. Los datos personales y bancarios se guardan cifrados.', 'area-profesores'); ?></p>
+    <ol>
+        <li><?php esc_html_e('En "Por hacer" están las solicitudes nuevas, en revisión y aprobadas. Pulsa "Abrir" para ver todos los datos, ordenados como en las hojas de papel.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Revisa los datos. Si hay que aclarar algo con la familia, pásala a "En revisión" y escríbeles (el correo de contacto está confirmado).', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Pásala a "Aprobada · pendiente de firma": la familia recibe un correo para venir a firmar y traer los originales, y se crea su cuenta del colegio en Google (si tiene hermanos en el colegio se usa la suya). Si la cuenta ya existía en Google, sale un aviso para que elijas qué hacer.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Pulsa "Imprimir la hoja de credenciales" y entrégasela el día de la firma (cuenta, contraseña temporal y cómo entrar). Después pulsa "Credenciales entregadas". Si la pierden, "Nueva contraseña" y vuelve a imprimirla.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Pulsa "Imprimir la ficha para firmar": salen la ficha de matrícula, la información del centro con las manifestaciones de los padres, la hoja de protección de datos, la reserva de plaza (solo Primer Ciclo) y la orden SEPA, ya rellenas con lo que contestó la familia. Antes, rellena el nº de matrícula, el NIA, la fecha de ingreso y el grupo para que salgan impresos.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Cuando firmen y comprobéis los originales, marca los documentos entregados y pásala a "Completada": la familia y los alumnos se dan de alta solos en Alumnos y familias, en su curso (antes elige el grupo A o B y la fecha de ingreso). Si empiezan más adelante, quedan "pendientes de incorporación" hasta ese día.', 'area-profesores'); ?></li>
+    </ol>
+    <ul>
+        <li><?php esc_html_e('La cuenta de la familia se propone sola con la regla del colegio: primerapellido.segundoapellido.cvm del alumno (padres separados: un 1 antes de .cvm). Si otra familia ya la tiene, se añade la inicial del nombre del alumno. Puedes cambiarla.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si sale el aviso "¿Hermanos de una familia del colegio?", comprueba si son hermanos: entonces se usa la cuenta que ya tienen.', 'area-profesores'); ?></li>
+    </ul>
 </section>
 <?php endif; ?>
 

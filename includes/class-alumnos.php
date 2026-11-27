@@ -43,6 +43,7 @@ class Area_Profesores_Alumnos {
             email VARCHAR(190) DEFAULT NULL,
             curso VARCHAR(20) NOT NULL DEFAULT '',
             estado VARCHAR(10) NOT NULL DEFAULT 'alta',
+            fecha_alta DATE DEFAULT NULL,
             fecha_baja DATE DEFAULT NULL,
             notas TEXT DEFAULT NULL,
             alergias_alimentarias TEXT DEFAULT NULL,
@@ -129,6 +130,17 @@ class Area_Profesores_Alumnos {
     public static function norm_nombre($s) {
         $s = remove_accents(mb_strtolower(trim((string) $s)));
         return preg_replace('/\s+/', ' ', $s);
+    }
+
+    /**
+     * Key of a pupil's name that does not depend on the order of the words
+     * ("García López, Lucía" = "Lucía García López"), to match the Alexia listing
+     * with the pupils registered from the online enrolment.
+     */
+    public static function clave_nombre($s) {
+        $w = preg_split('/[\s,]+/', self::norm_nombre(str_replace(',', ' ', (string) $s)), -1, PREG_SPLIT_NO_EMPTY);
+        sort($w);
+        return implode(' ', $w);
     }
 
     public static function log($origen, $objeto, $objeto_id, $accion, $detalle = '') {
@@ -286,6 +298,7 @@ class Area_Profesores_Alumnos {
         return array(
             'alumnos'  => (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . self::t('alumnos') . " WHERE estado = 'alta'"),
             'bajas'    => (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . self::t('alumnos') . " WHERE estado = 'baja'"),
+            'pendientes' => (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . self::t('alumnos') . " WHERE estado = 'pendiente'"),
             'familias' => (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . self::t('familias')),
         );
     }
@@ -294,15 +307,42 @@ class Area_Profesores_Alumnos {
      * Escritura
      * ------------------------------------------------------------------- */
 
+    /**
+     * Pupils "pendientes de incorporación" (new families) whose date has arrived go
+     * to "alta". Runs once a day, on the first visit (does not depend on WP-Cron).
+     */
+    public static function activar_pendientes($forzar = false) {
+        global $wpdb;
+        $hoy = current_time('Y-m-d');
+        if (!$forzar && get_option('ap_alumnos_activados') === $hoy) {
+            return 0;
+        }
+        update_option('ap_alumnos_activados', $hoy, false);
+        $ids = $wpdb->get_col($wpdb->prepare('SELECT id FROM ' . self::t('alumnos') . " WHERE estado = 'pendiente' AND fecha_alta IS NOT NULL AND fecha_alta <= %s", $hoy));
+        foreach ($ids as $id) {
+            $wpdb->update(self::t('alumnos'), array('estado' => 'alta', 'actualizado' => self::now()), array('id' => (int) $id));
+            self::log('automatico', 'alumno', (int) $id, 'editar', array('estado' => array('pendiente', 'alta')));
+        }
+        if ($ids) {
+            // E.g. their families enter the Chat space of the class.
+            do_action('ap_alumnos_activados', array_map('intval', $ids));
+        }
+        return count($ids);
+    }
+
     public static function guardar_alumno($data, $id = 0, $origen = 'backend') {
         global $wpdb;
         $row = array(
             'nombre' => sanitize_text_field($data['nombre']),
             'email'  => self::norm_email(isset($data['email']) ? $data['email'] : '') ?: null,
             'curso'  => Area_Profesores_Cursos::get_curso(isset($data['curso']) ? $data['curso'] : '') ? $data['curso'] : '',
-            'estado' => (isset($data['estado']) && $data['estado'] === 'baja') ? 'baja' : 'alta',
+            'estado' => (isset($data['estado']) && in_array($data['estado'], array('baja', 'pendiente'), true)) ? $data['estado'] : 'alta',
             'actualizado' => self::now(),
         );
+        // Pending pupils (new families) start on their incorporation date.
+        if (array_key_exists('fecha_alta', $data)) {
+            $row['fecha_alta'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data['fecha_alta']) ? $data['fecha_alta'] : null;
+        }
         if (array_key_exists('notas', $data)) {
             $row['notas'] = sanitize_textarea_field($data['notas']);
         }
@@ -317,7 +357,7 @@ class Area_Profesores_Alumnos {
             $old = self::get_alumno($id);
             if ($row['estado'] === 'baja' && $old && $old['estado'] !== 'baja') {
                 $row['fecha_baja'] = current_time('Y-m-d');
-            } elseif ($row['estado'] === 'alta') {
+            } elseif ($row['estado'] !== 'baja') {
                 $row['fecha_baja'] = null;
             }
             $wpdb->update(self::t('alumnos'), $row, array('id' => $id));

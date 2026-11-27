@@ -73,6 +73,8 @@ if (!defined('ABSPATH')) {
         'comedor'        => array('ve' => $comedor !== null, 'tpl' => 'comedor-diario.php',
             'contador' => ($comedor !== null && $comedor['lectivo'] && $comedor['mi_curso'] !== '' && empty($comedor['estados'][$comedor['mi_curso']]['registro'])) ? '<span class="ap-tab-counter" title="' . esc_attr__('Pendiente de validar', 'area-profesores') . '">!</span>' : ''),
         'administracion' => array('ve' => $comensales_mes !== null, 'tpl' => 'administracion.php', 'contador' => ''),
+        'matriculas'     => array('ve' => $matriculas !== null, 'tpl' => 'matriculas.php',
+            'contador' => ($matriculas !== null && $matriculas['pendientes']) ? '<span class="ap-tab-counter" title="' . esc_attr__('Solicitudes nuevas o en revisión', 'area-profesores') . '">' . (int) $matriculas['pendientes'] . '</span>' : ''),
         'enlaces'        => array('ve' => $ap_P::ve($user_id, 'enlaces'), 'tpl' => 'enlaces-utiles.php',
             'contador' => !empty($enlaces['total']) ? '<span class="ap-tab-counter">' . (int) $enlaces['total'] . '</span>' : ''),
         'alumnos'        => array('ve' => !empty($mis_alumnos['cursos']), 'tpl' => 'mis-alumnos.php',
