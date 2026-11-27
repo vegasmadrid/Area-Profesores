@@ -123,6 +123,9 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
         </label>
         <input type="text" name="motivo" maxlength="300" placeholder="<?php esc_attr_e('Nota (opcional): por qué cambia', 'area-profesores'); ?>">
         <label class="ap-nf-check"><input type="checkbox" name="avisar" value="1" checked> <?php esc_html_e('Si pasa a «Aprobada», enviar a la familia el correo para venir a firmar', 'area-profesores'); ?></label>
+        <?php if (Area_Profesores_Google::familias_conectada() && $M::cuentas_sin_crear($m)) : ?>
+            <label class="ap-nf-check"><input type="checkbox" name="crear_cuenta" value="1" <?php checked(Area_Profesores_Google::familias()['auto']); ?>> <?php esc_html_e('Si pasa a «Aprobada», crear la cuenta en Google (si no hay nada que revisar)', 'area-profesores'); ?></label>
+        <?php endif; ?>
         <?php if (!$M::alta_hecha($m)) : ?>
             <label class="ap-nf-check"><input type="checkbox" name="dar_alta" value="1" checked> <?php esc_html_e('Si pasa a «Completada», dar de alta a la familia y a los alumnos en Alumnos y familias', 'area-profesores'); ?></label>
         <?php endif; ?>
@@ -161,6 +164,88 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
             </div>
         <?php endif; ?>
     <?php endif; ?>
+
+    <!-- Cuenta en Google -->
+    <?php $ap_ec = $M::estado_cuentas($m); $ap_conf = isset($of['google_conflicto']) ? $of['google_conflicto'] : null; $ap_gc = Area_Profesores_Google::familias_conectada(); ?>
+    <section class="ap-nf-box ap-nf-google">
+        <h4><?php esc_html_e('Cuenta en Google y hoja de credenciales', 'area-profesores'); ?></h4>
+        <?php if ($ap_conf) : ?>
+            <div class="ap-cd-msg is-warning" role="alert">
+                <strong><?php printf(esc_html__('La cuenta %s ya existe en Google', 'area-profesores'), esc_html($ap_conf['cuenta'])); ?></strong>
+                <?php esc_html_e('y no es de ninguna familia de la web (puede ser de una familia antigua, de hermanos que no están dados de alta o de otra persona). No se ha tocado.', 'area-profesores'); ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-nf-botones no-print">
+                    <?php echo $ap_nonce; // phpcs:ignore ?>
+                    <input type="hidden" name="action" value="ap_matricula">
+                    <input type="hidden" name="id" value="<?php echo (int) $m['id']; ?>">
+                    <?php if ($ap_conf['propuesta'] !== '') : ?>
+                        <button type="submit" name="op" value="google_alternativa" class="ap-btn ap-btn-sm ap-btn-primary"><?php printf(esc_html__('Es otra familia: crear %s', 'area-profesores'), esc_html($ap_conf['propuesta'])); ?></button>
+                    <?php endif; ?>
+                    <button type="submit" name="op" value="google_usar" class="ap-btn ap-btn-sm ap-btn-outline" onclick="return confirm('<?php echo esc_js(__('¿Seguro que esa cuenta es de esta misma familia? Se usará tal cual, sin cambiar su contraseña.', 'area-profesores')); ?>');"><?php esc_html_e('Es de esta familia: usar esa cuenta', 'area-profesores'); ?></button>
+                </form>
+            </div>
+        <?php endif; ?>
+        <?php if (!$ap_ec) : ?>
+            <p class="ap-nf-gris"><?php esc_html_e('Todavía no hay cuenta: escríbela abajo en «Cuenta de la familia en Google».', 'area-profesores'); ?></p>
+        <?php else : ?>
+            <ul class="ap-nf-lista ap-nf-cuentas">
+                <?php foreach ($ap_ec as $email => $c) : ?>
+                    <li>
+                        <code><?php echo esc_html($email); ?></code> ·
+                        <?php
+                        if ($c['estado'] === 'creada') {
+                            echo '<span class="ap-nf-resp is-si">' . esc_html__('Creada', 'area-profesores') . '</span> ';
+                            printf(esc_html__('el %1$s por %2$s', 'area-profesores'), esc_html(date_i18n('j/m/Y', strtotime($c['fecha']))), esc_html($c['quien']));
+                            echo ' · ' . ($c['clave'] ? esc_html__('contraseña temporal pendiente de entregar', 'area-profesores') : esc_html__('credenciales entregadas', 'area-profesores'));
+                        } elseif ($c['estado'] === 'familia') {
+                            echo '<span class="ap-nf-resp is-si">' . esc_html__('Su cuenta de siempre', 'area-profesores') . '</span> ' . esc_html__('(hermanos en el colegio: no se crea nada)', 'area-profesores');
+                        } elseif ($c['estado'] === 'existente') {
+                            echo '<span class="ap-nf-resp is-si">' . esc_html__('Ya existía en Google', 'area-profesores') . '</span> ' . esc_html__('(confirmado por Secretaría; no se ha cambiado su contraseña)', 'area-profesores');
+                        } else {
+                            echo '<span class="ap-nf-resp is-no">' . esc_html__('Sin crear', 'area-profesores') . '</span>';
+                        }
+                        ?>
+                        <?php if ($c['estado'] === 'creada') : ?>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-nf-inline no-print" onsubmit="return confirm('<?php echo esc_js(__('Se pondrá una contraseña temporal nueva y la anterior dejará de valer. ¿Seguir?', 'area-profesores')); ?>');">
+                                <?php echo $ap_nonce; // phpcs:ignore ?>
+                                <input type="hidden" name="action" value="ap_matricula">
+                                <input type="hidden" name="op" value="google_clave">
+                                <input type="hidden" name="id" value="<?php echo (int) $m['id']; ?>">
+                                <input type="hidden" name="email" value="<?php echo esc_attr($email); ?>">
+                                <button type="submit" class="ap-btn ap-btn-sm ap-btn-subtle"><?php esc_html_e('Nueva contraseña', 'area-profesores'); ?></button>
+                            </form>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <div class="ap-nf-botones no-print">
+                <?php if ($M::cuentas_sin_crear($m) && !$ap_conf) : ?>
+                    <?php if ($ap_gc) : ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('¿Crear ahora la cuenta en Google?', 'area-profesores')); ?>');">
+                            <?php echo $ap_nonce; // phpcs:ignore ?>
+                            <input type="hidden" name="action" value="ap_matricula">
+                            <input type="hidden" name="op" value="google_crear">
+                            <input type="hidden" name="id" value="<?php echo (int) $m['id']; ?>">
+                            <button type="submit" class="ap-btn ap-btn-sm ap-btn-primary"><?php esc_html_e('Crear la cuenta en Google', 'area-profesores'); ?></button>
+                        </form>
+                    <?php else : ?>
+                        <span class="ap-nf-gris"><?php esc_html_e('Para crear las cuentas desde aquí, un administrador tiene que conectar la cuenta de Google en Área Profesores › Aulas.', 'area-profesores'); ?></span>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php if (!$M::cuentas_sin_crear($m)) : ?>
+                    <a class="ap-btn ap-btn-sm ap-btn-outline" href="<?php echo esc_url($M::url_credenciales($m['id'])); ?>" target="_blank" rel="noopener">🖨️ <?php esc_html_e('Imprimir la hoja de credenciales', 'area-profesores'); ?></a>
+                    <?php if (array_filter(wp_list_pluck($ap_ec, 'clave'))) : ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('¿Ya habéis entregado la hoja a la familia? La contraseña temporal se borrará de la web.', 'area-profesores')); ?>');">
+                            <?php echo $ap_nonce; // phpcs:ignore ?>
+                            <input type="hidden" name="action" value="ap_matricula">
+                            <input type="hidden" name="op" value="google_entregadas">
+                            <input type="hidden" name="id" value="<?php echo (int) $m['id']; ?>">
+                            <button type="submit" class="ap-btn ap-btn-sm ap-btn-subtle"><?php esc_html_e('Credenciales entregadas', 'area-profesores'); ?></button>
+                        </form>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </section>
 
     <!-- Alta en Alumnos y familias -->
     <?php $ap_alta = $M::alta_hecha($m) ? $m['oficina']['alta'] : null; ?>
@@ -238,11 +323,15 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
                 <?php $ap_cuentas = isset($of['cuentas']) ? (array) $of['cuentas'] : array(); ?>
                 <?php for ($i = 0; $i < max(count($ap_cuentas), !empty($d['separados']) ? 2 : 1); $i++) : ?>
                     <label><?php echo $i === 0 ? esc_html__('Cuenta', 'area-profesores') : esc_html__('Segunda cuenta (padres separados)', 'area-profesores'); ?>
-                        <input type="text" name="cuentas[]" value="<?php echo esc_attr(isset($ap_cuentas[$i]) ? $ap_cuentas[$i] : ''); ?>" spellcheck="false" autocomplete="off">
+                        <input type="text" name="cuentas[]" value="<?php echo esc_attr(isset($ap_cuentas[$i]) ? $ap_cuentas[$i] : ''); ?>" spellcheck="false" autocomplete="off"<?php echo $M::alguna_creada($m) ? ' readonly' : ''; ?>>
                     </label>
                 <?php endfor; ?>
                 <p class="ap-nf-ayuda"><?php printf(esc_html__('Regla del colegio: primerapellido.segundoapellido.%1$s@%2$s del alumno; padres separados: un 1 antes de .%1$s. Si tiene hermanos en el colegio se usa la cuenta de su familia; si la cuenta es de otra familia con los mismos apellidos, se añade la inicial del nombre del alumno.', 'area-profesores'), esc_html($M::SUFIJO), esc_html($M::dominio())); ?></p>
-                <button type="submit" name="op" value="proponer" class="ap-btn ap-btn-sm ap-btn-outline"><?php esc_html_e('Volver a proponer la cuenta', 'area-profesores'); ?></button>
+                <?php if ($M::alguna_creada($m)) : ?>
+                    <p class="ap-nf-ayuda"><?php esc_html_e('La cuenta ya está en Google: no se puede cambiar desde aquí.', 'area-profesores'); ?></p>
+                <?php else : ?>
+                    <button type="submit" name="op" value="proponer" class="ap-btn ap-btn-sm ap-btn-outline"><?php esc_html_e('Volver a proponer la cuenta', 'area-profesores'); ?></button>
+                <?php endif; ?>
             </fieldset>
         </div>
 

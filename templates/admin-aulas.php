@@ -212,6 +212,63 @@ $ap_etapas = Area_Profesores_Cursos::get_etapas();
             <?php endif; ?>
         </div>
 
+        <!-- Cuentas de las familias (Admin SDK) -->
+        <?php $ap_gf = Area_Profesores_Google::familias(); $ap_gf_ok = Area_Profesores_Google::familias_conectada(); ?>
+        <div class="ap-settings-card ap-chat-help" id="ap-google-familias">
+            <h2 class="ap-settings-section-title"><span class="dashicons dashicons-groups"></span> <?php esc_html_e('Cuentas de las familias nuevas (Google Admin)', 'area-profesores'); ?></h2>
+            <p><?php esc_html_e('Para que Secretaría cree con un clic la cuenta del colegio de cada familia nueva (pestaña «Nuevas familias»), conecta una vez la cuenta que tiene el rol «Alta de familias» en Google Admin. Nadie más necesita su contraseña.', 'area-profesores'); ?></p>
+            <ol class="ap-google-steps">
+                <li><?php esc_html_e('En Google Admin, la cuenta (p. ej. areaprofesores@) tiene un rol con: Usuarios › Leer, Crear, Cambiar contraseña y Forzar el cambio de contraseña, y Unidades organizativas › Leer, asignado solo a la unidad de las familias.', 'area-profesores'); ?></li>
+                <li><?php esc_html_e('En Google Cloud, en el mismo proyecto que la conexión de Google Chat, está habilitada la «Admin SDK API» y la pantalla de consentimiento es de tipo «Interno».', 'area-profesores'); ?></li>
+            </ol>
+            <?php if ($ap_gf_ok) : ?>
+                <p><span class="ap-status-pill ap-status-success"><?php esc_html_e('Conectada', 'area-profesores'); ?></span> <strong><?php echo esc_html($ap_gf['email']); ?></strong> · <?php printf(esc_html__('desde el %s', 'area-profesores'), esc_html(date_i18n('j/m/Y', strtotime($ap_gf['conectado'])))); ?></p>
+            <?php elseif (!Area_Profesores_Google::is_configured()) : ?>
+                <div class="notice notice-warning inline"><p><?php esc_html_e('Primero configura las credenciales de Google Cloud en la conexión con Google Chat (arriba).', 'area-profesores'); ?></p></div>
+            <?php endif; ?>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('ap_google_familias_guardar'); ?>
+                <input type="hidden" name="action" value="ap_google_familias_guardar">
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><label for="ap-gf-ou"><?php esc_html_e('Unidad organizativa', 'area-profesores'); ?></label></th>
+                        <td><input type="text" id="ap-gf-ou" name="ou" class="regular-text code" value="<?php echo esc_attr($ap_gf['ou']); ?>">
+                            <p class="description"><?php esc_html_e('Donde se crean las cuentas, tal cual sale en Google Admin (mayúsculas incluidas). Ej.: /MADRID/Familias', 'area-profesores'); ?></p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Al aprobar una solicitud', 'area-profesores'); ?></th>
+                        <td><label><input type="checkbox" name="auto" value="1" <?php checked($ap_gf['auto']); ?>> <?php esc_html_e('Crear la cuenta automáticamente (si no hay dudas con los hermanos ni con la cuenta)', 'area-profesores'); ?></label></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="ap-gf-url"><?php esc_html_e('Dirección del Área Familias', 'area-profesores'); ?></label></th>
+                        <td><input type="url" id="ap-gf-url" name="familias_url" class="regular-text" value="<?php echo esc_attr($ap_gf['familias_url']); ?>" placeholder="<?php echo esc_attr(Area_Profesores_Matriculas::url_familias()); ?>">
+                            <p class="description"><?php esc_html_e('Sale con un código QR en la hoja de credenciales. Si la dejas vacía se usa la que envía el Área Familias.', 'area-profesores'); ?></p></td>
+                    </tr>
+                </table>
+                <?php submit_button(__('Guardar', 'area-profesores'), 'secondary', 'submit', false); ?>
+            </form>
+            <?php if (Area_Profesores_Google::is_configured()) : ?>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <?php wp_nonce_field('ap_google_familias'); ?>
+                        <input type="hidden" name="action" value="ap_google_familias">
+                        <input type="hidden" name="email" value="<?php echo esc_attr($ap_gf['email'] !== '' ? $ap_gf['email'] : 'areaprofesores@' . Area_Profesores_Matriculas::dominio()); ?>">
+                        <button type="submit" class="button button-primary"><?php echo $ap_gf_ok ? esc_html__('Volver a conectar', 'area-profesores') : esc_html__('Conectar la cuenta que crea las familias', 'area-profesores'); ?></button>
+                    </form>
+                    <?php if ($ap_gf_ok) : ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('¿Quitar la conexión? Secretaría no podrá crear cuentas hasta que se vuelva a conectar.', 'area-profesores')); ?>');">
+                            <?php wp_nonce_field('ap_google_familias_quitar'); ?>
+                            <input type="hidden" name="action" value="ap_google_familias_quitar">
+                            <button type="submit" class="button"><?php esc_html_e('Quitar la conexión', 'area-profesores'); ?></button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+                <?php if (!Area_Profesores_Google::puede_anadir_miembros()) : ?>
+                    <p class="description"><?php esc_html_e('Para que las familias entren solas en el espacio de Google Chat de su clase cuando empiecen, hace falta la conexión de administrador de Google Chat con permiso para gestionar miembros (arriba).', 'area-profesores'); ?></p>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+
         <!-- Cuentas para publicar los comunicados (API de Google Chat) -->
         <div class="ap-settings-card ap-chat-help" id="ap-cuentas-publicar">
             <h2 class="ap-settings-section-title"><span class="dashicons dashicons-megaphone"></span> <?php esc_html_e('Cuentas para publicar los comunicados', 'area-profesores'); ?></h2>

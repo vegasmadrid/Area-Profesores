@@ -42,6 +42,8 @@ class Area_Profesores_Matriculas {
         add_action('admin_post_ap_matricula_imprimir', array($this, 'render_imprimir'));
         // Pupils "pendientes de incorporación" whose date has arrived go to "alta" (once a day).
         add_action('init', array('Area_Profesores_Alumnos', 'activar_pendientes'), 20);
+        add_action('ap_alumnos_activados', array(__CLASS__, 'al_activar'));
+        add_action('admin_post_ap_matricula_credenciales', array($this, 'render_credenciales'));
     }
 
     public static function t() {
@@ -482,6 +484,10 @@ class Area_Profesores_Matriculas {
         if (is_wp_error($datos)) {
             return $datos;
         }
+        $url = esc_url_raw((string) (isset($request->get_json_params()['familias_url']) ? $request->get_json_params()['familias_url'] : ''));
+        if ($url !== '' && get_option('ap_familias_login_url') !== $url) {
+            update_option('ap_familias_login_url', $url, false);
+        }
         $primero = $datos['alumnos'][0];
         $niveles = array_values(array_unique(wp_list_pluck($datos['alumnos'], 'nivel')));
         $tel = '';
@@ -844,6 +850,7 @@ class Area_Profesores_Matriculas {
             if (!isset(self::estados()[$nuevo]) || $nuevo === $row['estado']) {
                 self::volver($id, 'error', __('Elige un estado distinto.', 'area-profesores'));
             }
+            $crear_ahora = $nuevo === 'aprobada' && !empty($p['crear_cuenta']) && Area_Profesores_Google::familias_conectada() && self::cuentas_sin_crear($row);
             $alta_ahora = $nuevo === 'completada' && !empty($p['dar_alta']) && !self::alta_hecha($row);
             if ($alta_ahora && ($faltan = self::faltan_para_alta($row))) {
                 self::volver($id, 'error', __('No se ha cambiado el estado. Para completarla y darla de alta en Alumnos y familias:', 'area-profesores') . ' ' . implode(' ', $faltan));
@@ -865,6 +872,17 @@ class Area_Profesores_Matriculas {
                 self::anotar($row, $ok ? __('Correo a la familia: venir a firmar y traer los documentos', 'area-profesores') : __('No se pudo enviar el correo a la familia', 'area-profesores'));
             }
             self::guardar_fila($row);
+            if ($crear_ahora) {
+                $dudas = $row['datos'] ? self::analizar_hermanos($row['datos'])['dudas'] : array();
+                if ($dudas || !empty($row['oficina']['google_conflicto'])) {
+                    $aviso .= ' ' . __('No se ha creado la cuenta en Google porque hay algo que revisar (hermanos o cuenta): revísalo y pulsa «Crear la cuenta en Google».', 'area-profesores');
+                } else {
+                    $aviso .= ' ' . self::texto_crear(self::crear_cuentas($id));
+                }
+            }
+            if ($nuevo === 'completada') {
+                self::borrar_claves($id);
+            }
             if ($alta_ahora) {
                 $r = self::dar_de_alta($id);
                 $aviso .= is_wp_error($r) ? ' ' . $r->get_error_message() : ' ' . __('Familia y alumnos dados de alta en Alumnos y familias.', 'area-profesores');
@@ -906,6 +924,9 @@ class Area_Profesores_Matriculas {
                 }
                 $cuentas[] = $c;
             }
+            if (self::alguna_creada($row)) {
+                $cuentas = (array) $row['oficina']['cuentas']; // already in Google: they do not change here
+            }
             $usadas = self::cuentas_usadas($id);
             foreach ($cuentas as $c) {
                 if (isset($usadas[$c]) && $usadas[$c]['tipo'] === 'solicitud') {
@@ -927,6 +948,59 @@ class Area_Profesores_Matriculas {
                 self::guardar_fila($row);
             }
             self::volver($id, 'success', __('Se ha vuelto a calcular la cuenta propuesta.', 'area-profesores'));
+        }
+
+        if ($op === 'google_crear') {
+            $r = self::crear_cuentas($id);
+            self::volver($id, $r['creadas'] && !$r['errores'] ? 'success' : 'error', self::texto_crear($r));
+        }
+
+        if ($op === 'google_alternativa' || $op === 'google_usar') {
+            $conf = isset($row['oficina']['google_conflicto']) ? $row['oficina']['google_conflicto'] : null;
+            if (!$conf) {
+                self::volver($id, 'error', __('No hay nada pendiente con esa cuenta.', 'area-profesores'));
+            }
+            unset($row['oficina']['google_conflicto']);
+            if ($op === 'google_usar') {
+                // Secretaría confirms the existing Google account is this family's.
+                $row['oficina']['google'][$conf['cuenta']] = array('estado' => 'existente', 'fecha' => Area_Profesores_Alumnos::now(), 'quien' => wp_get_current_user()->display_name);
+                self::anotar($row, sprintf(__('Se usa la cuenta que ya existía en Google: %s', 'area-profesores'), $conf['cuenta']));
+                self::guardar_fila($row);
+                self::volver($id, 'success', sprintf(__('Se usará la cuenta %s, que ya existía (no se ha cambiado su contraseña).', 'area-profesores'), $conf['cuenta']));
+            }
+            if ($conf['propuesta'] === '') {
+                self::volver($id, 'error', __('No se ha encontrado otra cuenta libre: escríbela a mano.', 'area-profesores'));
+            }
+            $row['oficina']['cuentas'] = array_values(array_map(function ($c) use ($conf) {
+                return $c === $conf['cuenta'] ? $conf['propuesta'] : $c;
+            }, (array) $row['oficina']['cuentas']));
+            self::anotar($row, sprintf(__('Cuenta cambiada: %1$s → %2$s', 'area-profesores'), $conf['cuenta'], $conf['propuesta']));
+            self::guardar_fila($row);
+            $r = self::crear_cuentas($id);
+            self::volver($id, $r['creadas'] && !$r['errores'] ? 'success' : 'error', self::texto_crear($r));
+        }
+
+        if ($op === 'google_clave') {
+            $email = isset($p['email']) ? strtolower(sanitize_email($p['email'])) : '';
+            $est = self::estado_cuentas($row);
+            if (!isset($est[$email]) || $est[$email]['estado'] !== 'creada') {
+                self::volver($id, 'error', __('Solo se puede cambiar la contraseña de las cuentas creadas desde aquí.', 'area-profesores'));
+            }
+            $clave = Area_Profesores_Google::generar_password();
+            $r = Area_Profesores_Google::cambiar_password($email, $clave);
+            if (is_wp_error($r)) {
+                self::volver($id, 'error', $r->get_error_message());
+            }
+            $row['oficina']['google'][$email]['clave'] = self::cifrar(array('c' => $clave));
+            unset($row['oficina']['google'][$email]['entregada']);
+            self::anotar($row, sprintf(__('Contraseña nueva para %s (la anterior ya no vale)', 'area-profesores'), $email));
+            self::guardar_fila($row);
+            self::volver($id, 'success', sprintf(__('Contraseña nueva para %s. Imprime otra vez la hoja de credenciales.', 'area-profesores'), $email));
+        }
+
+        if ($op === 'google_entregadas') {
+            self::borrar_claves($id);
+            self::volver($id, 'success', __('Credenciales marcadas como entregadas: la contraseña temporal se ha borrado de la web.', 'area-profesores'));
         }
 
         if ($op === 'alta') {
@@ -955,6 +1029,219 @@ class Area_Profesores_Matriculas {
             'sepa'          => __('Orden SEPA firmada (o pago por ventanilla)', 'area-profesores'),
             'pago'          => __('Matrícula pagada', 'area-profesores'),
         );
+    }
+
+    /* ---------------------------------------------------------------------
+     * Cuentas de Google de las familias (fase 3)
+     * ------------------------------------------------------------------- */
+
+    /**
+     * State of each account of the request:
+     *   familia   = already the account of a family of the school (siblings): nothing to create
+     *   creada    = created by this website (temporary password kept until it is delivered)
+     *   existente = it already existed in Google and Secretaría confirmed it is this family's
+     *   pendiente = not created yet
+     *
+     * @return array email => { estado, fecha, quien, clave (bool), entregada }
+     */
+    public static function estado_cuentas($m) {
+        $usadas = self::cuentas_usadas((int) $m['id']);
+        $g = isset($m['oficina']['google']) ? (array) $m['oficina']['google'] : array();
+        $out = array();
+        foreach (isset($m['oficina']['cuentas']) ? (array) $m['oficina']['cuentas'] : array() as $email) {
+            if (isset($g[$email]['estado'])) {
+                $x = $g[$email];
+                $out[$email] = array('estado' => $x['estado'], 'fecha' => isset($x['fecha']) ? $x['fecha'] : '', 'quien' => isset($x['quien']) ? $x['quien'] : '', 'clave' => !empty($x['clave']), 'entregada' => isset($x['entregada']) ? $x['entregada'] : '');
+            } elseif (isset($usadas[$email]) && $usadas[$email]['tipo'] === 'familia') {
+                $out[$email] = array('estado' => 'familia', 'fecha' => '', 'quien' => '', 'clave' => false, 'entregada' => '');
+            } else {
+                $out[$email] = array('estado' => 'pendiente', 'fecha' => '', 'quien' => '', 'clave' => false, 'entregada' => '');
+            }
+        }
+        return $out;
+    }
+
+    public static function cuentas_sin_crear($m) {
+        return array_keys(array_filter(self::estado_cuentas($m), function ($c) {
+            return $c['estado'] === 'pendiente';
+        }));
+    }
+
+    public static function alguna_creada($m) {
+        foreach (self::estado_cuentas($m) as $c) {
+            if (in_array($c['estado'], array('creada', 'existente'), true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Next free account after $email exists in Google: the initials of the eldest
+     * pupil's name are added (keeping the "1" of separated parents), checking the
+     * school's families, the other requests and Google.
+     */
+    public static function siguiente_libre($m, $email) {
+        $dom = '@' . self::dominio();
+        $local = substr($email, 0, strpos($email, '@'));
+        $local = preg_replace('/\.' . preg_quote(self::SUFIJO, '/') . '$/', '', $local);
+        $sep = substr($local, -1) === '1' ? '1' : '';
+        $alumnos = $m['datos']['alumnos'];
+        usort($alumnos, function ($a, $b) {
+            return strcmp($a['fecha_nacimiento'], $b['fecha_nacimiento']);
+        });
+        $base = self::base_cuenta($alumnos[0]);
+        $nombre = self::slug(preg_split('/\s+/', trim((string) $alumnos[0]['nombre']))[0]);
+        $usadas = self::cuentas_usadas((int) $m['id']);
+        $cands = array();
+        for ($i = 1; $i <= strlen($nombre); $i++) {
+            $cands[] = $base . '.' . substr($nombre, 0, $i);
+        }
+        for ($n = 2; $n < 30; $n++) {
+            $cands[] = $base . '.' . substr($nombre, 0, 1) . $n;
+        }
+        foreach ($cands as $c) {
+            $e = $c . $sep . '.' . self::SUFIJO . $dom;
+            if ($e === $email || isset($usadas[$e])) {
+                continue;
+            }
+            // Free, or it cannot be checked (then creating it will tell).
+            if (Area_Profesores_Google::usuario_existe($e) !== true) {
+                return $e;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Create in Google the accounts of the request that are not created yet.
+     * If one already exists in Google (and it is not a family of the school), it
+     * is NOT touched: the next free account is proposed and Secretaría decides.
+     *
+     * @return array { creadas: [], conflicto: string|'', errores: [] }
+     */
+    public static function crear_cuentas($id) {
+        $m = self::get($id);
+        $out = array('creadas' => array(), 'conflicto' => '', 'errores' => array());
+        if (!$m || !$m['datos']) {
+            $out['errores'][] = __('No se pueden leer los datos de la solicitud.', 'area-profesores');
+            return $out;
+        }
+        if (!Area_Profesores_Google::familias_conectada()) {
+            $out['errores'][] = __('No está conectada la cuenta que crea las cuentas de las familias (Área Profesores › Aulas).', 'area-profesores');
+            return $out;
+        }
+        foreach (self::cuentas_sin_crear($m) as $email) {
+            $existe = Area_Profesores_Google::usuario_existe($email);
+            if (is_wp_error($existe) && $existe->get_error_code() === 'google' && strpos($existe->get_error_message(), 'HTTP 403') !== 0) {
+                $out['errores'][] = $existe->get_error_message();
+                continue;
+            }
+            $clave = Area_Profesores_Google::generar_password();
+            $r = $existe === true ? new WP_Error('existe', '') : Area_Profesores_Google::crear_usuario($email, __('Familia', 'area-profesores'), $m['familia'], $clave);
+            if (is_wp_error($r) && $r->get_error_code() === 'existe') {
+                $alt = self::siguiente_libre($m, $email);
+                $m['oficina']['google_conflicto'] = array('cuenta' => $email, 'propuesta' => $alt);
+                self::anotar($m, sprintf(__('La cuenta %1$s ya existe en Google y no es de ninguna familia de la web: no se ha tocado. Propuesta: %2$s', 'area-profesores'), $email, $alt !== '' ? $alt : '—'));
+                $out['conflicto'] = $email;
+                break;
+            }
+            if (is_wp_error($r)) {
+                $out['errores'][] = $r->get_error_message();
+                continue;
+            }
+            $m['oficina']['google'][$email] = array(
+                'estado' => 'creada',
+                'fecha'  => Area_Profesores_Alumnos::now(),
+                'quien'  => wp_get_current_user()->display_name,
+                'clave'  => self::cifrar(array('c' => $clave)),
+            );
+            self::anotar($m, sprintf(__('Cuenta de Google creada: %s', 'area-profesores'), $email));
+            $out['creadas'][] = $email;
+        }
+        self::guardar_fila($m);
+        return $out;
+    }
+
+    public static function texto_crear($r) {
+        $t = array();
+        if ($r['creadas']) {
+            $t[] = sprintf(__('Cuenta creada en Google: %s. Ya puedes imprimir la hoja de credenciales.', 'area-profesores'), implode(', ', $r['creadas']));
+        }
+        if ($r['conflicto'] !== '') {
+            $t[] = sprintf(__('La cuenta %s ya existe en Google: no se ha creado nada. Revisa el aviso de la solicitud.', 'area-profesores'), $r['conflicto']);
+        }
+        foreach ($r['errores'] as $e) {
+            $t[] = $e;
+        }
+        return implode(' ', $t);
+    }
+
+    /** Temporary password of a created account (until it is delivered), or ''. */
+    public static function clave_de($m, $email) {
+        $c = isset($m['oficina']['google'][$email]['clave']) ? $m['oficina']['google'][$email]['clave'] : '';
+        if ($c === '') {
+            return '';
+        }
+        $v = self::descifrar($c);
+        return isset($v['c']) && is_string($v['c']) ? $v['c'] : '';
+    }
+
+    /** Address of the families' website (for the credentials sheet). */
+    public static function url_familias() {
+        $g = Area_Profesores_Google::familias();
+        if (!empty($g['familias_url'])) {
+            return $g['familias_url'];
+        }
+        $u = (string) get_option('ap_familias_login_url', '');
+        if ($u === '') {
+            $u = (string) strtok(Area_Profesores_Reservas::panel_familias(), '#');
+        }
+        return $u;
+    }
+
+    /**
+     * Add the families of these pupils to the Chat space of their class (only
+     * pupils "de alta": the ones who have not started wait for their date).
+     *
+     * @return string[] result lines
+     */
+    public static function anadir_a_espacios($alumno_ids) {
+        $A = 'Area_Profesores_Alumnos';
+        $lineas = array();
+        if (!$alumno_ids || !Area_Profesores_Google::puede_anadir_miembros()) {
+            return $lineas;
+        }
+        $espacios = array();
+        foreach (Area_Profesores_Chat::get_espacios() as $e) {
+            if ($e['curso'] !== '' && $e['space_id'] !== '' && $e['activo'] && !$e['archivada'] && !isset($espacios[$e['curso']])) {
+                $espacios[$e['curso']] = $e;
+            }
+        }
+        $familias = $A::familias_de_alumnos($alumno_ids);
+        foreach ($alumno_ids as $aid) {
+            $al = $A::get_alumno($aid);
+            if (!$al || $al['estado'] !== 'alta' || !isset($espacios[$al['curso']])) {
+                continue;
+            }
+            $esp = $espacios[$al['curso']];
+            foreach (isset($familias[$aid]) ? $familias[$aid] : array() as $f) {
+                foreach ($A::emails_array($f['emails']) as $email) {
+                    $r = Area_Profesores_Google::anadir_familia_a_espacio($esp['space_id'], $email);
+                    $txt = is_wp_error($r)
+                        ? sprintf(__('No se ha podido añadir %1$s al espacio %2$s: %3$s', 'area-profesores'), $email, $esp['titulo'], $r->get_error_message())
+                        : sprintf(__('%1$s añadida al espacio de Google Chat %2$s', 'area-profesores'), $email, $esp['titulo']);
+                    $A::log('matricula', 'alumno', $aid, 'chat', $txt);
+                    $lineas[] = $txt;
+                }
+            }
+        }
+        return $lineas;
+    }
+
+    /** Pupils who start today: their families enter the class space. */
+    public static function al_activar($ids) {
+        self::anadir_a_espacios(array_map('intval', (array) $ids));
     }
 
     /* ---------------------------------------------------------------------
@@ -993,6 +1280,8 @@ class Area_Profesores_Matriculas {
         $cuentas = isset($m['oficina']['cuentas']) ? array_filter((array) $m['oficina']['cuentas']) : array();
         if (!$cuentas) {
             $faltan[] = __('Escribe la cuenta de la familia en «Cuenta de la familia en Google».', 'area-profesores');
+        } elseif (Area_Profesores_Google::familias_conectada() && self::cuentas_sin_crear($m)) {
+            $faltan[] = sprintf(__('Crea primero la cuenta en Google (%s).', 'area-profesores'), implode(', ', self::cuentas_sin_crear($m)));
         }
         foreach ($m['datos']['alumnos'] as $i => $a) {
             $grupo = isset($m['oficina']['alumnos'][$i]['grupo']) ? $m['oficina']['alumnos'][$i]['grupo'] : '';
@@ -1107,6 +1396,10 @@ class Area_Profesores_Matriculas {
             'resumen'    => $resumen,
         );
         self::anotar($m, __('Dada de alta en Alumnos y familias', 'area-profesores') . ': ' . implode('; ', $resumen) . ($existentes ? ' · ' . __('vinculados a una familia que ya estaba en el colegio', 'area-profesores') : ''));
+        // Families of pupils who start now enter the Chat space of their class.
+        foreach (self::anadir_a_espacios($alumnos) as $l) {
+            self::anotar($m, $l);
+        }
         self::guardar_fila($m);
         return $m['oficina']['alta'];
     }
@@ -1160,6 +1453,51 @@ class Area_Profesores_Matriculas {
         nocache_headers();
         include AREA_PROFESORES_PLUGIN_DIR . 'templates/matricula-imprimir.php';
         exit;
+    }
+
+    /** The temporary passwords are deleted once the credentials are delivered. */
+    public static function borrar_claves($id) {
+        $m = self::get($id);
+        if (!$m || empty($m['oficina']['google'])) {
+            return;
+        }
+        $hay = false;
+        foreach ($m['oficina']['google'] as $email => $g) {
+            if (!empty($g['clave'])) {
+                $m['oficina']['google'][$email]['clave'] = '';
+                $m['oficina']['google'][$email]['entregada'] = Area_Profesores_Alumnos::now();
+                $hay = true;
+            }
+        }
+        if ($hay) {
+            self::anotar($m, __('Credenciales entregadas: contraseña temporal borrada de la web', 'area-profesores'));
+            self::guardar_fila($m);
+        }
+    }
+
+    public function render_credenciales() {
+        $id = isset($_GET['id']) ? absint($_GET['id']) : 0;
+        if (!self::puede_ver(get_current_user_id()) || !wp_verify_nonce(isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '', 'ap_matricula_credenciales_' . $id)) {
+            wp_die(esc_html__('No tienes permisos para ver esta solicitud.', 'area-profesores'));
+        }
+        $m = self::get($id);
+        if (!$m || !$m['datos']) {
+            wp_die(esc_html__('No se puede leer esta solicitud.', 'area-profesores'));
+        }
+        $cuentas = self::estado_cuentas($m);
+        $claves = array();
+        foreach ($cuentas as $email => $c) {
+            $claves[$email] = $c['estado'] === 'creada' ? self::clave_de($m, $email) : '';
+        }
+        $logo_url = Area_Profesores_Admin::get_setting('logo_url', '');
+        $familias_url = self::url_familias();
+        nocache_headers();
+        include AREA_PROFESORES_PLUGIN_DIR . 'templates/credenciales-imprimir.php';
+        exit;
+    }
+
+    public static function url_credenciales($id) {
+        return wp_nonce_url(admin_url('admin-post.php?action=ap_matricula_credenciales&id=' . (int) $id), 'ap_matricula_credenciales_' . (int) $id);
     }
 
     /** "1234 5678 …" groups of four. */

@@ -30,6 +30,8 @@ class Area_Profesores_Google {
     const API    = 'https://chat.googleapis.com/v1/';
     const UPLOAD = 'https://chat.googleapis.com/upload/v1/';
     const OPT_CUENTAS = 'ap_google_cuentas';
+    const OPT_FAMILIAS = 'ap_google_familias';
+    const DIRECTORY = 'https://admin.googleapis.com/admin/directory/v1/';
 
     private static $instance = null;
 
@@ -49,6 +51,10 @@ class Area_Profesores_Google {
         add_action('admin_post_ap_google_cuenta', array($this, 'handle_connect_cuenta'));
         add_action('admin_post_ap_google_cuenta_quitar', array($this, 'handle_quitar_cuenta'));
         add_action('admin_post_ap_google_miembros', array($this, 'handle_miembros'));
+        // Account that creates the families' accounts (Admin SDK, delegated role).
+        add_action('admin_post_ap_google_familias', array($this, 'handle_connect_familias'));
+        add_action('admin_post_ap_google_familias_guardar', array($this, 'handle_save_familias'));
+        add_action('admin_post_ap_google_familias_quitar', array($this, 'handle_quitar_familias'));
     }
 
     /* ---------------------------------------------------------------------
@@ -220,6 +226,9 @@ class Area_Profesores_Google {
 
         if ($modo === 'cuenta') {
             self::guardar_cuenta($data, !empty($guardado['compartida']));
+        }
+        if ($modo === 'familias') {
+            self::guardar_familias($data);
         }
 
         $s['access_token'] = $data['access_token'];
@@ -687,5 +696,264 @@ class Area_Profesores_Google {
             '{etapa}'     => Area_Profesores_Cursos::get_etapa_label($c['etapa']),
         ));
         return trim(preg_replace('/\s+/', ' ', $nombre));
+    }
+
+    /* ---------------------------------------------------------------------
+     * Cuentas de las familias (Admin SDK · Directory API)
+     *
+     * A school account with a delegated admin role limited to the families'
+     * organisational unit (e.g. areaprofesores@ with "Alta de familias" on
+     * /MADRID/Familias) is connected once. Secretaría never needs its password.
+     * ------------------------------------------------------------------- */
+
+    public static function familias() {
+        $c = get_option(self::OPT_FAMILIAS, array());
+        return array_merge(array(
+            'email'         => '',
+            'refresh_token' => '',
+            'access_token'  => '',
+            'expires_at'    => 0,
+            'conectado'     => '',
+            'scopes'        => '',
+            'ou'            => '/MADRID/Familias',
+            'auto'          => true,
+            'familias_url'  => '',
+        ), is_array($c) ? $c : array());
+    }
+
+    private static function guardar_opcion_familias($c) {
+        update_option(self::OPT_FAMILIAS, $c, false);
+    }
+
+    public static function familias_conectada() {
+        $c = self::familias();
+        return self::is_configured() && $c['refresh_token'] !== '';
+    }
+
+    private static function scopes_familias() {
+        return array(
+            'openid',
+            'email',
+            'https://www.googleapis.com/auth/admin.directory.user',
+            'https://www.googleapis.com/auth/admin.directory.orgunit.readonly',
+        );
+    }
+
+    public function handle_connect_familias() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_familias');
+        if (!self::is_configured()) {
+            self::back(__('Primero guarda el ID de cliente y el secreto de Google (más abajo).', 'area-profesores'), 'error');
+        }
+        $hint = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+        self::ir_a_google(self::scopes_familias(), array('modo' => 'familias'), $hint);
+    }
+
+    private static function guardar_familias($data) {
+        $c = self::familias();
+        $email = strtolower(self::email_from_id_token(isset($data['id_token']) ? $data['id_token'] : ''));
+        $refresh = !empty($data['refresh_token']) ? $data['refresh_token'] : $c['refresh_token'];
+        if ($refresh === '') {
+            self::back(__('Google no ha devuelto un permiso permanente. Quita la conexión y vuelve a conectar.', 'area-profesores'), 'error');
+        }
+        $scopes = isset($data['scope']) ? (string) $data['scope'] : '';
+        if (strpos($scopes, 'admin.directory.user') === false) {
+            self::back(__('No se ha concedido el permiso para crear usuarios. Vuelve a conectar y acepta todos los permisos.', 'area-profesores'), 'error');
+        }
+        $c['email'] = $email;
+        $c['refresh_token'] = $refresh;
+        $c['access_token'] = $data['access_token'];
+        $c['expires_at'] = time() + (isset($data['expires_in']) ? (int) $data['expires_in'] : 3500) - 60;
+        $c['conectado'] = current_time('mysql');
+        $c['scopes'] = $scopes;
+        self::guardar_opcion_familias($c);
+        $ou = self::comprobar_ou();
+        if (is_wp_error($ou)) {
+            self::back(sprintf(__('%1$s conectada, pero no se ha podido comprobar la unidad organizativa %2$s: %3$s', 'area-profesores'), $email, $c['ou'], $ou->get_error_message()), 'error');
+        }
+        self::back(sprintf(__('%1$s conectada: ya se pueden crear las cuentas de las familias en %2$s.', 'area-profesores'), $email, $c['ou']));
+    }
+
+    public function handle_save_familias() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_familias_guardar');
+        $c = self::familias();
+        $ou = isset($_POST['ou']) ? trim(sanitize_text_field(wp_unslash($_POST['ou']))) : '';
+        $c['ou'] = '/' . trim($ou !== '' ? $ou : '/MADRID/Familias', '/');
+        $c['auto'] = !empty($_POST['auto']);
+        $c['familias_url'] = isset($_POST['familias_url']) ? esc_url_raw(wp_unslash($_POST['familias_url'])) : '';
+        self::guardar_opcion_familias($c);
+        if (self::familias_conectada()) {
+            $r = self::comprobar_ou();
+            if (is_wp_error($r)) {
+                self::back(sprintf(__('Guardado, pero Google no encuentra la unidad organizativa %1$s: %2$s', 'area-profesores'), $c['ou'], $r->get_error_message()), 'error');
+            }
+        }
+        self::back(__('Ajustes de las cuentas de las familias guardados.', 'area-profesores'));
+    }
+
+    public function handle_quitar_familias() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('No tienes permisos para realizar esta acción.', 'area-profesores'));
+        }
+        check_admin_referer('ap_google_familias_quitar');
+        $c = self::familias();
+        if ($c['refresh_token'] !== '') {
+            wp_remote_post('https://oauth2.googleapis.com/revoke', array('timeout' => 10, 'body' => array('token' => $c['refresh_token'])));
+        }
+        $c['refresh_token'] = '';
+        $c['access_token'] = '';
+        $c['email'] = '';
+        self::guardar_opcion_familias($c);
+        self::back(__('Conexión para crear las cuentas de las familias quitada.', 'area-profesores'));
+    }
+
+    /** @return string|WP_Error */
+    private static function token_familias() {
+        $c = self::familias();
+        if (!self::familias_conectada()) {
+            return new WP_Error('google', __('No está conectada la cuenta que crea las cuentas de las familias (Área Profesores › Aulas).', 'area-profesores'));
+        }
+        if ($c['access_token'] !== '' && (int) $c['expires_at'] > time()) {
+            return $c['access_token'];
+        }
+        $s = self::get_settings();
+        $response = wp_remote_post('https://oauth2.googleapis.com/token', array(
+            'timeout' => 20,
+            'body'    => array(
+                'client_id'     => $s['client_id'],
+                'client_secret' => $s['client_secret'],
+                'refresh_token' => $c['refresh_token'],
+                'grant_type'    => 'refresh_token',
+            ),
+        ));
+        $data = is_wp_error($response) ? array() : json_decode(wp_remote_retrieve_body($response), true);
+        if (empty($data['access_token'])) {
+            $err = is_wp_error($response) ? $response->get_error_message() : (isset($data['error_description']) ? $data['error_description'] : __('permiso revocado o caducado', 'area-profesores'));
+            return new WP_Error('google', sprintf(__('No se pudo usar la cuenta %1$s: %2$s. Vuelve a conectarla en Área Profesores › Aulas.', 'area-profesores'), $c['email'], $err));
+        }
+        $c['access_token'] = $data['access_token'];
+        $c['expires_at'] = time() + (isset($data['expires_in']) ? (int) $data['expires_in'] : 3500) - 60;
+        self::guardar_opcion_familias($c);
+        return $c['access_token'];
+    }
+
+    /**
+     * Call to the Directory API.
+     *
+     * @return array|WP_Error JSON; the error carries the HTTP code as data ['status' => n]
+     */
+    private static function directorio($method, $path, $body = null) {
+        $token = self::token_familias();
+        if (is_wp_error($token)) {
+            return $token;
+        }
+        $args = array(
+            'method'  => $method,
+            'timeout' => 25,
+            'headers' => array('Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json; charset=UTF-8'),
+        );
+        if ($body !== null) {
+            $args['body'] = wp_json_encode($body);
+        }
+        $response = wp_remote_request(self::DIRECTORY . $path, $args);
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        if ($code < 200 || $code >= 300) {
+            $msg = isset($data['error']['message']) ? $data['error']['message'] : wp_remote_retrieve_response_message($response);
+            if ($code === 403) {
+                $msg = __('La cuenta conectada no tiene permiso (revisa el rol «Alta de familias» y su unidad organizativa en Google Admin).', 'area-profesores') . ' ' . $msg;
+            }
+            return new WP_Error('google', sprintf('HTTP %d: %s', $code, $msg), array('status' => $code));
+        }
+        return is_array($data) ? $data : array();
+    }
+
+    private static function codigo_error($e) {
+        $d = is_wp_error($e) ? $e->get_error_data() : null;
+        return is_array($d) && isset($d['status']) ? (int) $d['status'] : 0;
+    }
+
+    /** @return true|WP_Error */
+    public static function comprobar_ou() {
+        $c = self::familias();
+        $path = implode('/', array_map('rawurlencode', explode('/', trim($c['ou'], '/'))));
+        $r = self::directorio('GET', 'customer/my_customer/orgunits/' . $path);
+        return is_wp_error($r) ? $r : true;
+    }
+
+    /**
+     * Does the account exist in Google? true / false, or WP_Error if it cannot be
+     * known (403: it may exist in a unit the connected account cannot see; creating
+     * it will then fail with "already exists", which is handled too).
+     */
+    public static function usuario_existe($email) {
+        $r = self::directorio('GET', 'users/' . rawurlencode($email) . '?projection=basic&viewType=admin_view');
+        if (!is_wp_error($r)) {
+            return true;
+        }
+        return self::codigo_error($r) === 404 ? false : $r;
+    }
+
+    /**
+     * Create a family account in the families' unit, with a temporary password that
+     * must be changed on the first login.
+     *
+     * @return true|WP_Error (code 'existe' when the account already exists)
+     */
+    public static function crear_usuario($email, $nombre, $apellidos, $password) {
+        $c = self::familias();
+        $r = self::directorio('POST', 'users', array(
+            'primaryEmail'              => $email,
+            'name'                      => array('givenName' => $nombre, 'familyName' => $apellidos),
+            'password'                  => $password,
+            'changePasswordAtNextLogin' => true,
+            'orgUnitPath'               => $c['ou'],
+        ));
+        if (is_wp_error($r)) {
+            return self::codigo_error($r) === 409 ? new WP_Error('existe', sprintf(__('La cuenta %s ya existe en Google.', 'area-profesores'), $email)) : $r;
+        }
+        return true;
+    }
+
+    /** New temporary password (to reprint the credentials). @return true|WP_Error */
+    public static function cambiar_password($email, $password) {
+        $r = self::directorio('PUT', 'users/' . rawurlencode($email), array(
+            'password'                  => $password,
+            'changePasswordAtNextLogin' => true,
+        ));
+        return is_wp_error($r) ? $r : true;
+    }
+
+    /** Easy-to-read temporary password: "Faro-Nube-4827" (no confusing characters). */
+    public static function generar_password() {
+        $p = array('Sol', 'Mar', 'Luna', 'Faro', 'Nube', 'Pino', 'Roble', 'Lago', 'Tren', 'Barco', 'Cielo', 'Monte', 'Playa', 'Bosque', 'Rio', 'Trigo', 'Arena', 'Flor', 'Lapiz', 'Libro', 'Cometa', 'Tigre', 'Delfin', 'Fresa', 'Limon', 'Globo', 'Puente', 'Torre', 'Campo', 'Brisa');
+        return $p[random_int(0, count($p) - 1)] . '-' . $p[random_int(0, count($p) - 1)] . '-' . random_int(2000, 9899);
+    }
+
+    /**
+     * Add a family to the Chat space of its class as an ordinary member (not as a
+     * manager, unlike the school's account). Already a member = ok.
+     *
+     * @return true|WP_Error
+     */
+    public static function anadir_familia_a_espacio($space_id, $email) {
+        if (!self::puede_anadir_miembros()) {
+            return new WP_Error('google', __('Para añadir familias a los espacios hace falta la conexión de administrador de Google Chat con permiso para gestionar miembros.', 'area-profesores'));
+        }
+        $r = self::request('POST', 'spaces/' . rawurlencode($space_id) . '/members', array(), array(
+            'member' => array('name' => 'users/' . $email, 'type' => 'HUMAN'),
+        ));
+        if (is_wp_error($r) && strpos($r->get_error_message(), 'HTTP 409') !== 0) {
+            return $r;
+        }
+        return true;
     }
 }

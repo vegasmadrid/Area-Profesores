@@ -3441,3 +3441,8 @@ details.ap-nf-box[open] summary { margin-bottom: 10px; }
 .ap-nf-resp.is-no { background: #fee2e2; color: #991b1b; }
 .ap-nf-alta { border-left: 4px solid #313280; }
 .ap-nf-alta.is-hecha { border-left-color: #10b981; background: #f6fef9; }
+.ap-nf-google { border-left: 4px solid #dc8e2b; }
+.ap-nf-botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.ap-nf-botones form { margin: 0; }
+.ap-nf-inline { display: inline; margin-left: 6px; }
+.ap-nf-cuentas li { margin: 6px 0; }

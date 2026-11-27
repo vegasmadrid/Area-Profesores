@@ -323,6 +323,10 @@ class Area_Profesores_Alumnos {
             $wpdb->update(self::t('alumnos'), array('estado' => 'alta', 'actualizado' => self::now()), array('id' => (int) $id));
             self::log('automatico', 'alumno', (int) $id, 'editar', array('estado' => array('pendiente', 'alta')));
         }
+        if ($ids) {
+            // E.g. their families enter the Chat space of the class.
+            do_action('ap_alumnos_activados', array_map('intval', $ids));
+        }
         return count($ids);
     }
 
