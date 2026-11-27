@@ -27,7 +27,7 @@ if ($ap_ma_flash) {
                 <?php echo $ap_ma['todos']
                     ? esc_html__('Puedes consultar los alumnos de todos los cursos.', 'area-profesores')
                     : esc_html__('Alumnos de tu tutoría y de las clases que tienes asignadas, con sus padres, el teléfono de emergencia y sus alergias.', 'area-profesores'); ?>
-                <?php esc_html_e('Si algún dato no es correcto, pulsa "Editar": se avisa a Secretaría con el motivo.', 'area-profesores'); ?>
+                <?php esc_html_e('Si algún dato no es correcto, pulsa "Editar": se avisa con el motivo (nombres y teléfonos, a Secretaría; alergias alimentarias, a Cocina y a los tutores; las demás alergias, a los tutores). Si cambias una alergia, la familia recibe una confirmación.', 'area-profesores'); ?>
             </p>
         </div>
         <div class="ap-ma-tools">
@@ -132,12 +132,12 @@ if ($ap_ma_flash) {
                     <textarea name="alergias_otras" rows="2" placeholder="<?php esc_attr_e('Ej.: Polen, látex', 'area-profesores'); ?>"></textarea></label>
             </fieldset>
             <div class="ap-ma-dialog-familias"></div>
-            <label class="ap-ma-motivo"><strong><?php esc_html_e('Motivo del cambio', 'area-profesores'); ?> *</strong> <small><?php esc_html_e('(se envía a Secretaría con los datos nuevos)', 'area-profesores'); ?></small>
+            <label class="ap-ma-motivo"><strong><?php esc_html_e('Motivo del cambio', 'area-profesores'); ?> *</strong> <small><?php esc_html_e('(se envía con los datos nuevos; no se envía a la familia)', 'area-profesores'); ?></small>
                 <textarea name="motivo" rows="2" required placeholder="<?php esc_attr_e('Ej.: La madre me lo ha comunicado hoy en la entrada.', 'area-profesores'); ?>"></textarea></label>
         </div>
         <div class="ap-ma-dialog-foot">
             <button type="button" class="ap-btn ap-btn-outline" data-cerrar><?php esc_html_e('Cancelar', 'area-profesores'); ?></button>
-            <button type="submit" class="ap-btn ap-btn-primary"><?php esc_html_e('Guardar y avisar a Secretaría', 'area-profesores'); ?></button>
+            <button type="submit" class="ap-btn ap-btn-primary"><?php esc_html_e('Guardar y avisar', 'area-profesores'); ?></button>
         </div>
     </form>
 </dialog>

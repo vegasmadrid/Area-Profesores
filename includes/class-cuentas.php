@@ -57,7 +57,7 @@ class Area_Profesores_Cuentas {
                 'meta'   => '_ap_is_cocina',
                 'nombre' => __('Cocina', 'area-profesores'),
                 'icono'  => 'dashicons-carrot',
-                'desc'   => __('Reciben los avisos que elijas en "Avisos" (de serie, el resumen diario del comedor y los cambios que se hagan después).', 'area-profesores'),
+                'desc'   => __('Reciben los avisos que elijas en "Avisos" (de serie, el resumen diario del comedor, los cambios que se hagan después y los cambios de alergias alimentarias que hagan los profesores).', 'area-profesores'),
             ),
             'porteria' => array(
                 'meta'   => '_ap_is_porteria',
