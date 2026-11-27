@@ -598,6 +598,18 @@ class Area_Profesores_Matriculas {
      * @return string[] one account, or two for separated parents
      */
     public static function cuentas_propuestas($datos, $excluir_id = 0) {
+        // Brothers or sisters at the school: the account(s) of their family.
+        $hermanos = self::analizar_hermanos($datos);
+        $ya = array();
+        foreach ($hermanos['familias'] as $f) {
+            if ($f['emails']) {
+                $ya[] = $f['emails'][0];
+            }
+        }
+        if ($ya) {
+            sort($ya);
+            return array_values(array_unique($ya));
+        }
         $usadas = self::cuentas_usadas($excluir_id);
         $alumnos = $datos['alumnos'];
         // Eldest pupil (the earliest date of birth).
@@ -639,27 +651,126 @@ class Area_Profesores_Matriculas {
         return $out;
     }
 
+    /** Words of a name, without accents and in any order. */
+    private static function palabras($s) {
+        $k = Area_Profesores_Alumnos::clave_nombre($s);
+        return $k === '' ? array() : array_values(array_unique(explode(' ', $k)));
+    }
+
     /**
-     * Families of the school that already use the "normal" account of these
-     * surnames (to detect siblings: then the existing account must be used).
+     * Same person? At least two words in common and all the words of the shorter
+     * name are in the other one ("Pablo García" = "Pablo García López";
+     * "Ana López" = "Ana María López Sanz").
      */
-    public static function coincidencias($datos) {
+    public static function mismo_nombre($a, $b) {
+        $wa = self::palabras($a);
+        $wb = self::palabras($b);
+        if (count($wa) < 2 || count($wb) < 2) {
+            return false;
+        }
+        $comunes = count(array_intersect($wa, $wb));
+        return $comunes >= 2 && $comunes === min(count($wa), count($wb));
+    }
+
+    /**
+     * Is this a family that already has children at the school? It is, when
+     * - a brother or sister written in "Hermanos en el centro" is a pupil of the
+     *   school (only one pupil with that name, sharing a surname with the new
+     *   pupils), or
+     * - the family that already uses the account of these surnames has a father,
+     *   mother or guardian with the same name as one of the request.
+     * Then the existing account is used and no new one is created. If the account
+     * exists but nothing matches, it is another family with the same surnames.
+     *
+     * @return array {
+     *   familias: id => { id, nombre, emails[], hijos[], motivos[] }  same family (sure)
+     *   dudas:    string[]   for Secretaría to check
+     *   otras:    email => text  account of another family with the same surnames
+     * }
+     */
+    public static function analizar_hermanos($datos) {
+        global $wpdb;
+        $A = 'Area_Profesores_Alumnos';
+        $out = array('familias' => array(), 'dudas' => array(), 'otras' => array());
+        $apellidos = array();
+        foreach ($datos['alumnos'] as $a) {
+            foreach (array($a['apellido1'], $a['apellido2']) as $ap) {
+                foreach (self::palabras($ap) as $w) {
+                    $apellidos[$w] = true;
+                }
+            }
+        }
+        $tutores = array_map(function ($t) {
+            return trim($t['nombre'] . ' ' . $t['apellidos']);
+        }, $datos['tutores']);
+
+        $hijos_txt = function ($fid) use ($A) {
+            $h = $A::alumnos_de_familias(array($fid));
+            return array_map(function ($x) {
+                $c = Area_Profesores_Cursos::get_curso($x['curso']);
+                return $x['nombre'] . ($c ? ' (' . $c['label'] . ')' : '');
+            }, isset($h[$fid]) ? array_values(array_filter($h[$fid], function ($x) {
+                return $x['estado'] !== 'baja';
+            })) : array());
+        };
+        $marcar = function ($fid, $motivo) use (&$out, $A, $hijos_txt) {
+            if (!isset($out['familias'][$fid])) {
+                $f = $A::get_familia($fid);
+                if (!$f) {
+                    return;
+                }
+                $out['familias'][$fid] = array('id' => (int) $fid, 'nombre' => $f['nombre'], 'emails' => $A::emails_array($f['emails']), 'hijos' => $hijos_txt($fid), 'motivos' => array());
+            }
+            if (!in_array($motivo, $out['familias'][$fid]['motivos'], true)) {
+                $out['familias'][$fid]['motivos'][] = $motivo;
+            }
+        };
+
+        // 1) Brothers and sisters written by the family.
+        if (!empty($datos['hermanos'])) {
+            $todos = $wpdb->get_results('SELECT id, nombre, curso FROM ' . $A::t('alumnos') . " WHERE estado <> 'baja'", ARRAY_A);
+            foreach ($datos['hermanos'] as $h) {
+                $cand = array_values(array_filter($todos, function ($x) use ($h, $apellidos) {
+                    return self::mismo_nombre($x['nombre'], $h['nombre']) && array_intersect_key(array_flip(self::palabras($x['nombre'])), $apellidos);
+                }));
+                if (count($cand) === 1) {
+                    $fams = $A::familias_de_alumnos(array((int) $cand[0]['id']));
+                    $fams = isset($fams[$cand[0]['id']]) ? $fams[$cand[0]['id']] : array();
+                    foreach ($fams as $f) {
+                        $marcar((int) $f['id'], sprintf(__('su hermano/a %s está en el colegio', 'area-profesores'), $cand[0]['nombre']));
+                    }
+                    if (!$fams) {
+                        $out['dudas'][] = sprintf(__('El hermano/a «%s» está en el colegio pero no tiene familia asignada en Alumnos y familias.', 'area-profesores'), $cand[0]['nombre']);
+                    }
+                } elseif (count($cand) > 1) {
+                    $out['dudas'][] = sprintf(__('El hermano/a «%1$s» coincide con varios alumnos (%2$s): comprobad cuál es.', 'area-profesores'), $h['nombre'], implode(', ', wp_list_pluck($cand, 'nombre')));
+                } else {
+                    $out['dudas'][] = sprintf(__('La familia dice que «%s» estudia en el colegio, pero no lo encontramos en Alumnos y familias.', 'area-profesores'), $h['nombre']);
+                }
+            }
+        }
+
+        // 2) The family that already uses the account of these surnames.
         $usadas = self::cuentas_usadas();
         $dom = '@' . self::dominio();
-        $out = array();
         foreach ($datos['alumnos'] as $a) {
             $base = self::base_cuenta($a);
             foreach (array($base . '.' . self::SUFIJO . $dom, $base . '1.' . self::SUFIJO . $dom) as $e) {
-                if (isset($usadas[$e]) && $usadas[$e]['tipo'] === 'familia' && !isset($out[$e])) {
-                    $fid = $usadas[$e]['id'];
-                    $hijos = Area_Profesores_Alumnos::alumnos_de_familias(array($fid), true);
-                    $out[$e] = array(
-                        'familia' => $usadas[$e]['texto'],
-                        'hijos'   => array_map(function ($h) {
-                            $c = Area_Profesores_Cursos::get_curso($h['curso']);
-                            return $h['nombre'] . ($c ? ' (' . $c['label'] . ')' : '');
-                        }, isset($hijos[$fid]) ? $hijos[$fid] : array()),
-                    );
+                if (!isset($usadas[$e]) || $usadas[$e]['tipo'] !== 'familia') {
+                    continue;
+                }
+                $fid = $usadas[$e]['id'];
+                $padres = false;
+                foreach ($A::get_contactos($fid) as $c) {
+                    foreach ($tutores as $t) {
+                        if (self::mismo_nombre($c['nombre'], $t)) {
+                            $marcar($fid, sprintf(__('coincide %s', 'area-profesores'), $c['nombre']));
+                            $padres = true;
+                        }
+                    }
+                }
+                if (!$padres && !isset($out['familias'][$fid])) {
+                    $out['otras'][$e] = $usadas[$e]['texto'];
                 }
             }
         }
@@ -933,12 +1044,12 @@ class Area_Profesores_Matriculas {
         $nombre_familia = $m['familia'];
 
         // Families: separated parents → one per account, each with its parent.
+        // Every account is a family (the pupils go in all of them). Separated
+        // parents: each new family with its own parent.
+        $separar = !empty($d['separados']) && count($cuentas) >= 2 && count($d['tutores']) >= 2;
         $grupos = array();
-        if (!empty($d['separados']) && count($cuentas) >= 2 && count($d['tutores']) >= 2) {
-            $grupos[] = array($cuentas[0], array($contacto($d['tutores'][0])));
-            $grupos[] = array($cuentas[1], array($contacto($d['tutores'][1])));
-        } else {
-            $grupos[] = array($cuentas[0], array_map($contacto, $d['tutores']));
+        foreach ($cuentas as $i => $cuenta) {
+            $grupos[] = array($cuenta, ($separar && isset($d['tutores'][$i])) ? array($contacto($d['tutores'][$i])) : array_map($contacto, $d['tutores']));
         }
         $familias = array();
         $existentes = array();
@@ -1030,7 +1141,7 @@ class Area_Profesores_Matriculas {
             'contadores' => self::contar_por_estado(),
             'pendientes' => self::contar_pendientes(),
             'detalle'    => $detalle,
-            'coinciden'  => ($detalle && $detalle['datos']) ? self::coincidencias($detalle['datos']) : array(),
+            'hermanos'   => ($detalle && $detalle['datos']) ? self::analizar_hermanos($detalle['datos']) : null,
             'flash'      => self::flash(),
             'borrar'     => current_user_can('manage_options'),
         );

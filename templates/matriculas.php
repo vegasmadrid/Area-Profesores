@@ -129,14 +129,37 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
         <button type="submit" class="ap-btn ap-btn-sm ap-btn-primary"><?php esc_html_e('Guardar estado', 'area-profesores'); ?></button>
     </form>
 
-    <?php if ($ap_m['coinciden'] && !$M::alta_hecha($m)) : ?>
-        <div class="ap-cd-msg is-warning" role="note">
-            <strong><?php esc_html_e('¿Hermanos de una familia del colegio?', 'area-profesores'); ?></strong>
-            <?php foreach ($ap_m['coinciden'] as $email => $c) : ?>
-                <br><?php printf(esc_html__('La cuenta %1$s ya es de la %2$s (hijos: %3$s).', 'area-profesores'), '<code>' . esc_html($email) . '</code>', esc_html($c['familia']), esc_html($c['hijos'] ? implode(', ', $c['hijos']) : '—')); ?>
-            <?php endforeach; ?>
-            <br><?php esc_html_e('Si es la misma familia, usad su cuenta (escríbela abajo en «Cuenta de la familia»). Si es otra familia con los mismos apellidos, se propone otra cuenta.', 'area-profesores'); ?>
-        </div>
+    <?php $ap_h = $ap_m['hermanos']; if ($ap_h && !$M::alta_hecha($m)) : ?>
+        <?php if ($ap_h['familias']) : ?>
+            <div class="ap-cd-msg is-success" role="note">
+                <strong><?php esc_html_e('Tiene hermanos en el colegio: se usa la cuenta de su familia (no se crea otra).', 'area-profesores'); ?></strong>
+                <?php foreach ($ap_h['familias'] as $f) : ?>
+                    <br><?php printf(esc_html__('%1$s (%2$s) · hijos: %3$s · porque %4$s.', 'area-profesores'), esc_html(sprintf(__('Familia %s', 'area-profesores'), $f['nombre'])), '<code>' . esc_html(implode(', ', $f['emails'])) . '</code>', esc_html($f['hijos'] ? implode(', ', $f['hijos']) : '—'), esc_html(implode(' y ', $f['motivos']))); ?>
+                <?php endforeach; ?>
+                <?php
+                $ap_fam_emails = array();
+                foreach ($ap_h['familias'] as $f) {
+                    $ap_fam_emails = array_merge($ap_fam_emails, $f['emails']);
+                }
+                if (!array_intersect($ap_fam_emails, isset($of['cuentas']) ? (array) $of['cuentas'] : array())) : ?>
+                    <br><em><?php esc_html_e('La cuenta guardada abajo no es la de esta familia: pulsa «Volver a proponer la cuenta».', 'area-profesores'); ?></em>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($ap_h['otras'] && !$ap_h['familias']) : ?>
+            <div class="ap-cd-msg is-info" role="note">
+                <?php foreach ($ap_h['otras'] as $email => $txt) : ?>
+                    <?php printf(esc_html__('La cuenta %1$s ya es de la %2$s, pero no coinciden los padres ni los hermanos: es otra familia con los mismos apellidos, así que se propone otra cuenta.', 'area-profesores'), '<code>' . esc_html($email) . '</code>', esc_html($txt)); ?><br>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($ap_h['dudas']) : ?>
+            <div class="ap-cd-msg is-warning" role="note">
+                <strong><?php esc_html_e('Revisad los hermanos:', 'area-profesores'); ?></strong>
+                <?php foreach ($ap_h['dudas'] as $txt) : ?><br><?php echo esc_html($txt); ?><?php endforeach; ?>
+                <br><?php esc_html_e('Si es una familia del colegio, escribid su cuenta abajo en «Cuenta de la familia en Google».', 'area-profesores'); ?>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <!-- Alta en Alumnos y familias -->
@@ -218,7 +241,7 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
                         <input type="text" name="cuentas[]" value="<?php echo esc_attr(isset($ap_cuentas[$i]) ? $ap_cuentas[$i] : ''); ?>" spellcheck="false" autocomplete="off">
                     </label>
                 <?php endfor; ?>
-                <p class="ap-nf-ayuda"><?php printf(esc_html__('Regla del colegio: primerapellido.segundoapellido.%1$s@%2$s del alumno; padres separados: un 1 antes de .%1$s. Si otra familia ya la usa, se añade la inicial del nombre del alumno.', 'area-profesores'), esc_html($M::SUFIJO), esc_html($M::dominio())); ?></p>
+                <p class="ap-nf-ayuda"><?php printf(esc_html__('Regla del colegio: primerapellido.segundoapellido.%1$s@%2$s del alumno; padres separados: un 1 antes de .%1$s. Si tiene hermanos en el colegio se usa la cuenta de su familia; si la cuenta es de otra familia con los mismos apellidos, se añade la inicial del nombre del alumno.', 'area-profesores'), esc_html($M::SUFIJO), esc_html($M::dominio())); ?></p>
                 <button type="submit" name="op" value="proponer" class="ap-btn ap-btn-sm ap-btn-outline"><?php esc_html_e('Volver a proponer la cuenta', 'area-profesores'); ?></button>
             </fieldset>
         </div>
