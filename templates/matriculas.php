@@ -255,14 +255,44 @@ $ap_roles = array('padre' => __('Padre', 'area-profesores'), 'madre' => __('Madr
     </section>
 
     <section class="ap-nf-box">
-        <h4><?php esc_html_e('Aceptaciones', 'area-profesores'); ?></h4>
-        <ul class="ap-nf-lista">
-            <li><?php printf(esc_html__('Ideario del centro y Reglamento de Régimen Interior: aceptado el %s', 'area-profesores'), esc_html($d['aceptaciones']['ideario'])); ?></li>
-            <li><?php printf(esc_html__('Información sobre protección de datos: aceptada el %s', 'area-profesores'), esc_html($d['aceptaciones']['privacidad'])); ?></li>
-            <?php if ($d['aceptaciones']['imagen'] !== '') : ?>
-                <li><?php printf(esc_html__('Uso de la imagen del alumno/a en las publicaciones del colegio: %s', 'area-profesores'), $d['aceptaciones']['imagen'] === 'si' ? esc_html__('Sí autoriza', 'area-profesores') : esc_html__('No autoriza', 'area-profesores')); ?></li>
-            <?php endif; ?>
-        </ul>
+        <h4><?php esc_html_e('Manifestaciones y autorizaciones', 'area-profesores'); ?></h4>
+        <?php
+        $ap_ac = $d['aceptaciones'];
+        $ap_mt = isset($d['textos']['manifestaciones']) ? $d['textos']['manifestaciones'] : array();
+        $ap_mr = isset($ap_ac['manifestaciones']) ? $ap_ac['manifestaciones'] : array();
+        $ap_si = function ($ok, $txt) {
+            return '<span class="ap-nf-resp ' . ($ok ? 'is-si' : 'is-no') . '">' . esc_html($txt) . '</span>';
+        };
+        ?>
+        <?php if ($M::imagenes_contradictorias($d)) : ?>
+            <div class="ap-cd-msg is-warning" role="note"><?php esc_html_e('Ojo: la familia ha contestado distinto sobre las imágenes en la manifestación 4º y en el consentimiento de protección de datos. Aclaradlo con ellos al firmar.', 'area-profesores'); ?></div>
+        <?php endif; ?>
+        <?php if ($ap_mt) : ?>
+            <dl class="ap-nf-dl">
+                <?php foreach ($ap_mt as $mk => $mf) : $r = isset($ap_mr[$mk]) ? $ap_mr[$mk] : ''; ?>
+                    <dt><?php echo esc_html($mf['n'] . ' ' . wp_trim_words(strtok($mf['texto'], "\n"), 9, '…')); ?></dt>
+                    <dd>
+                        <?php
+                        if ($mf['tipo'] === 'acepta') {
+                            echo $ap_si($r === 'si', $r === 'si' ? __('Aceptada', 'area-profesores') : __('Sin aceptar', 'area-profesores')); // phpcs:ignore
+                        } elseif ($mf['tipo'] === 'eleccion') {
+                            echo $r === '' ? '—' : $ap_si($r === 'si', $r === 'si' ? $mf['si'] : $mf['no']); // phpcs:ignore
+                        } else {
+                            echo $r !== '' ? nl2br(esc_html($r)) : '—';
+                        }
+                        ?>
+                    </dd>
+                <?php endforeach; ?>
+            </dl>
+        <?php endif; ?>
+        <dl class="ap-nf-dl" style="margin-top:10px;">
+            <?php foreach (isset($d['textos']['consentimientos']) ? $d['textos']['consentimientos'] : array() as $c) : $r = isset($ap_ac['rgpd'][$c['campo']]) ? $ap_ac['rgpd'][$c['campo']] : ''; ?>
+                <dt><?php echo esc_html(sprintf(__('Protección de datos: %s', 'area-profesores'), $c['label'])); ?></dt>
+                <dd><?php echo $r === '' ? '—' : $ap_si($r === 'consiento', $r === 'consiento' ? __('Consiento', 'area-profesores') : __('No consiento', 'area-profesores')); // phpcs:ignore ?></dd>
+            <?php endforeach; ?>
+            <dt><?php esc_html_e('Información leída y aceptada en la web', 'area-profesores'); ?></dt>
+            <dd><?php echo esc_html($ap_ac['privacidad']); ?></dd>
+        </dl>
     </section>
     <?php endif; ?>
 

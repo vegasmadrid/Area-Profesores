@@ -203,7 +203,7 @@ $m_secciones = array(
         <li><?php esc_html_e('En "Por hacer" están las solicitudes nuevas, en revisión y aprobadas. Pulsa "Abrir" para ver todos los datos, ordenados como en las hojas de papel.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Revisa los datos. Si hay que aclarar algo con la familia, pásala a "En revisión" y escríbeles (el correo de contacto está confirmado).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pásala a "Aprobada · pendiente de firma": la familia recibe un correo para venir a firmar y traer los originales.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Pulsa "Imprimir la ficha para firmar": salen la ficha de matrícula, la reserva de plaza (solo Primer Ciclo) y la orden SEPA, ya rellenas. Antes, rellena el nº de matrícula, el NIA, la fecha de ingreso y el grupo para que salgan impresos.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Pulsa "Imprimir la ficha para firmar": salen la ficha de matrícula, la información del centro con las manifestaciones de los padres, la hoja de protección de datos, la reserva de plaza (solo Primer Ciclo) y la orden SEPA, ya rellenas con lo que contestó la familia. Antes, rellena el nº de matrícula, el NIA, la fecha de ingreso y el grupo para que salgan impresos.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Cuando firmen y comprobéis los originales, marca los documentos entregados y pásala a "Completada".', 'area-profesores'); ?></li>
     </ol>
     <ul>

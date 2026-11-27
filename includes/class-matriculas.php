@@ -338,16 +338,110 @@ class Area_Profesores_Matriculas {
             'email_contacto'=> $email,
             'observaciones' => isset($p['observaciones']) && is_scalar($p['observaciones']) ? mb_substr(sanitize_textarea_field((string) $p['observaciones']), 0, 2000) : '',
             'aceptaciones'  => array(
-                'ideario'    => self::txt($acept, 'ideario', 30),
-                'privacidad' => self::txt($acept, 'privacidad', 30),
-                'imagen'     => self::txt($acept, 'imagen', 10),
+                'ideario'         => self::txt($acept, 'ideario', 30),
+                'privacidad'      => self::txt($acept, 'privacidad', 30),
+                'imagen'          => self::txt($acept, 'imagen', 10),
+                'manifestaciones' => self::sanitizar_respuestas(isset($acept['manifestaciones']) ? $acept['manifestaciones'] : array(), 2000),
+                'rgpd'            => self::sanitizar_respuestas(isset($acept['rgpd']) ? $acept['rgpd'] : array(), 10),
             ),
+            'textos'        => self::sanitizar_textos(isset($p['textos']) ? $p['textos'] : array()),
             'origen'        => array(
                 'ip'         => self::txt($origen, 'ip', 64),
                 'navegador'  => self::txt($origen, 'navegador', 255),
                 'verificado' => self::txt($origen, 'verificado', 30),
             ),
         );
+    }
+
+    private static function sanitizar_respuestas($a, $max) {
+        $out = array();
+        foreach (is_array($a) ? $a : array() as $k => $v) {
+            if (is_scalar($v) && count($out) < 20) {
+                $out[sanitize_key($k)] = mb_substr(sanitize_textarea_field((string) $v), 0, $max);
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Texts the family accepted (information of the school, manifestations and data
+     * protection), kept with the request to print exactly what they read.
+     */
+    private static function sanitizar_textos($t) {
+        $t = is_array($t) ? $t : array();
+        $largo = function ($k) use ($t) {
+            return isset($t[$k]) && is_scalar($t[$k]) ? mb_substr(sanitize_textarea_field((string) $t[$k]), 0, 30000) : '';
+        };
+        $manif = array();
+        foreach (isset($t['manifestaciones']) && is_array($t['manifestaciones']) ? array_slice($t['manifestaciones'], 0, 12, true) : array() as $k => $m) {
+            if (!is_array($m)) {
+                continue;
+            }
+            $x = array();
+            foreach (array('n' => 10, 'tipo' => 10, 'texto' => 5000, 'si' => 200, 'no' => 200) as $c => $max) {
+                $x[$c] = isset($m[$c]) && is_scalar($m[$c]) ? mb_substr(sanitize_textarea_field((string) $m[$c]), 0, $max) : '';
+            }
+            $manif[sanitize_key($k)] = $x;
+        }
+        $cons = array();
+        foreach (isset($t['consentimientos']) && is_array($t['consentimientos']) ? $t['consentimientos'] : array() as $k => $c) {
+            if (is_array($c) && preg_match('/^[A-Z_]+$/', (string) $k)) {
+                $cons[$k] = array(
+                    'campo' => sanitize_key(isset($c['campo']) ? $c['campo'] : ''),
+                    'label' => isset($c['label']) && is_scalar($c['label']) ? mb_substr(sanitize_text_field($c['label']), 0, 200) : '',
+                );
+            }
+        }
+        return array('info_centro' => $largo('info_centro'), 'manifestaciones' => $manif, 'proteccion' => $largo('proteccion'), 'consentimientos' => $cons);
+    }
+
+    /**
+     * Text with the simple format of the Área Familias → HTML ("## " heading, "- " list,
+     * **bold**, *italic*; a line [MARKER] is replaced by $marca($marker)).
+     */
+    public static function texto_html($texto, $marca = null) {
+        $out = '';
+        $lista = false;
+        $inline = function ($s) {
+            $s = esc_html($s);
+            $s = preg_replace('/\*\*(.+?)\*\*/u', '<strong>$1</strong>', $s);
+            $s = preg_replace('/(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])/u', '<em>$1</em>', $s);
+            return $s;
+        };
+        foreach (preg_split('/\r\n|\r|\n/', (string) $texto) as $l) {
+            $l = trim($l);
+            $es_item = strpos($l, '- ') === 0;
+            if ($lista && !$es_item) {
+                $out .= '</ul>';
+                $lista = false;
+            }
+            if ($l === '') {
+                continue;
+            }
+            if (preg_match('/^\[([A-Z_]+)\]$/', $l, $m)) {
+                $out .= $marca ? call_user_func($marca, $m[1]) : '';
+            } elseif (strpos($l, '## ') === 0) {
+                $out .= '<h4>' . $inline(substr($l, 3)) . '</h4>';
+            } elseif ($es_item) {
+                if (!$lista) {
+                    $out .= '<ul>';
+                    $lista = true;
+                }
+                $out .= '<li>' . $inline(substr($l, 2)) . '</li>';
+            } else {
+                $out .= '<p>' . $inline($l) . '</p>';
+            }
+        }
+        return $out . ($lista ? '</ul>' : '');
+    }
+
+    /**
+     * The image answers do not match (4º of the manifestations and the data-protection consent)?
+     */
+    public static function imagenes_contradictorias($d) {
+        $m4 = isset($d['aceptaciones']['manifestaciones']['m4']) ? $d['aceptaciones']['manifestaciones']['m4'] : '';
+        $rg = isset($d['aceptaciones']['rgpd']['rgpd_imagenes']) ? $d['aceptaciones']['rgpd']['rgpd_imagenes'] : '';
+        return $m4 !== '' && $rg !== '' && (($m4 === 'si') !== ($rg === 'consiento'));
     }
 
     public static function iban_valido($iban) {

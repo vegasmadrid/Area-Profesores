@@ -118,10 +118,34 @@ $datos_tutor = function ($titulo, $t) use ($campo, $M) {
     .imp { font-size: 9pt; text-align: justify; line-height: 1.4; }
     .check { display: inline-block; width: 4.5mm; height: 4.5mm; border: 1.5px solid #313280; vertical-align: middle; margin-right: 4px; text-align: center; line-height: 4mm; font-weight: 700; }
     .pie { margin-top: 8px; font-size: 7.5pt; color: #64748b; }
+    .legal { font-size: 9pt; line-height: 1.38; text-align: justify; }
+    .legal h4 { font-size: 9.5pt; color: #313280; margin: 7px 0 2px; }
+    .legal p { margin: 0 0 4px; }
+    .legal ul { margin: 0 0 4px; padding-left: 10px; list-style: none; }
+    .legal li { margin: 0 0 2px; }
+    .legal.peq { font-size: 8.2pt; line-height: 1.3; }
+    .manif { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 6px; }
+    .manif .n { font-weight: 700; color: #313280; min-width: 22px; }
+    .manif .t { flex: 1; }
+    .resp { display: inline-block; margin-top: 3px; padding: 1px 8px; border: 1.5px solid #313280; border-radius: 4px; font-weight: 700; font-size: 8.5pt; }
+    .resp.no { border-color: #b91c1c; color: #b91c1c; }
+    .cons { margin: 4px 0 6px; font-weight: 700; }
+    .cons span { margin-right: 22px; }
+    .firmas3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .lineas { border-bottom: 1px solid #94a3b8; min-height: 16px; margin: 2px 0 6px; font-size: 9.5pt; }
     @media print {
         body { background: #fff; }
         .barra { display: none; }
         .hoja { margin: 0; box-shadow: none; width: auto; min-height: 0; padding: 0; }
+        body { font-size: 10pt; }
+        .hd { margin-bottom: 4px; }
+        .logo { max-height: 48px; }
+        h1 { margin: 2px 0 5px; }
+        .box { padding: 5px 9px; margin-bottom: 6px; }
+        .f { min-height: 17px; padding: 1.5px 0; }
+        .f .v { font-size: 9.5pt; }
+        .firma { height: 22mm; }
+        .legal.peq { font-size: 7.9pt; line-height: 1.26; }
     }
 </style>
 </head>
@@ -224,6 +248,72 @@ $datos_tutor = function ($titulo, $t) use ($campo, $M) {
         </div>
         <p class="pie">Datos enviados por la familia desde el Área de Familias el <?php echo esc_html(date_i18n('j/m/Y H:i', strtotime($m['creado']))); ?> (ref. <?php echo esc_html($m['referencia']); ?>). Ideario y RRI aceptados en la web el <?php echo esc_html($d['aceptaciones']['ideario']); ?>.</p>
     </section>
+
+    <?php if (!empty($d['textos']['info_centro']) || !empty($d['textos']['manifestaciones'])) :
+        $mresp = isset($d['aceptaciones']['manifestaciones']) ? $d['aceptaciones']['manifestaciones'] : array(); ?>
+    <!-- INFORMACIÓN DEL CENTRO A LA FAMILIA (2 páginas) -->
+    <section class="hoja">
+        <?php $cabecera(); ?>
+        <h1>INFORMACIÓN DEL CENTRO A LA FAMILIA</h1>
+        <div class="box legal"><?php echo $M::texto_html($d['textos']['info_centro']); // phpcs:ignore -- escaped inside ?></div>
+    </section>
+    <section class="hoja">
+        <?php $cabecera(); ?>
+        <div class="box legal">
+            <h2>MANIFESTACIONES DE LOS PADRES/TUTORES:</h2>
+            <p><strong>Alumno/a:</strong> <?php $e($M::nombre_alumno($a) . ' · ' . $curso_txt . ' · ' . $d['curso_escolar']); ?></p>
+            <?php foreach ($d['textos']['manifestaciones'] as $mk => $mf) : $r = isset($mresp[$mk]) ? $mresp[$mk] : ''; ?>
+                <div class="manif">
+                    <span class="n"><?php $e($mf['n']); ?>.</span>
+                    <div class="t">
+                        <?php echo $M::texto_html($mf['texto']); // phpcs:ignore ?>
+                        <?php if ($mf['tipo'] === 'eleccion' && $r !== '') : ?>
+                            <span class="resp <?php echo $r === 'si' ? '' : 'no'; ?>"><?php echo $r === 'si' ? '✓ ' : '✗ '; ?><?php $e($r === 'si' ? $mf['si'] : $mf['no']); ?></span>
+                        <?php elseif ($mf['tipo'] === 'texto') : ?>
+                            <div class="lineas"><?php echo nl2br(esc_html($r)); ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+            <p style="margin-top:10px;">En Madrid a ______ de ____________________ de 20____</p>
+            <div class="firmas3">
+                <div class="firma">Firma:<small>Padre/Tutor: <?php $e(trim($t1['nombre'] . ' ' . $t1['apellidos'])); ?></small></div>
+                <div class="firma">Firma:<small>Madre/tutora: <?php $e(trim($t2['nombre'] . ' ' . $t2['apellidos'])); ?></small></div>
+                <div class="firma">Firma:<small>Representante del Centro</small></div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if (!empty($d['textos']['proteccion'])) :
+        $rgpd = isset($d['aceptaciones']['rgpd']) ? $d['aceptaciones']['rgpd'] : array();
+        $cons = isset($d['textos']['consentimientos']) ? $d['textos']['consentimientos'] : array(); ?>
+    <!-- PROTECCIÓN DE DATOS (Fundación) -->
+    <section class="hoja">
+        <div class="hd">
+            <?php if ($logo_url) : ?><img class="logo" src="<?php echo esc_url($logo_url); ?>" alt="Colegio Casa de la Virgen"><?php endif; ?>
+            <div class="hd-dir" style="font-size:11pt;font-weight:700;color:#1f2240;">FUNDACIÓN CASA DE LA VIRGEN</div>
+        </div>
+        <div class="legal peq">
+            <?php
+            echo $M::texto_html($d['textos']['proteccion'], function ($marca) use ($cons, $rgpd) { // phpcs:ignore
+                if (!isset($cons[$marca])) {
+                    return '';
+                }
+                $r = isset($rgpd[$cons[$marca]['campo']]) ? $rgpd[$cons[$marca]['campo']] : '';
+                return '<p class="cons"><span><span class="check">' . ($r === 'consiento' ? '✓' : '') . '</span> Consiento</span><span><span class="check">' . ($r === 'no' ? '✓' : '') . '</span> No consiento</span></p>';
+            });
+            ?>
+        </div>
+        <div class="box" style="margin-top:8px;">
+            <?php $campo('ALUMNO/A:', $M::nombre_alumno($a) . ' · ' . $curso_txt); ?>
+            <div class="firmas">
+                <div class="firma">NOMBRE Y APELLIDOS: <?php $e(trim($t1['nombre'] . ' ' . $t1['apellidos'])); ?><small>FECHA: ____________ · FIRMA:</small></div>
+                <div class="firma">NOMBRE Y APELLIDOS: <?php $e(trim($t2['nombre'] . ' ' . $t2['apellidos'])); ?><small>FECHA: ____________ · FIRMA:</small></div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <?php if (in_array($a['nivel'], array('PC1', 'PC2'), true)) : ?>
     <!-- RESERVA DE PLAZA (PRIMER CICLO) -->
