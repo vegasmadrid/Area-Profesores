@@ -3385,3 +3385,10 @@ th[aria-sort="descending"] .ap-sort-ind::after { content: '↓'; opacity: 1; }
 .ap-cd-dieta .ap-rp-dias { flex-wrap: wrap; }
 @media print { .ap-cd-dieta-btn, .ap-cd-dieta { display: none !important; } }
 .ap-rp-nota-dieta { padding: 8px 12px; border-radius: 10px; background: #fff7ed; color: #9a3412; line-height: 1.45; }
+
+/* Reservas: ver las de mis alumnos o las de todo el centro */
+.ap-res-alcance { display: inline-flex; margin-top: 10px; border: 1px solid #cbd5e1; border-radius: 999px; overflow: hidden; background: #fff; }
+.ap-res-alcance a { padding: 6px 14px; font-size: 14px; font-weight: 600; color: #475569; text-decoration: none; }
+.ap-res-alcance a + a { border-left: 1px solid #cbd5e1; }
+.ap-res-alcance a.is-active { background: #313280; color: #fff; }
+.ap-res-alcance a:not(.is-active):hover, .ap-res-alcance a:focus-visible { background: #eef3fe; }

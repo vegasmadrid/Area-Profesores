@@ -142,6 +142,7 @@ $m_secciones = array(
         <li><?php esc_html_e('Las reservas aparecen agrupadas por servicio, con el alumno, su clase y los detalles (hora de salida, quién lo recoge, tipo de dieta…).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Las reservas de comedor y de dieta ya salen marcadas en la pestaña "Comedor"; no hace falta apuntarlas.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Portería ve las reservas de todos los cursos.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si necesitas consultar las de otros alumnos, pulsa "Todo el centro" (arriba); "Mis alumnos" vuelve a tu lista.', 'area-profesores'); ?></li>
     </ul>
     <?php $m_fig('reservas', __('Reservas del día por servicio, con los próximos días arriba.', 'area-profesores')); ?>
     <h4><?php esc_html_e('Reservar un servicio para una familia (profesores y Portería)', 'area-profesores'); ?></h4>

@@ -3,7 +3,7 @@
  * Plugin Name: Área Profesores - Colegio
  * Plugin URI:  https://colegio.local/
  * Description: Gestión integral del Área de Profesores integrada en la web escolar. Control de acceso por profesor, asignación de tutorías, y registro diario de comensales para el comedor escolar mediante el shortcode [area_profesores].
- * Version:     1.25.1
+ * Version:     1.25.2
  * Author:      Colegio
  * Text Domain: area-profesores
  * Domain Path: /languages
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('AREA_PROFESORES_VERSION', '1.25.1');
+define('AREA_PROFESORES_VERSION', '1.25.2');
 define('AREA_PROFESORES_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AREA_PROFESORES_PLUGIN_URL', plugin_dir_url(__FILE__));
 

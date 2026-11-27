@@ -198,10 +198,16 @@ class Area_Profesores_Shortcode {
         // Reservas de las familias (services) of the visible courses; Portería sees every course.
         $reservas = null;
         if ($P::ve($user_id, 'reservas')) {
-            // Teachers: their pupils; whoever has no pupils (Portería…): every course.
+            // Teachers: their pupils (and, if they choose "Todo el centro", every course);
+            // whoever has no pupils (Portería…): every course.
             $es_porteria = Area_Profesores_Cuentas::tiene($user_id, 'porteria');
             $visibles = $es_porteria ? true : Area_Profesores_Alumnos::cursos_visibles($user_id);
             if ($visibles !== true && empty($visibles)) {
+                $visibles = true;
+            }
+            $res_elegir = $visibles !== true; // only those who normally see their pupils
+            $res_todo = $res_elegir && isset($_GET['ap_rv']) && $_GET['ap_rv'] === 'todos';
+            if ($res_todo) {
                 $visibles = true;
             }
             $hoy = current_time('Y-m-d');
@@ -220,6 +226,8 @@ class Area_Profesores_Shortcode {
                 'lista'    => Area_Profesores_Reservas::del_dia($f, $visibles),
                 'proximos' => $proximos,
                 'todos'    => $visibles === true,
+                'elegir'   => $res_elegir,
+                'todo'     => $res_todo,
                 'porteria' => Area_Profesores_Reservas::datos_porteria($user_id),
             );
         }
