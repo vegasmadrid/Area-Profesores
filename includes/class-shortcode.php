@@ -39,6 +39,27 @@ class Area_Profesores_Shortcode {
 
         // Printable manual (every section), for any logged-in teacher.
         add_action('admin_post_ap_manual', array($this, 'render_manual'));
+
+        // The Área and the kitchen page show personal and live data: never cached.
+        add_action('template_redirect', array($this, 'no_cache_pages'), 1);
+    }
+
+    /**
+     * The pages of the Área (login, teachers' area, kitchen) must not be stored by the
+     * browser, the hosting or a cache plugin: otherwise a teacher can see an old
+     * version (e.g. an old form) after an update or the data of the day before.
+     */
+    public function no_cache_pages() {
+        $id = get_queried_object_id();
+        if (!$id || !is_singular() || !isset($this->get_injected_pages()[$id])) {
+            return;
+        }
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true); // WP Super Cache, W3 Total Cache, WP Rocket…
+        }
+        do_action('litespeed_control_set_nocache', 'Área Profesores'); // LiteSpeed Cache
+        nocache_headers(); // browser and proxies (no-store, must-revalidate)
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0, private', true);
     }
 
     public function render_manual() {
@@ -177,10 +198,16 @@ class Area_Profesores_Shortcode {
         // Reservas de las familias (services) of the visible courses; Portería sees every course.
         $reservas = null;
         if ($P::ve($user_id, 'reservas')) {
-            // Teachers: their pupils; whoever has no pupils (Portería…): every course.
+            // Teachers: their pupils (and, if they choose "Todo el centro", every course);
+            // whoever has no pupils (Portería…): every course.
             $es_porteria = Area_Profesores_Cuentas::tiene($user_id, 'porteria');
             $visibles = $es_porteria ? true : Area_Profesores_Alumnos::cursos_visibles($user_id);
             if ($visibles !== true && empty($visibles)) {
+                $visibles = true;
+            }
+            $res_elegir = $visibles !== true; // only those who normally see their pupils
+            $res_todo = $res_elegir && isset($_GET['ap_rv']) && $_GET['ap_rv'] === 'todos';
+            if ($res_todo) {
                 $visibles = true;
             }
             $hoy = current_time('Y-m-d');
@@ -199,6 +226,8 @@ class Area_Profesores_Shortcode {
                 'lista'    => Area_Profesores_Reservas::del_dia($f, $visibles),
                 'proximos' => $proximos,
                 'todos'    => $visibles === true,
+                'elegir'   => $res_elegir,
+                'todo'     => $res_todo,
                 'porteria' => Area_Profesores_Reservas::datos_porteria($user_id),
             );
         }
@@ -275,19 +304,12 @@ class Area_Profesores_Shortcode {
         wp_enqueue_script('area-profesores-comedor');
         $vivo_url = add_query_arg(array('action' => 'ap_comedor_estado', 'fecha' => $fecha), admin_url('admin-ajax.php'));
 
-        // Extract diet and allergy notice lists for instant kitchen overview
-        $dietas_list = array();
+        // Diets to cook (always from the current reservations of the pupils who eat).
+        $dietas_dia = Area_Profesores_Comensales::dietas_dia($fecha);
         $alergicos_faltan_list = array();
 
         if (!empty($records)) {
             foreach ($records as $r) {
-                if (!empty(trim($r->dietas))) {
-                    $dietas_list[] = array(
-                        'clase' => $r->clase,
-                        'etapa' => $r->etapa,
-                        'texto' => $r->dietas,
-                    );
-                }
                 if (!empty(trim($r->alergicos_faltan))) {
                     $alergicos_faltan_list[] = array(
                         'clase' => $r->clase,

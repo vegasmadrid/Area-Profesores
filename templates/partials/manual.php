@@ -68,11 +68,12 @@ $m_secciones = array(
         <li><?php esc_html_e('Abre la pestaña "Comedor". Sale tu clase con la lista de alumnos. Los que se quedan siempre ese día de la semana (comensales fijos) ya aparecen marcados.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Marca a quien se queda hoy sin ser fijo (aparece la etiqueta "Extra hoy") y desmarca a quien hoy no se queda ("Hoy no se queda"). Al validar, cada extra queda registrado como un servicio de comedor de ese día: se avisa a su familia y a Administración, y te llega un correo de confirmación.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Los alumnos con reserva de la familia (👪) ya salen marcados: la familia lo ha pedido desde el Área de Familias.', 'area-profesores'); ?></li>
-        <li><?php esc_html_e('Si hace falta, escribe las dietas del día (por ejemplo, "Pablo — dieta blanda") y otras observaciones para cocina.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Para pedir una dieta, pulsa "🥗 Dieta" junto al alumno y rellena el formulario (tipo de dieta, instrucciones, motivo; un día o varios). Solo se puede los días que el alumno se queda a comer. Se avisa a la familia por correo y a cocina, y aparece en el Área de Familias.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si hace falta, escribe otras observaciones para cocina.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Pulsa "Validar el comedor". Arriba aparece en verde quién lo ha validado, a qué hora y cuántos comensales hay.', 'area-profesores'); ?></li>
     </ol>
     <?php $m_fig('comedor-lista', __('El comedor de la clase: los fijos ya salen marcados (verde), un extra de hoy (naranja), un fijo que hoy no se queda (tachado), las alergias en rojo y una reserva de la familia con dieta.', 'area-profesores')); ?>
-    <?php $m_fig('comedor-validar', __('Dietas y observaciones para cocina (debajo está el botón "Validar el comedor").', 'area-profesores')); ?>
+    <?php $m_fig('comedor-validar', __('Observaciones para cocina (debajo está el botón "Validar el comedor").', 'area-profesores')); ?>
     <div class="ap-manual-nota">
         <?php printf(esc_html__('A las %1$s se envía un recordatorio a los tutores que no lo hayan validado y a las %2$s se manda el resumen a cocina. Si cambias algo después de esa hora, vuelve a validar: cocina recibe un aviso con el cambio.', 'area-profesores'), esc_html($m_rec), esc_html($m_coc)); ?>
     </div>
@@ -141,13 +142,15 @@ $m_secciones = array(
         <li><?php esc_html_e('Las reservas aparecen agrupadas por servicio, con el alumno, su clase y los detalles (hora de salida, quién lo recoge, tipo de dieta…).', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Las reservas de comedor y de dieta ya salen marcadas en la pestaña "Comedor"; no hace falta apuntarlas.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Portería ve las reservas de todos los cursos.', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Si necesitas consultar las de otros alumnos, pulsa "Todo el centro" (arriba); "Mis alumnos" vuelve a tu lista.', 'area-profesores'); ?></li>
     </ul>
     <?php $m_fig('reservas', __('Reservas del día por servicio, con los próximos días arriba.', 'area-profesores')); ?>
-    <h4><?php esc_html_e('Reservar un servicio para una familia (tutores y Portería)', 'area-profesores'); ?></h4>
-    <p><?php esc_html_e('Cuando un padre o una madre pide un servicio de palabra, por teléfono o por correo, el tutor/a (para los alumnos de sus clases) o Portería (para cualquier alumno) lo reserva desde esta misma pestaña:', 'area-profesores'); ?></p>
+    <h4><?php esc_html_e('Reservar un servicio para una familia (profesores y Portería)', 'area-profesores'); ?></h4>
+    <p><?php esc_html_e('Cuando un padre o una madre pide un servicio de palabra, por teléfono o por correo, cualquier profesor (por ejemplo, si el tutor/a no está) o Portería lo reserva para cualquier alumno desde esta misma pestaña; su tutor/a recibe el aviso:', 'area-profesores'); ?></p>
     <ol>
         <li><?php esc_html_e('Pulsa "+ Nueva reserva para una familia" y escribe el nombre del alumno (o de la familia). Elige al alumno en la lista; si quieres, marca también a sus hermanos.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Elige el servicio, el día (o varios días con los días de la semana) y rellena lo que pida: hora, desayuno, dieta, quién le recoge, motivo…', 'area-profesores'); ?></li>
+        <li><?php esc_html_e('Una dieta solo se puede reservar los días que el alumno se queda a comer (comensal fijo o con el comedor reservado). Si no se queda, reserva el Comedor y marca en él que necesita dieta.', 'area-profesores'); ?></li>
         <li><?php esc_html_e('Escribe quién lo ha pedido (por ejemplo, "la madre, por teléfono") y pulsa "Hacer la reserva".', 'area-profesores'); ?></li>
     </ol>
     <?php $m_fig('reservas-buscar', __('Escribe parte del nombre y elige al alumno en la lista.', 'area-profesores')); ?>

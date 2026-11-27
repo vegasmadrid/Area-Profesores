@@ -36,9 +36,15 @@ foreach ($ap_r['lista'] as $r) {
             <h2 class="ap-records-title"><?php esc_html_e('Reservas de las familias', 'area-profesores'); ?></h2>
             <p class="ap-records-subtitle">
                 <?php echo $ap_r['todos']
-                    ? esc_html__('Servicios que han reservado las familias de todos los cursos.', 'area-profesores')
-                    : esc_html__('Servicios que han reservado las familias de tus alumnos: ampliación, comedor, ludoteca, dietas, salidas anticipadas y retrasos.', 'area-profesores'); ?>
+                    ? esc_html__('Servicios reservados para los alumnos de todos los cursos: ampliación, comedor, ludoteca, dietas, salidas anticipadas y retrasos.', 'area-profesores')
+                    : esc_html__('Servicios reservados para tus alumnos: ampliación, comedor, ludoteca, dietas, salidas anticipadas y retrasos.', 'area-profesores'); ?>
             </p>
+            <?php if (!empty($ap_r['elegir'])) : ?>
+                <div class="ap-res-alcance no-print" role="group" aria-label="<?php esc_attr_e('Qué reservas ver', 'area-profesores'); ?>">
+                    <a href="<?php echo esc_url(remove_query_arg('ap_rv') . '#reservas'); ?>" class="<?php echo empty($ap_r['todo']) ? 'is-active' : ''; ?>"<?php echo empty($ap_r['todo']) ? ' aria-current="true"' : ''; ?>><?php esc_html_e('Mis alumnos', 'area-profesores'); ?></a>
+                    <a href="<?php echo esc_url(add_query_arg('ap_rv', 'todos') . '#reservas'); ?>" class="<?php echo !empty($ap_r['todo']) ? 'is-active' : ''; ?>"<?php echo !empty($ap_r['todo']) ? ' aria-current="true"' : ''; ?>><?php esc_html_e('Todo el centro', 'area-profesores'); ?></a>
+                </div>
+            <?php endif; ?>
         </div>
         <div class="ap-ma-tools">
             <button type="button" class="ap-btn ap-btn-sm ap-btn-outline" onclick="window.print()"><?php esc_html_e('Imprimir', 'area-profesores'); ?></button>

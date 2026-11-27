@@ -122,7 +122,8 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                                     <?php if ($a['dias']) : ?><span class="ap-cd-tag is-dias" title="<?php esc_attr_e('Días que se queda siempre', 'area-profesores'); ?>"><?php echo esc_html(implode(' ', array_map(function ($d) use ($cd_dias) { return $cd_dias[$d]; }, $a['dias']))); ?></span><?php endif; ?>
                                     <?php if ($a['familia']) : ?><span class="ap-cd-tag is-familia" title="<?php echo esc_attr($a['familia']['fechas_texto']); ?>">👪 <?php esc_html_e('Reserva de la familia', 'area-profesores'); ?></span><?php endif; ?>
                                     <?php if ($a['alergia'] !== '') : ?><span class="ap-cd-tag is-alergia" title="<?php esc_attr_e('Alergia alimentaria (ficha del alumno)', 'area-profesores'); ?>">⚠️ <?php echo esc_html($a['alergia']); ?></span><?php endif; ?>
-                                    <?php if ($a['dieta'] !== '') : ?><span class="ap-cd-tag is-dieta">🥗 <?php echo esc_html($a['dieta']); ?></span><?php endif; ?>
+                                    <?php if ($a['dieta'] !== '') : ?><span class="ap-cd-tag is-dieta" title="<?php esc_attr_e('Dieta reservada: cocina ya la tiene', 'area-profesores'); ?>">🥗 <?php echo esc_html($a['dieta']); ?></span><?php endif; ?>
+                                    <button type="button" class="ap-cd-dieta-btn" data-cd-dieta="<?php echo esc_attr($a['id']); ?>" data-nombre="<?php echo esc_attr($a['nombre']); ?>" data-come="<?php echo $a['come'] ? '1' : '0'; ?>" data-emails="<?php echo esc_attr(implode(', ', isset($cd['emails'][$a['id']]) ? $cd['emails'][$a['id']] : array())); ?>"><?php esc_html_e('🥗 Dieta', 'area-profesores'); ?></button>
                                     <span class="ap-cd-tag is-extra"><?php esc_html_e('Extra hoy', 'area-profesores'); ?></span>
                                     <span class="ap-cd-tag is-no"><?php echo $a['alergia'] !== '' ? esc_html__('Hoy no se queda · se avisa a cocina para que no prepare su menú', 'area-profesores') : esc_html__('Hoy no se queda', 'area-profesores'); ?></span>
                                 </span>
@@ -133,15 +134,72 @@ $cd_base = remove_query_arg(array('ap_cc', 'ap_res'));
                     <p class="ap-cd-resumen" aria-live="polite"></p>
 
                     <div class="ap-cd-campos">
-                        <label><strong><?php esc_html_e('Dietas', 'area-profesores'); ?></strong> <small><?php esc_html_e('(opcional; las que piden las familias ya aparecen solas)', 'area-profesores'); ?></small>
-                            <textarea name="dietas" rows="2" placeholder="<?php esc_attr_e('Ej.: Pablo — dieta blanda', 'area-profesores'); ?>"><?php echo esc_textarea($cd_reg ? $cd_reg['dietas'] : $cd['dietas_prev']); ?></textarea></label>
-                        <?php if (!$cd_reg && $cd['dietas_prev'] !== '') : ?><small class="ap-cd-nota"><?php esc_html_e('Hemos copiado las dietas del último día: bórralas si ya no hacen falta.', 'area-profesores'); ?></small><?php endif; ?>
+                        <p class="ap-cd-nota"><?php esc_html_e('🥗 Las dietas se reservan con el botón "Dieta" de cada alumno (solo los días que se queda a comer). Las que reservan las familias ya aparecen solas.', 'area-profesores'); ?></p>
                         <label><strong><?php esc_html_e('Otras observaciones para cocina', 'area-profesores'); ?></strong> <small><?php esc_html_e('(los alérgicos que faltan se avisan solos)', 'area-profesores'); ?></small>
                             <textarea name="observaciones" rows="2"><?php echo esc_textarea($cd_reg ? $cd_reg['observaciones'] : ''); ?></textarea></label>
                     </div>
 
                     <button type="submit" class="ap-btn ap-btn-primary ap-cd-validar"><?php esc_html_e('Validar el comedor', 'area-profesores'); ?></button>
                 </form>
+
+                <dialog class="ap-cd-dieta" id="ap-cd-dieta" aria-labelledby="ap-cd-dieta-titulo">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="ap-cd-dieta-form">
+                        <input type="hidden" name="action" value="ap_comedor_dieta">
+                        <input type="hidden" name="curso" value="<?php echo esc_attr($cd['curso']); ?>">
+                        <input type="hidden" name="alumno_id" value="">
+                        <?php wp_nonce_field('ap_comedor_dieta_' . $cd['curso']); ?>
+                        <h3 id="ap-cd-dieta-titulo"><?php esc_html_e('Reservar dieta', 'area-profesores'); ?> · <span class="ap-cd-dieta-nombre"></span></h3>
+                        <p class="ap-cd-dieta-aviso is-no-come" hidden><?php esc_html_e('⚠️ Ahora mismo no está marcado como comensal de hoy. Solo se puede reservar dieta para los días que se queda a comer: si hoy se queda, márcalo y valida antes el comedor; si no, reserva primero el Comedor (en la pestaña Reservas) y marca allí que necesita dieta.', 'area-profesores'); ?></p>
+
+                        <fieldset>
+                            <legend><?php esc_html_e('Cuándo', 'area-profesores'); ?></legend>
+                            <?php if ($cd['dieta_varios']) : ?>
+                                <div class="ap-rp-fila">
+                                    <label><input type="radio" name="modo" value="dia" checked> <?php esc_html_e('Un día', 'area-profesores'); ?></label>
+                                    <label><input type="radio" name="modo" value="varios"> <?php esc_html_e('Varios días', 'area-profesores'); ?></label>
+                                </div>
+                            <?php else : ?>
+                                <input type="hidden" name="modo" value="dia">
+                            <?php endif; ?>
+                            <div class="ap-rp-fila" data-modo="dia">
+                                <label><?php esc_html_e('Día', 'area-profesores'); ?> <input type="date" name="fecha" value="<?php echo esc_attr($cd['fecha']); ?>" min="<?php echo esc_attr($cd['fecha']); ?>"></label>
+                            </div>
+                            <div class="ap-rp-fila" data-modo="varios" hidden>
+                                <label><?php esc_html_e('Desde', 'area-profesores'); ?> <input type="date" name="desde" value="<?php echo esc_attr($cd['fecha']); ?>" min="<?php echo esc_attr($cd['fecha']); ?>"></label>
+                                <label><?php esc_html_e('Hasta', 'area-profesores'); ?> <input type="date" name="hasta" min="<?php echo esc_attr($cd['fecha']); ?>"></label>
+                                <span class="ap-rp-dias">
+                                    <?php foreach ($cd_dias as $n => $d) : ?>
+                                        <label><input type="checkbox" name="dias[]" value="<?php echo (int) $n; ?>" checked> <?php echo esc_html($d); ?></label>
+                                    <?php endforeach; ?>
+                                </span>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend><?php esc_html_e('Dieta', 'area-profesores'); ?></legend>
+                            <div class="ap-rp-fila">
+                                <label><?php esc_html_e('Tipo de dieta', 'area-profesores'); ?>
+                                    <select name="tipo_dieta">
+                                        <option value=""><?php esc_html_e('— Elige —', 'area-profesores'); ?></option>
+                                        <?php foreach ($cd['tipos_dieta'] as $t) : ?><option value="<?php echo esc_attr($t); ?>"><?php echo esc_html($t); ?></option><?php endforeach; ?>
+                                    </select></label>
+                            </div>
+                            <div class="ap-rp-fila"><label class="ap-rp-ancho"><?php esc_html_e('Instrucciones especiales', 'area-profesores'); ?> <input type="text" name="instrucciones" maxlength="1000"></label></div>
+                            <div class="ap-rp-fila"><label class="ap-rp-ancho"><?php esc_html_e('Motivo', 'area-profesores'); ?> <input type="text" name="motivo" maxlength="500" placeholder="<?php esc_attr_e('Ej.: gastroenteritis', 'area-profesores'); ?>"></label></div>
+                            <div class="ap-rp-fila"><label class="ap-rp-ancho"><?php esc_html_e('Observaciones', 'area-profesores'); ?> <input type="text" name="observaciones" maxlength="1000"></label></div>
+                            <div class="ap-rp-fila"><label class="ap-rp-ancho"><?php esc_html_e('Quién lo ha pedido', 'area-profesores'); ?> <input type="text" name="pedido" maxlength="200" placeholder="<?php esc_attr_e('Ej.: la madre, en la agenda', 'area-profesores'); ?>"></label></div>
+                        </fieldset>
+
+                        <p class="ap-cd-dieta-aviso is-correo">📧 <span class="ap-cd-dieta-correo"></span></p>
+                        <p class="ap-cd-dieta-aviso is-sin-correo" hidden><?php esc_html_e('Esta familia no tiene correo en su ficha: la reserva se hará igual, pero la familia no recibirá el aviso.', 'area-profesores'); ?></p>
+                        <p class="ap-rp-error" role="alert" hidden></p>
+
+                        <div class="ap-cd-dieta-botones">
+                            <button type="button" class="ap-btn ap-btn-outline" data-cd-dieta-cerrar><?php esc_html_e('Cancelar', 'area-profesores'); ?></button>
+                            <button type="submit" class="ap-btn ap-btn-primary"><?php esc_html_e('Reservar la dieta y avisar a la familia', 'area-profesores'); ?></button>
+                        </div>
+                    </form>
+                </dialog>
 
                 <details class="ap-cd-fijos" id="ap-cd-fijos"<?php echo array_filter(wp_list_pluck($cd['lista'], 'dias')) ? '' : ' open'; ?>>
                     <summary><?php esc_html_e('Comensales fijos de la clase (los que se quedan siempre)', 'area-profesores'); ?></summary>

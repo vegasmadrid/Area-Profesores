@@ -38,6 +38,7 @@ class Area_Profesores_Comensales {
     private function __construct() {
         add_action('admin_post_ap_comedor_validar', array($this, 'handle_validar'));
         add_action('admin_post_ap_comedor_fijos', array($this, 'handle_fijos'));
+        add_action('admin_post_ap_comedor_dieta', array($this, 'handle_dieta'));
         add_action('admin_post_ap_comedor_profe', array($this, 'handle_profe'));
         add_action('admin_post_ap_comedor_ajustes', array($this, 'handle_ajustes'));
         add_action('admin_post_ap_comedor_csv_mes', array($this, 'handle_csv_mes'));
@@ -493,14 +494,47 @@ class Area_Profesores_Comensales {
     }
 
     /**
-     * Families' reservations of a date for a course: comedor (alumno_id => r)
-     * and diet details (alumno_id => text).
+     * Diet of a reservation ("Dieta" service, or "Comedor" with "Dieta: Sí").
+     *
+     * @return array|null { tipo, texto }
+     */
+    public static function dieta_de_reserva($r) {
+        if ($r['servicio'] !== 'comedor' && $r['servicio'] !== 'dieta') {
+            return null;
+        }
+        $con_dieta = $r['servicio'] === 'dieta';
+        $tipo = '';
+        $l = array();
+        foreach ($r['detalles'] as $d) {
+            if (!isset($d['label'], $d['valor'])) {
+                continue;
+            }
+            if ($d['label'] === 'Dieta' && stripos($d['valor'], 's') === 0) {
+                $con_dieta = true;
+            }
+            if ($d['label'] === 'Tipo de dieta') {
+                $tipo = trim((string) $d['valor']);
+            }
+            if (in_array($d['label'], array('Tipo de dieta', 'Instrucciones especiales'), true)) {
+                $l[] = $d['valor'];
+            }
+        }
+        if (!$con_dieta || !$l) {
+            return null;
+        }
+        return array('tipo' => $tipo !== '' ? $tipo : __('Otra dieta', 'area-profesores'), 'texto' => implode(' — ', $l));
+    }
+
+    /**
+     * Families' reservations of a date for a course: comedor (alumno_id => r),
+     * diet details (alumno_id => text) and diet types (alumno_id => tipo).
      */
     private static function reservas_familia($fecha, $curso) {
         $comedor = array();
         $dietas = array();
+        $tipos = array();
         if (!class_exists('Area_Profesores_Reservas')) {
-            return array($comedor, $dietas);
+            return array($comedor, $dietas, $tipos);
         }
         foreach (Area_Profesores_Reservas::del_dia($fecha, array($curso)) as $r) {
             if (($r['servicio'] !== 'comedor' && $r['servicio'] !== 'dieta') || $r['origen'] === 'tutor') {
@@ -509,21 +543,95 @@ class Area_Profesores_Comensales {
             if ($r['servicio'] === 'comedor') {
                 $comedor[$r['alumno_id']] = $r;
             }
-            $l = array();
-            $con_dieta = $r['servicio'] === 'dieta';
-            foreach ($r['detalles'] as $d) {
-                if ($d['label'] === 'Dieta' && stripos($d['valor'], 's') === 0) {
-                    $con_dieta = true;
-                }
-                if (in_array($d['label'], array('Tipo de dieta', 'Instrucciones especiales'), true)) {
-                    $l[] = $d['valor'];
-                }
-            }
-            if ($con_dieta && $l) {
-                $dietas[$r['alumno_id']] = implode(' — ', $l);
+            $d = self::dieta_de_reserva($r);
+            if ($d) {
+                $dietas[$r['alumno_id']] = $d['texto'];
+                $tipos[$r['alumno_id']] = $d['tipo'];
             }
         }
-        return array($comedor, $dietas);
+        return array($comedor, $dietas, $tipos);
+    }
+
+    /**
+     * Whether a pupil eats at school on a date: in the validated record of the class,
+     * or (not validated yet) a regular diner that weekday or with a "Comedor" reservation.
+     * Only for the courses of the daily dining room (others: always true).
+     */
+    public static function come_el_dia($alumno_id, $curso, $fecha) {
+        if (!self::es_curso($curso)) {
+            return true;
+        }
+        $alumno_id = (int) $alumno_id;
+        $reg = self::get_dia($fecha, $curso);
+        if ($reg) {
+            return in_array($alumno_id, array_map('intval', wp_list_pluck($reg['alumnos'], 'id')), true);
+        }
+        $fijos = self::fijos(array($alumno_id));
+        if (isset($fijos[$alumno_id]) && in_array(self::dow($fecha), $fijos[$alumno_id], true)) {
+            return true;
+        }
+        foreach (Area_Profesores_Reservas::del_dia($fecha, array($curso), 'comedor') as $r) {
+            if ((int) $r['alumno_id'] === $alumno_id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * School days of a reservation (dates within it, its weekdays, without the days off).
+     *
+     * @return string[] Y-m-d
+     */
+    public static function fechas_de_reserva($r) {
+        $out = array();
+        for ($t = strtotime($r['fecha_inicio'] . ' 12:00:00 UTC'), $e = strtotime($r['fecha_fin'] . ' 12:00:00 UTC'), $i = 0; $t <= $e && $i < 400; $t += DAY_IN_SECONDS, $i++) {
+            $f = gmdate('Y-m-d', $t);
+            if (self::es_lectivo($f) && (!$r['dias'] || in_array(self::dow($f), array_map('intval', $r['dias']), true))) {
+                $out[] = $f;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * A diet can only be booked for the days the pupil eats at school.
+     *
+     * @param array $d       reservation data (fecha_inicio, fecha_fin, dias)
+     * @param array $alumnos alumno_id => { alumno: { nombre, curso } }
+     * @return true|WP_Error
+     */
+    public static function comprobar_dieta($d, $alumnos) {
+        $hoy = current_time('Y-m-d');
+        foreach ($alumnos as $id => $x) {
+            $curso = isset($x['alumno']['curso']) ? $x['alumno']['curso'] : '';
+            if (!self::es_curso($curso)) {
+                continue;
+            }
+            $no = array();
+            foreach (self::fechas_de_reserva($d) as $f) {
+                if (!self::come_el_dia($id, $curso, $f)) {
+                    $no[] = $f;
+                }
+            }
+            if (!$no) {
+                continue;
+            }
+            $txt = array_map(function ($f) {
+                return date_i18n('l j \d\e F', strtotime($f . ' 12:00:00'));
+            }, array_slice($no, 0, 5));
+            $dias = implode(', ', $txt) . (count($no) > 5 ? ' ' . sprintf(__('y %d días más', 'area-profesores'), count($no) - 5) : '');
+            $msg = sprintf(
+                _n('No se puede reservar una dieta para %1$s el %2$s porque ese día no se queda a comer (no es comensal fijo ni tiene reservado el comedor).', 'No se puede reservar una dieta para %1$s estos días porque no se queda a comer (no es comensal fijo ni tiene reservado el comedor): %2$s.', count($no), 'area-profesores'),
+                $x['alumno']['nombre'],
+                $dias
+            ) . ' ' . __('Reserva el servicio de Comedor para esos días y marca en él que necesita dieta.', 'area-profesores');
+            if (in_array($hoy, $no, true) && self::get_dia($hoy, $curso)) {
+                $msg .= ' ' . __('Si hoy sí se queda, márcalo en la pestaña Comedor y vuelve a validar la clase.', 'area-profesores');
+            }
+            return new WP_Error('ap_dieta_sin_comedor', $msg, array('status' => 400));
+        }
+        return true;
     }
 
     /**
@@ -534,7 +642,7 @@ class Area_Profesores_Comensales {
     public static function lista($fecha, $curso) {
         $alumnos = self::alumnos_curso($curso);
         $fijos = self::fijos(wp_list_pluck($alumnos, 'id'));
-        list($familia, $dietas) = self::reservas_familia($fecha, $curso);
+        list($familia, $dietas, $tipos) = self::reservas_familia($fecha, $curso);
         $reg = self::get_dia($fecha, $curso);
         $guardados = array();
         if ($reg) {
@@ -562,6 +670,7 @@ class Area_Profesores_Comensales {
                 'fijo'    => $fijo,
                 'familia' => $fam,
                 'dieta'   => isset($dietas[$id]) ? $dietas[$id] : '',
+                'dieta_tipo' => isset($tipos[$id]) ? $tipos[$id] : '',
                 'alergia' => trim((string) (isset($a['alergias_alimentarias']) ? $a['alergias_alimentarias'] : '')),
                 'come'    => $come,
                 'tipo'    => self::tipo($come, $fijo, (bool) $fam),
@@ -580,7 +689,7 @@ class Area_Profesores_Comensales {
     /**
      * Save (validate) the dining room of a class.
      */
-    public static function guardar($fecha, $curso, $ids, $dietas, $obs, $user_id) {
+    public static function guardar($fecha, $curso, $ids, $obs, $user_id) {
         global $wpdb;
         $ids = array_map('intval', (array) $ids);
         $antes = self::get_dia($fecha, $curso);
@@ -590,7 +699,7 @@ class Area_Profesores_Comensales {
         foreach ($lista as $a) {
             $come = in_array($a['id'], $ids, true);
             if ($come) {
-                $comen[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'tipo' => self::tipo(true, $a['fijo'], (bool) $a['familia']), 'dieta' => $a['dieta'], 'alergia' => $a['alergia']);
+                $comen[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'tipo' => self::tipo(true, $a['fijo'], (bool) $a['familia']), 'dieta' => $a['dieta'], 'dieta_tipo' => $a['dieta_tipo'], 'alergia' => $a['alergia']);
             } elseif ($a['fijo']) {
                 $ausentes[] = array('id' => $a['id'], 'nombre' => $a['nombre'], 'alergia' => $a['alergia']);
             }
@@ -601,7 +710,7 @@ class Area_Profesores_Comensales {
             'total'         => count($comen),
             'alumnos'       => wp_json_encode($comen),
             'ausentes'      => wp_json_encode($ausentes),
-            'dietas'        => $dietas,
+            'dietas'        => '', // diets are booked as reservations (Dieta, or Comedor with diet)
             'observaciones' => $obs,
             'validado_por'  => (int) $user_id,
             'validado'      => current_time('mysql'),
@@ -615,13 +724,15 @@ class Area_Profesores_Comensales {
         self::sincronizar_extras($fecha, $curso, $comen, $user_id);
 
         // After the kitchen summary, the kitchen is told about the change
-        // (number of diners, or a pupil with a food allergy who now eats / does not eat).
+        // (number of diners, a pupil with a food allergy who now eats / does not eat, or a diet).
         $env = get_option(self::ENVIADOS, array());
         $cambio_alergias = self::cambios_alergias($antes, $comen, $ausentes);
-        if (is_array($env) && isset($env['fecha'], $env['cocina']) && $env['fecha'] === $fecha && $env['cocina'] && (!$antes || $antes['total'] !== count($comen) || $cambio_alergias)) {
+        $cambio_dietas = self::cambios_dietas($antes, $comen);
+        if (is_array($env) && isset($env['fecha'], $env['cocina']) && $env['fecha'] === $fecha && $env['cocina'] && (!$antes || $antes['total'] !== count($comen) || $cambio_alergias || $cambio_dietas)) {
             $c = Area_Profesores_Cursos::get_curso($curso);
             $u = get_userdata($user_id);
             $alergias_txt = $cambio_alergias ? implode("\n", $cambio_alergias) : __('Sin cambios.', 'area-profesores');
+            $dietas_txt = $cambio_dietas ? implode("\n", $cambio_dietas) : __('Sin cambios.', 'area-profesores');
             Area_Profesores_Correos::enviar('comedor_cambio', array(), self::con_alergias('comedor_cambio', array(
                 'clase'    => $c ? $c['label'] : $curso,
                 'antes'    => $antes ? $antes['total'] : __('sin validar', 'area-profesores'),
@@ -630,7 +741,10 @@ class Area_Profesores_Comensales {
                 'quien'    => $u ? $u->display_name : '',
                 'enlace'   => self::url_cocina(),
                 'alergias' => $alergias_txt,
-            ), $cambio_alergias ? __('Alergias alimentarias:', 'area-profesores') . "\n" . $alergias_txt : ''));
+                'dietas'   => $dietas_txt,
+            ), $cambio_alergias ? __('Alergias alimentarias:', 'area-profesores') . "\n" . $alergias_txt : '', array(
+                'dietas' => $cambio_dietas ? '🥗 ' . __('Dietas:', 'area-profesores') . "\n" . $dietas_txt : '',
+            )));
         }
         return count($comen);
     }
@@ -796,6 +910,42 @@ class Area_Profesores_Comensales {
     }
 
     /**
+     * Diets that appeared, disappeared or changed between two validations.
+     *
+     * @return string[] lines for the kitchen
+     */
+    private static function cambios_dietas($antes, $comen) {
+        $prev = array();
+        if ($antes) {
+            foreach ($antes['alumnos'] as $a) {
+                if (!empty($a['dieta'])) {
+                    $prev[(int) $a['id']] = $a;
+                }
+            }
+        }
+        $out = array();
+        $ahora = array();
+        foreach ($comen as $a) {
+            if (empty($a['dieta'])) {
+                continue;
+            }
+            $ahora[(int) $a['id']] = true;
+            $p = isset($prev[(int) $a['id']]) ? $prev[(int) $a['id']] : null;
+            if (!$p) {
+                $out[] = '- ' . sprintf(__('%1$s: NUEVA dieta hoy: %2$s', 'area-profesores'), $a['nombre'], $a['dieta']);
+            } elseif ($p['dieta'] !== $a['dieta']) {
+                $out[] = '- ' . sprintf(__('%1$s: cambia la dieta: ahora %2$s (antes %3$s)', 'area-profesores'), $a['nombre'], $a['dieta'], $p['dieta']);
+            }
+        }
+        foreach ($prev as $id => $p) {
+            if (!isset($ahora[$id])) {
+                $out[] = '- ' . sprintf(__('%1$s: ya NO hay que preparar su dieta (%2$s)', 'area-profesores'), $p['nombre'], $p['dieta']);
+            }
+        }
+        return $out;
+    }
+
+    /**
      * E-mails whose text was customised before {alergias} (or {profesores}) existed still get them.
      */
     private static function con_alergias($key, $vars, $bloque, $otros = array()) {
@@ -853,18 +1003,76 @@ class Area_Profesores_Comensales {
     }
 
     /**
+     * Diets to cook on a date, one line per pupil, always from the current reservations
+     * ("Dieta", or "Comedor" with diet) of the pupils who eat:
+     * - Primer Ciclo, Infantil y Primaria: the diners of the validated record or, if the
+     *   class is not validated yet, the expected ones (regular diners and reservations);
+     * - other courses: their reservations.
+     *
+     * @return array { total, tipos: [tipo => n], lineas: [ {clase, curso, nombre, tipo, texto, validado} ] }
+     */
+    public static function dietas_dia($fecha) {
+        $lineas = array();
+        $cursos = self::cursos();
+        foreach (self::es_lectivo($fecha) ? self::estados($fecha) : array() as $k => $e) {
+            foreach (self::lista($fecha, $k) as $a) {
+                if ($a['come'] && $a['dieta'] !== '') {
+                    $lineas[] = array('clase' => $e['label'], 'curso' => $k, 'nombre' => $a['nombre'], 'tipo' => $a['dieta_tipo'] !== '' ? $a['dieta_tipo'] : __('Otra dieta', 'area-profesores'), 'texto' => $a['dieta'], 'validado' => (bool) $e['registro']);
+                }
+            }
+        }
+        if (class_exists('Area_Profesores_Reservas')) {
+            $vistos = array();
+            foreach (Area_Profesores_Reservas::del_dia($fecha) as $r) {
+                if (isset($cursos[$r['curso']]) || isset($vistos[$r['alumno_id']])) {
+                    continue;
+                }
+                $d = self::dieta_de_reserva($r);
+                if ($d) {
+                    $vistos[$r['alumno_id']] = true;
+                    $lineas[] = array('clase' => $r['curso_label'], 'curso' => $r['curso'], 'nombre' => $r['alumno'], 'tipo' => $d['tipo'], 'texto' => $d['texto'], 'validado' => true);
+                }
+            }
+        }
+        $tipos = array();
+        foreach ($lineas as $l) {
+            $tipos[$l['tipo']] = (isset($tipos[$l['tipo']]) ? $tipos[$l['tipo']] : 0) + 1;
+        }
+        arsort($tipos);
+        return array('total' => count($lineas), 'tipos' => $tipos, 'lineas' => $lineas);
+    }
+
+    /** The same as text (kitchen e-mail). */
+    public static function dietas_texto($fecha, $dd = null) {
+        $dd = $dd ? $dd : self::dietas_dia($fecha);
+        if (!$dd['total']) {
+            return '';
+        }
+        $t = array();
+        foreach ($dd['tipos'] as $tipo => $n) {
+            $t[] = $tipo . ': ' . $n;
+        }
+        $l = array(sprintf(_n('%d dieta a preparar', '%d dietas a preparar', $dd['total'], 'area-profesores'), $dd['total']) . ' (' . implode(' · ', $t) . ')');
+        foreach ($dd['lineas'] as $x) {
+            $l[] = '- ' . $x['clase'] . ' · ' . $x['nombre'] . ': ' . $x['texto'] . ($x['validado'] ? '' : ' ' . __('(clase sin validar todavía)', 'area-profesores'));
+        }
+        return implode("\n", $l);
+    }
+
+    /**
      * Keep the previous table (kitchen page, "Comedor Diario" and its CSV) in step.
      */
     private static function sincronizar_registro_antiguo($fecha, $curso, $data, $comen) {
         global $wpdb;
         $t = Area_Profesores_Comedor::get_table_name();
         $c = Area_Profesores_Cursos::get_curso($curso);
-        $dietas = trim((string) $data['dietas']);
+        $l = array();
         foreach ($comen as $a) {
-            if ($a['dieta'] !== '' && strpos($dietas, $a['nombre']) === false) {
-                $dietas .= ($dietas !== '' ? "\n" : '') . $a['nombre'] . ': ' . $a['dieta'] . ' ' . __('(reserva de la familia)', 'area-profesores');
+            if (!empty($a['dieta'])) {
+                $l[] = $a['nombre'] . ': ' . $a['dieta'];
             }
         }
+        $dietas = implode("\n", $l);
         $row = array(
             'user_id'          => $data['validado_por'],
             'fecha'            => $fecha,
@@ -885,24 +1093,29 @@ class Area_Profesores_Comensales {
     }
 
     /**
-     * A family books (or cancels) the comedor for today after the class was validated.
+     * Someone books (or cancels) the comedor or a diet for today after the class was
+     * validated: the record (and the kitchen page) is updated, and after the kitchen
+     * summary the kitchen gets the change.
      */
     public static function on_reserva($r) {
         $hoy = current_time('Y-m-d');
-        if ($r['servicio'] !== 'comedor' || !self::es_curso($r['curso']) || !Area_Profesores_Reservas::aplica($r, $hoy)) {
+        if (!in_array($r['servicio'], array('comedor', 'dieta'), true) || !self::es_curso($r['curso']) || !Area_Profesores_Reservas::aplica($r, $hoy)) {
             return;
         }
         $reg = self::get_dia($hoy, $r['curso']);
         if (!$reg) {
-            return; // not validated yet: it will appear marked
+            return; // not validated yet: it will appear marked (with its diet)
         }
         $ids = array_map('intval', wp_list_pluck($reg['alumnos'], 'id'));
-        if ($r['estado'] === 'activa') {
-            $ids[] = (int) $r['alumno_id'];
-        } else {
-            $ids = array_diff($ids, array((int) $r['alumno_id']));
+        if ($r['servicio'] === 'comedor') {
+            if ($r['estado'] === 'activa') {
+                $ids[] = (int) $r['alumno_id'];
+            } else {
+                $ids = array_diff($ids, array((int) $r['alumno_id']));
+            }
         }
-        self::guardar($hoy, $r['curso'], array_unique($ids), (string) $reg['dietas'], (string) $reg['observaciones'], $reg['validado_por']);
+        // A diet only changes the details of the diners (saved again with the current diets).
+        self::guardar($hoy, $r['curso'], array_unique($ids), (string) $reg['observaciones'], $reg['validado_por']);
     }
 
     public static function total_dia($fecha) {
@@ -980,11 +1193,18 @@ class Area_Profesores_Comensales {
         $estados = self::estados($hoy);
         $reg = $curso !== '' ? self::get_dia($hoy, $curso) : null;
 
-        // Diets usually last several days: offer the last ones written for the class.
-        $dietas_prev = '';
-        if ($curso !== '' && !$reg) {
-            global $wpdb;
-            $dietas_prev = (string) $wpdb->get_var($wpdb->prepare('SELECT dietas FROM ' . self::t() . ' WHERE curso = %s AND fecha < %s AND fecha >= %s ORDER BY fecha DESC LIMIT 1', $curso, $hoy, gmdate('Y-m-d', strtotime($hoy . ' -14 days'))));
+        $lista = $curso !== '' ? self::lista($hoy, $curso) : array();
+        // Family e-mails (the diet form says who will get the confirmation).
+        $emails = array();
+        if ($lista) {
+            foreach (Area_Profesores_Alumnos::familias_de_alumnos(wp_list_pluck($lista, 'id')) as $id => $fams) {
+                $emails[$id] = Area_Profesores_Alumnos::emails_array($fams[0]['emails']);
+            }
+        }
+        $serv = Area_Profesores_Reservas::servicios();
+        $tipos = isset($serv['dieta']) ? array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $serv['dieta']['tipos_dieta'])))) : array();
+        if (!$tipos) {
+            $tipos = array(__('Dieta blanda', 'area-profesores'), __('Sin lactosa', 'area-profesores'), __('Sin gluten', 'area-profesores'));
         }
 
         $flash = get_transient('ap_comedor_flash_' . $user_id);
@@ -997,10 +1217,12 @@ class Area_Profesores_Comensales {
             'motivo'      => isset(self::dias_sin_clase()[$hoy]) ? self::dias_sin_clase()[$hoy] : '',
             'mi_curso'    => $mi,
             'curso'       => $curso,
-            'lista'       => $curso !== '' ? self::lista($hoy, $curso) : array(),
+            'lista'       => $lista,
             'registro'    => $reg,
             'estados'     => $estados,
-            'dietas_prev' => $dietas_prev,
+            'emails'      => $emails,
+            'tipos_dieta' => $tipos,
+            'dieta_varios' => !isset($serv['dieta']) || $serv['dieta']['varios_dias'] === 'yes',
             'ajustes'     => self::ajustes(),
             'flash'       => $flash,
             'profe'       => self::come_en_colegio($user_id) ? self::datos_profe($user_id) : null,
@@ -1023,15 +1245,76 @@ class Area_Profesores_Comensales {
         }
         $hoy = current_time('Y-m-d');
         $ids = isset($_POST['come']) ? array_map('absint', (array) $_POST['come']) : array();
-        $dietas = isset($_POST['dietas']) ? sanitize_textarea_field(wp_unslash($_POST['dietas'])) : '';
         $obs = isset($_POST['observaciones']) ? sanitize_textarea_field(wp_unslash($_POST['observaciones'])) : '';
-        $n = self::guardar($hoy, $curso, $ids, $dietas, $obs, $uid);
+        $n = self::guardar($hoy, $curso, $ids, $obs, $uid);
         $c = Area_Profesores_Cursos::get_curso($curso);
         $alumnos = self::alumnos_curso($curso);
         if ($n && !array_filter(self::fijos(wp_list_pluck($alumnos, 'id')))) {
             self::volver($curso, 'warning', sprintf(_n('Comedor de %1$s validado: %2$d comensal. ATENCIÓN:', 'Comedor de %1$s validado: %2$d comensales. ATENCIÓN:', $n, 'area-profesores') . ' ' . __('Esta clase no tiene comensales fijos, así que todos cuentan como EXTRA: se ha avisado a Administración para cobrárselo a las familias y a cada familia por correo. Marca cuanto antes los fijos en "Comensales fijos de la clase" (abajo).', 'area-profesores'), $c['label'], $n));
         }
         self::volver($curso, 'success', sprintf(_n('Comedor de %1$s validado: %2$d comensal. ¡Gracias!', 'Comedor de %1$s validado: %2$d comensales. ¡Gracias!', $n, 'area-profesores'), $c['label'], $n));
+    }
+
+    /**
+     * A teacher books a diet from the class list (the same form as the families').
+     * It is saved as a "Dieta" reservation: the family gets the confirmation by e-mail,
+     * the tutor and the kitchen are told as configured in Correos, and it appears in
+     * the Área Familias, the class list and the kitchen page.
+     */
+    public function handle_dieta() {
+        $uid = get_current_user_id();
+        $curso = isset($_POST['curso']) ? sanitize_text_field(wp_unslash($_POST['curso'])) : '';
+        check_admin_referer('ap_comedor_dieta_' . $curso);
+        if (!self::puede($uid) || !self::es_curso($curso)) {
+            wp_die(esc_html__('No puedes reservar dietas en esta clase.', 'area-profesores'));
+        }
+        $R = 'Area_Profesores_Reservas';
+        $id = isset($_POST['alumno_id']) ? absint($_POST['alumno_id']) : 0;
+        $alumno = null;
+        foreach (self::alumnos_curso($curso) as $a) {
+            if ((int) $a['id'] === $id) {
+                $alumno = $a;
+            }
+        }
+        if (!$alumno) {
+            self::volver($curso, 'error', __('Ese alumno no es de esta clase.', 'area-profesores'));
+        }
+        if (!isset($R::servicios()['dieta'])) {
+            self::volver($curso, 'error', __('El servicio de Dieta no está activo en el Área Familias.', 'area-profesores'));
+        }
+        $fams = Area_Profesores_Alumnos::familias_de_alumnos(array($id));
+        if (empty($fams[$id])) {
+            self::volver($curso, 'error', sprintf(__('%s no tiene familia en su ficha, así que no se puede hacer la reserva ni avisar a la familia. Pide a Secretaría que la vincule.', 'area-profesores'), $alumno['nombre']));
+        }
+        $post = wp_unslash($_POST);
+        $p = array(
+            'servicio'      => 'dieta',
+            'familia_id'    => (int) $fams[$id][0]['id'],
+            'alumnos'       => array($id),
+            'modo'          => isset($post['modo']) && $post['modo'] === 'varios' ? 'varios' : 'dia',
+            'fecha'         => isset($post['fecha']) ? $post['fecha'] : current_time('Y-m-d'),
+            'desde'         => isset($post['desde']) ? $post['desde'] : '',
+            'hasta'         => isset($post['hasta']) ? $post['hasta'] : '',
+            'dias'          => isset($post['dias']) ? (array) $post['dias'] : array(),
+            'tipo_dieta'    => isset($post['tipo_dieta']) ? $post['tipo_dieta'] : '',
+            'instrucciones' => isset($post['instrucciones']) ? $post['instrucciones'] : '',
+            'motivo'        => isset($post['motivo']) ? $post['motivo'] : '',
+            'observaciones' => isset($post['observaciones']) ? $post['observaciones'] : '',
+            'pedido'        => isset($post['pedido']) ? $post['pedido'] : '',
+        );
+        $v = $R::validar_porteria($p, true);
+        if (is_wp_error($v)) {
+            self::volver($curso, 'error', $v->get_error_message());
+        }
+        $creadas = $R::crear($v['datos'], $v['alumnos'], $v['emails'], $R::panel_familias(), $uid, array('origen' => $R::es_porteria($uid) ? 'porteria' : 'profesor'));
+        if (is_wp_error($creadas)) {
+            self::volver($curso, 'error', $creadas->get_error_message());
+        }
+        if (!$creadas) {
+            self::volver($curso, 'error', __('No se ha guardado la reserva. Inténtalo de nuevo y, si vuelve a pasar, avisa al administrador de la web.', 'area-profesores'));
+        }
+        self::volver($curso, 'success', sprintf(__('Dieta reservada para %1$s (%2$s). Ya aparece en cocina.', 'area-profesores'), $alumno['nombre'], $creadas[0]['fechas_texto'])
+            . ' ' . ($v['emails'] ? sprintf(__('Se ha avisado a la familia por correo (%s).', 'area-profesores'), implode(', ', $v['emails'])) : __('La familia no tiene correo: no ha recibido aviso.', 'area-profesores')));
     }
 
     public function handle_fijos() {
@@ -1183,6 +1466,7 @@ class Area_Profesores_Comensales {
         $clases = array();
         $pendientes = array();
         $dietas = array();
+        $obs = array();
         $total = 0;
         foreach (self::estados($fecha) as $k => $e) {
             $r = $e['registro'];
@@ -1196,9 +1480,6 @@ class Area_Profesores_Comensales {
                 if (isset($n[$a['tipo']])) {
                     $n[$a['tipo']]++;
                 }
-                if (!empty($a['dieta'])) {
-                    $dietas[] = '- ' . $e['label'] . ' · ' . $a['nombre'] . ': ' . $a['dieta'] . ' ' . __('(reserva de la familia)', 'area-profesores');
-                }
             }
             $extra = array();
             if ($n['extra']) {
@@ -1208,12 +1489,16 @@ class Area_Profesores_Comensales {
                 $extra[] = sprintf(_n('%d reservado por la familia', '%d reservados por la familia', $n['familia'], 'area-profesores'), $n['familia']);
             }
             $clases[] = '- ' . $e['label'] . ': ' . $r['total'] . ($extra ? ' (' . implode(', ', $extra) . ')' : '');
-            if (trim((string) $r['dietas']) !== '') {
-                $dietas[] = '- ' . $e['label'] . ': ' . str_replace("\n", ' · ', trim($r['dietas']));
-            }
             if (trim((string) $r['observaciones']) !== '') {
-                $dietas[] = '- ' . $e['label'] . ' (' . __('observaciones', 'area-profesores') . '): ' . str_replace("\n", ' · ', trim($r['observaciones']));
+                $obs[] = '- ' . $e['label'] . ': ' . str_replace("\n", ' · ', trim($r['observaciones']));
             }
+        }
+        $txt = self::dietas_texto($fecha);
+        if ($txt !== '') {
+            $dietas[] = $txt;
+        }
+        if ($obs) {
+            $dietas[] = ($dietas ? "\n" : '') . __('Observaciones de los tutores:', 'area-profesores') . "\n" . implode("\n", $obs);
         }
         return array('total' => $total, 'clases' => $clases, 'pendientes' => $pendientes, 'dietas' => $dietas, 'alergias' => self::alergias_texto($fecha), 'profesores' => self::profes_no_comen($fecha));
     }

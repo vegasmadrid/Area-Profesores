@@ -333,7 +333,7 @@ class Area_Profesores_Comedor {
             'Fecha',
             'Clase',
             'Etapa',
-            'Nº Alumnos (Sin dietas)',
+            'Nº Alumnos (con dietas incluidas)',
             'Dietas y Especiales',
             'Alérgicos que faltan / Observaciones',
             'Profesor',
@@ -357,7 +357,7 @@ class Area_Profesores_Comedor {
         }
 
         // Summary row
-        fputcsv($output, array('', '', 'TOTAL ALUMNOS (Sin dietas):', $total_alumnos, '', '', '', ''), ';');
+        fputcsv($output, array('', '', 'TOTAL ALUMNOS:', $total_alumnos, '', '', '', ''), ';');
 
         fclose($output);
         exit;

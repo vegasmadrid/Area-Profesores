@@ -3367,3 +3367,28 @@ a.ap-enlace-card.is-featured .ap-enlace-icon {
 th[aria-sort="ascending"] .ap-sort-ind::after { content: '↑'; opacity: 1; }
 th[aria-sort="descending"] .ap-sort-ind::after { content: '↓'; opacity: 1; }
 @media print { .ap-sort-ind { display: none; } }
+
+/* Comedor diario: reservar dieta desde la lista de la clase */
+.ap-cd-dieta-btn { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px; border: 1px dashed #65a30d; background: #fff; color: #3f6212; cursor: pointer; }
+.ap-cd-dieta-btn:hover, .ap-cd-dieta-btn:focus-visible { background: #ecfccb; }
+.ap-cd-dieta { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); border: 0; border-radius: 16px; padding: 20px; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); box-sizing: border-box; }
+.ap-cd-dieta::backdrop { background: rgba(15, 23, 42, .45); }
+.ap-cd-dieta h3 { margin: 0 0 12px; font-size: 18px; }
+.ap-cd-dieta fieldset { border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 12px 10px; margin: 0 0 12px; }
+.ap-cd-dieta legend { font-weight: 700; font-size: 14px; padding: 0 4px; }
+.ap-cd-dieta [hidden] { display: none !important; }
+.ap-cd-dieta-aviso { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; font-size: 14px; line-height: 1.45; }
+.ap-cd-dieta-aviso.is-correo { background: #eef3fe; color: #313280; }
+.ap-cd-dieta-aviso.is-sin-correo, .ap-cd-dieta-aviso.is-no-come { background: #fff7ed; color: #9a3412; }
+.ap-cd-dieta .ap-rp-error { margin-bottom: 12px; }
+.ap-cd-dieta-botones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.ap-cd-dieta .ap-rp-dias { flex-wrap: wrap; }
+@media print { .ap-cd-dieta-btn, .ap-cd-dieta { display: none !important; } }
+.ap-rp-nota-dieta { padding: 8px 12px; border-radius: 10px; background: #fff7ed; color: #9a3412; line-height: 1.45; }
+
+/* Reservas: ver las de mis alumnos o las de todo el centro */
+.ap-res-alcance { display: inline-flex; margin-top: 10px; border: 1px solid #cbd5e1; border-radius: 999px; overflow: hidden; background: #fff; }
+.ap-res-alcance a { padding: 6px 14px; font-size: 14px; font-weight: 600; color: #475569; text-decoration: none; }
+.ap-res-alcance a + a { border-left: 1px solid #cbd5e1; }
+.ap-res-alcance a.is-active { background: #313280; color: #fff; }
+.ap-res-alcance a:not(.is-active):hover, .ap-res-alcance a:focus-visible { background: #eef3fe; }
